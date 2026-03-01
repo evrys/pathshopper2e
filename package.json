@@ -6,6 +6,7 @@
 	"scripts": {
 		"dev": "vite dev --port 5900",
 		"build": "tsc -b && vite build",
+		"tsc": "tsc --pretty --noEmit",
 		"biome": "biome check --error-on-warnings",
 		"format": "biome format --write .",
 		"preview": "vite preview"
