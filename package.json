@@ -12,8 +12,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react": "^19.2.2",
+    "react-dom": "^19.2.2"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.6",
