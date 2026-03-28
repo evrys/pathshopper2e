@@ -133,14 +133,26 @@
   font-weight: 500;
 }
 
+/* Override Tippy's default theme so our .item-tooltip styles apply */
+.tippy-box {
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.tippy-box > .tippy-content {
+  padding: 0;
+}
+
+.tippy-box > .tippy-arrow {
+  display: none;
+}
+
 .item-tooltip {
-  position: fixed;
-  z-index: 9999;
-  width: 420px;
-  max-width: calc(100vw - 2rem);
-  max-height: calc(100vh - 2rem);
   display: flex;
   flex-direction: column;
+  max-height: calc(100vh - 1rem);
   font-size: 0.8125rem;
   font-weight: 400;
   line-height: 1.45;
@@ -149,8 +161,6 @@
   border: 1px solid #444;
   border-radius: var(--radius);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  pointer-events: none;
-  overflow: hidden;
 }
 
 .item-tooltip-header {

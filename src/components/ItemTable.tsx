@@ -3,7 +3,7 @@ import { useFuzzySearch } from "../hooks/useFuzzySearch";
 import { aonUrl } from "../lib/aon";
 import { formatPrice, toCopper } from "../lib/price";
 import type { Item } from "../types";
-import { ItemTooltip, useItemTooltip } from "./ItemTooltip";
+import { ItemTooltipWrapper } from "./ItemTooltip";
 import { MultiSelect } from "./MultiSelect";
 
 type SortField = "name" | "level" | "price" | "type";
@@ -62,7 +62,6 @@ export function ItemTable({
     sortDir,
   } = filters;
   const [page, setPage] = useState(0);
-  const { tooltip, show: showTooltip, hide: hideTooltip } = useItemTooltip();
 
   const preFiltered = useMemo(() => {
     const minLvl = minLevel ? Number.parseInt(minLevel, 10) : -Infinity;
@@ -231,15 +230,15 @@ export function ItemTable({
             {pageItems.map((item) => (
               <tr key={item.id}>
                 <td className="item-name">
-                  <a
-                    href={aonUrl(item)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onMouseEnter={(e) => showTooltip(item, e.currentTarget)}
-                    onMouseLeave={hideTooltip}
-                  >
-                    {highlightMap.get(item.id) ?? item.name}
-                  </a>
+                  <ItemTooltipWrapper item={item}>
+                    <a
+                      href={aonUrl(item)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {highlightMap.get(item.id) ?? item.name}
+                    </a>
+                  </ItemTooltipWrapper>
                 </td>
                 <td className="item-type">
                   {TYPE_LABELS[item.type] ?? item.type}
@@ -296,11 +295,6 @@ export function ItemTable({
           </button>
         </div>
       )}
-
-      <ItemTooltip
-        item={tooltip?.item ?? null}
-        anchor={tooltip?.rect ?? null}
-      />
     </div>
   );
 }
