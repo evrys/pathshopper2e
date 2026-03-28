@@ -26,6 +26,7 @@ const SPARSE_PATH = "packs/equipment";
 const CLONE_DIR = "node_modules/.cache/pf2e-data";
 const OUTPUT = "data/items.json";
 const AON_CSV = "data/aon-all-equipment.csv";
+const AON_OVERRIDES = "data/aon-url-overrides.json";
 
 /**
  * Parse the AoN CSV export and build a Map from item name to URL path.
@@ -202,6 +203,24 @@ function main() {
     }
   }
   console.log(`Matched ${matched}/${items.length} items to AoN URLs.`);
+
+  // Apply manual URL overrides for items not in the CSV
+  const overrides = JSON.parse(readFileSync(AON_OVERRIDES, "utf-8")) as Record<
+    string,
+    string
+  >;
+  let overrideCount = 0;
+  for (const item of items) {
+    if (item.aonUrl) continue;
+    const url = overrides[item.name];
+    if (url) {
+      item.aonUrl = url;
+      overrideCount++;
+    }
+  }
+  console.log(
+    `Applied ${overrideCount} manual AoN URL overrides (${Object.keys(overrides).length} defined).`,
+  );
 
   // Assign fallback URLs for treasure items (gems & art objects)
   let gemCount = 0;
