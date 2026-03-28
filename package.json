@@ -9,7 +9,8 @@
     "tsc": "tsc --pretty --noEmit",
     "biome": "biome check --error-on-warnings",
     "format": "biome format --write .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "fetch-data": "tsx scripts/fetch-equipment.ts"
   },
   "dependencies": {
     "react": "^19.2.2",
@@ -22,6 +23,7 @@
     "@types/react-dom": "^19.2.2",
     "@vitejs/plugin-react": "^5.1.1",
     "globals": "^16.5.0",
+    "tsx": "^4.21.0",
     "typescript": "~5.9.3",
     "vite": "npm:rolldown-vite@latest"
   },

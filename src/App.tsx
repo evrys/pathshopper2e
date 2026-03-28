@@ -1,34 +1,54 @@
-import { useState } from "react";
 import "./App.css";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
+import { Cart } from "./components/Cart";
+import { ItemTable } from "./components/ItemTable";
+import { useCart } from "./hooks/useCart";
+import { useItems } from "./hooks/useItems";
 
 function App() {
-  const [count, setCount] = useState(0);
+  const { items, loading } = useItems();
+  const {
+    entries,
+    totalPrice,
+    totalItems,
+    addItem,
+    removeItem,
+    setQuantity,
+    clearCart,
+  } = useCart();
+
+  if (loading) {
+    return (
+      <div className="loading">
+        <p>Loading item data...</p>
+      </div>
+    );
+  }
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank" rel="noopener">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank" rel="noopener">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button type="button" onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
+    <div className="app">
+      <header className="app-header">
+        <h1>⚔️ PF2e Item Shopper</h1>
+        <p className="app-subtitle">
+          Plan your equipment purchases for any budget
         </p>
+      </header>
+
+      <div className="app-body">
+        <main className="app-main">
+          <ItemTable items={items} onAddItem={addItem} />
+        </main>
+        <aside className="app-sidebar">
+          <Cart
+            entries={entries}
+            totalPrice={totalPrice}
+            totalItems={totalItems}
+            onSetQuantity={setQuantity}
+            onRemoveItem={removeItem}
+            onClear={clearCart}
+          />
+        </aside>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    </div>
   );
 }
 
