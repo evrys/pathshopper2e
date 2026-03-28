@@ -12,7 +12,8 @@
     "preview": "vite preview",
     "fetch-data": "tsx scripts/fetch-equipment.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "checks": "pnpm tsc && pnpm biome && pnpm test"
   },
   "dependencies": {
     "react": "^19.2.2",

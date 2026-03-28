@@ -27,7 +27,7 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>⚔️ PF2e Item Shopper</h1>
+        <h1>Pathshopper</h1>
         <p className="app-subtitle">
           Plan your equipment purchases for any budget
         </p>
