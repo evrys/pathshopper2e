@@ -29,6 +29,16 @@ const AON_CSV = "data/aon-all-equipment.csv";
 const AON_OVERRIDES = "data/aon-url-overrides.json";
 
 /**
+ * Items that have been renamed in AoN but whose source data (Foundry) still
+ * uses the old name. Map from old Foundry name → current AoN name.
+ */
+const NAME_CORRECTIONS: Record<string, string> = {
+  "Wyrm on the Wing": "Wyrm's Wingspan",
+  "Wyrm on the Wing (Greater)": "Wyrm's Wingspan (Greater)",
+  "Wyrm on the Wing (Major)": "Wyrm's Wingspan (Major)",
+};
+
+/**
  * Normalize an item name for fuzzy matching against the AoN CSV.
  * Strips parentheticals, collapses hyphens/spaces, lowercases.
  */
@@ -224,6 +234,19 @@ const AON_ART_OBJECTS_URL = "/Rules.aspx?ID=3229";
 function main() {
   cloneEquipmentPack();
   const { items, stackGroups } = processFiles();
+
+  // Apply name corrections for items renamed in AoN since Foundry source data was published
+  let nameCorrections = 0;
+  for (const item of items) {
+    const corrected = NAME_CORRECTIONS[item.name];
+    if (corrected) {
+      item.name = corrected;
+      nameCorrections++;
+    }
+  }
+  if (nameCorrections > 0) {
+    console.log(`Applied ${nameCorrections} name corrections.`);
+  }
 
   // Annotate items with AoN URLs — try exact name first, then normalized fallback
   const aonUrls = loadAonUrls();
