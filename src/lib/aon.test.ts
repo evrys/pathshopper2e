@@ -42,3 +42,27 @@ describe("aonUrl", () => {
     );
   });
 });
+
+describe("dataset integration", () => {
+  it("every item has an Archives of Nethys URL", async () => {
+    const items = (await import("../../data/items.json")).default as Array<{
+      name: string;
+      type: string;
+      aonUrl?: string;
+    }>;
+
+    const missing = items.filter((item) => !item.aonUrl);
+
+    if (missing.length > 0) {
+      const sample = missing
+        .slice(0, 20)
+        .map((item) => `  ${item.name} [${item.type}]`)
+        .join("\n");
+      const suffix =
+        missing.length > 20 ? `\n  ... and ${missing.length - 20} more` : "";
+      throw new Error(
+        `${missing.length}/${items.length} items are missing an AoN URL:\n${sample}${suffix}`,
+      );
+    }
+  });
+});
