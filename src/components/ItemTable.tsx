@@ -1,4 +1,5 @@
-import { type ReactNode, useCallback, useMemo, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { type ReactNode, useCallback, useMemo, useRef } from "react";
 import { useFuzzySearch } from "../hooks/useFuzzySearch";
 import { aonUrl } from "../lib/aon";
 import { formatPrice, toCopper } from "../lib/price";
@@ -26,8 +27,6 @@ interface ItemTableProps {
   onFiltersChange: (filters: Partial<FilterState>) => void;
   onAddItem: (item: Item) => void;
 }
-
-const ITEMS_PER_PAGE = 50;
 
 const TYPE_LABELS: Record<string, string> = {
   weapon: "⚔️ Weapon",
@@ -62,7 +61,6 @@ export function ItemTable({
     sortField,
     sortDir,
   } = filters;
-  const [page, setPage] = useState(0);
 
   const preFiltered = useMemo(() => {
     const minLvl = minLevel ? Number.parseInt(minLevel, 10) : -Infinity;
@@ -119,12 +117,6 @@ export function ItemTable({
     return arr;
   }, [filtered, sortField, sortDir, isSearching]);
 
-  const totalPages = Math.ceil(sorted.length / ITEMS_PER_PAGE);
-  const pageItems = sorted.slice(
-    page * ITEMS_PER_PAGE,
-    (page + 1) * ITEMS_PER_PAGE,
-  );
-
   function handleSort(field: SortField) {
     if (sortField === field) {
       onFiltersChange({ sortDir: sortDir === "asc" ? "desc" : "asc" });
@@ -138,8 +130,14 @@ export function ItemTable({
     return sortDir === "asc" ? " ▲" : " ▼";
   }
 
-  // Reset page when filters change
-  const resetPage = () => setPage(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const virtualizer = useVirtualizer({
+    count: sorted.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 36,
+    overscan: 20,
+  });
 
   return (
     <div className={styles.container}>
@@ -150,7 +148,6 @@ export function ItemTable({
           value={search}
           onChange={(e) => {
             onFiltersChange({ search: e.target.value });
-            resetPage();
           }}
           className={styles.searchInput}
         />
@@ -163,7 +160,6 @@ export function ItemTable({
           selected={typeFilter}
           onChange={(next) => {
             onFiltersChange({ typeFilter: next });
-            resetPage();
           }}
         />
         <MultiSelect
@@ -177,7 +173,6 @@ export function ItemTable({
           selected={rarityFilter}
           onChange={(next) => {
             onFiltersChange({ rarityFilter: next });
-            resetPage();
           }}
         />
         <input
@@ -186,7 +181,6 @@ export function ItemTable({
           value={minLevel}
           onChange={(e) => {
             onFiltersChange({ minLevel: e.target.value });
-            resetPage();
           }}
           className={styles.levelInput}
           min={0}
@@ -198,7 +192,6 @@ export function ItemTable({
           value={maxLevel}
           onChange={(e) => {
             onFiltersChange({ maxLevel: e.target.value });
-            resetPage();
           }}
           className={styles.levelInput}
           min={0}
@@ -207,102 +200,99 @@ export function ItemTable({
         <span className={styles.resultCount}>{sorted.length} items</span>
       </div>
 
-      <div className={styles.tableScroll}>
-        <table>
-          <thead>
-            <tr>
-              <th
-                className={styles.sortable}
-                onClick={() => handleSort("name")}
-              >
-                Name{sortIndicator("name")}
-              </th>
-              <th
-                className={styles.sortable}
-                onClick={() => handleSort("type")}
-              >
-                Type{sortIndicator("type")}
-              </th>
-              <th
-                className={styles.sortable}
-                onClick={() => handleSort("level")}
-              >
-                Lvl{sortIndicator("level")}
-              </th>
-              <th
-                className={styles.sortable}
-                onClick={() => handleSort("price")}
-              >
-                Price{sortIndicator("price")}
-              </th>
-              <th>Rarity</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {pageItems.map((item) => (
-              <tr key={item.id}>
-                <td className={styles.name}>
-                  <ItemTooltipWrapper item={item}>
-                    <a
-                      href={aonUrl(item)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {highlightMap.get(item.id) ?? item.name}
-                    </a>
-                  </ItemTooltipWrapper>
-                </td>
-                <td>{TYPE_LABELS[item.type] ?? item.type}</td>
-                <td className={styles.level}>{item.level}</td>
-                <td className={styles.price}>{formatPrice(item.price)}</td>
-                <td style={{ color: RARITY_COLORS[item.rarity] ?? "inherit" }}>
-                  {item.rarity}
-                </td>
-                <td className={styles.actions}>
-                  <button
-                    type="button"
-                    className={styles.addBtn}
-                    onClick={() => onAddItem(item)}
-                    title={`Add ${item.name} to cart`}
-                  >
-                    +
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {pageItems.length === 0 && (
-              <tr>
-                <td colSpan={6} className={styles.noResults}>
-                  No items match your filters.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {totalPages > 1 && (
-        <div className={styles.pagination}>
+      <div className={styles.tableScroll} ref={scrollRef}>
+        <div className={styles.headerRow}>
           <button
             type="button"
-            disabled={page === 0}
-            onClick={() => setPage((p) => p - 1)}
+            className={styles.sortable}
+            onClick={() => handleSort("name")}
           >
-            ← Prev
+            Name{sortIndicator("name")}
           </button>
-          <span>
-            Page {page + 1} of {totalPages}
-          </span>
           <button
             type="button"
-            disabled={page >= totalPages - 1}
-            onClick={() => setPage((p) => p + 1)}
+            className={styles.sortable}
+            onClick={() => handleSort("type")}
           >
-            Next →
+            Type{sortIndicator("type")}
           </button>
+          <button
+            type="button"
+            className={styles.sortable}
+            onClick={() => handleSort("level")}
+          >
+            Lvl{sortIndicator("level")}
+          </button>
+          <button
+            type="button"
+            className={styles.sortable}
+            onClick={() => handleSort("price")}
+          >
+            Price{sortIndicator("price")}
+          </button>
+          <span>Rarity</span>
+          <span />
         </div>
-      )}
+
+        {sorted.length === 0 ? (
+          <div className={styles.noResults}>No items match your filters.</div>
+        ) : (
+          <div
+            style={{ height: virtualizer.getTotalSize(), position: "relative" }}
+          >
+            {virtualizer.getVirtualItems().map((virtualRow) => {
+              const item = sorted[virtualRow.index];
+              return (
+                <div
+                  key={item.id}
+                  className={styles.row}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                >
+                  <span className={styles.name}>
+                    <ItemTooltipWrapper item={item}>
+                      <a
+                        href={aonUrl(item)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {highlightMap.get(item.id) ?? item.name}
+                      </a>
+                    </ItemTooltipWrapper>
+                  </span>
+                  <span>{TYPE_LABELS[item.type] ?? item.type}</span>
+                  <span className={styles.level}>{item.level}</span>
+                  <span className={styles.price}>
+                    {formatPrice(item.price)}
+                  </span>
+                  <span
+                    style={{
+                      color: RARITY_COLORS[item.rarity] ?? "inherit",
+                    }}
+                  >
+                    {item.rarity}
+                  </span>
+                  <span className={styles.actions}>
+                    <button
+                      type="button"
+                      className={styles.addBtn}
+                      onClick={() => onAddItem(item)}
+                      title={`Add ${item.name} to cart`}
+                    >
+                      +
+                    </button>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
