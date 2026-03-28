@@ -59,7 +59,7 @@
 }
 
 .row {
-  height: 36px;
+  min-height: 36px;
   font-size: 0.875rem;
   border-bottom: 1px solid var(--color-border);
 }
@@ -76,16 +76,38 @@
 
 .name {
   font-weight: 500;
+  overflow: hidden;
 }
 
 .name a {
   color: var(--color-text);
   text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
 }
 
 .name a:hover {
   color: var(--color-primary);
   text-decoration: underline;
+}
+
+.snippet {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.snippet mark {
+  background: rgba(245, 158, 11, 0.3);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
 }
 
 .level,

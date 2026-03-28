@@ -33,6 +33,8 @@ export interface Item {
   remaster: boolean;
   /** HTML description */
   description: string;
+  /** Plain-text version of description (HTML stripped), for search indexing */
+  plainDescription: string;
   /** URL path on Archives of Nethys, e.g. "/Weapons.aspx?ID=386" */
   aonUrl?: string;
 }

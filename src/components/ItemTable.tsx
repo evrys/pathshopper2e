@@ -75,14 +75,30 @@ export function ItemTable({
   }, [items, typeFilter, rarityFilter, minLevel, maxLevel]);
 
   const getName = useCallback((item: Item) => item.name, []);
-  const fuzzyResults = useFuzzySearch(preFiltered, getName, search);
+  const getDescription = useCallback((item: Item) => item.plainDescription, []);
+  const fuzzyResults = useFuzzySearch(
+    preFiltered,
+    getName,
+    search,
+    getDescription,
+  );
 
-  // Build a Map from item id → highlighted ReactNode for rendering
+  // Build Maps from item id → highlighted name / description snippet
   const highlightMap = useMemo(() => {
     const map = new Map<string, ReactNode>();
     for (const r of fuzzyResults) {
       if (r.highlighted) {
         map.set(r.item.id, r.highlighted);
+      }
+    }
+    return map;
+  }, [fuzzyResults]);
+
+  const snippetMap = useMemo(() => {
+    const map = new Map<string, ReactNode>();
+    for (const r of fuzzyResults) {
+      if (r.secondarySnippet) {
+        map.set(r.item.id, r.secondarySnippet);
       }
     }
     return map;
@@ -135,7 +151,7 @@ export function ItemTable({
   const virtualizer = useVirtualizer({
     count: sorted.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 36,
+    estimateSize: (index) => (snippetMap.has(sorted[index].id) ? 56 : 36),
     overscan: 20,
   });
 
@@ -242,6 +258,7 @@ export function ItemTable({
           >
             {virtualizer.getVirtualItems().map((virtualRow) => {
               const item = sorted[virtualRow.index];
+              const snippet = snippetMap.get(item.id);
               return (
                 <div
                   key={item.id}
@@ -251,6 +268,7 @@ export function ItemTable({
                     top: 0,
                     left: 0,
                     width: "100%",
+                    height: virtualRow.size,
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
                 >
@@ -264,6 +282,9 @@ export function ItemTable({
                         {highlightMap.get(item.id) ?? item.name}
                       </a>
                     </ItemTooltipWrapper>
+                    {snippet && (
+                      <span className={styles.snippet}>{snippet}</span>
+                    )}
                   </span>
                   <span>{TYPE_LABELS[item.type] ?? item.type}</span>
                   <span className={styles.level}>{item.level}</span>
