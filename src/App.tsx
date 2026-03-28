@@ -29,9 +29,6 @@ function App() {
 
   // Capture the initial URL cart before any state changes
   const initialUrlCart = useRef(urlState.cart);
-  const initialEntries = loading
-    ? undefined
-    : buildInitialCart(items, initialUrlCart.current);
 
   const {
     state: cartState,
@@ -42,7 +39,21 @@ function App() {
     removeItem,
     setQuantity,
     clearCart,
-  } = useCart(initialEntries);
+    replaceCart,
+  } = useCart();
+
+  // Once items are loaded, hydrate the cart from the URL (one-time)
+  const cartHydrated = useRef(false);
+  useEffect(() => {
+    if (loading || cartHydrated.current) return;
+    cartHydrated.current = true;
+    const urlCart = initialUrlCart.current;
+    if (urlCart.size === 0) return;
+    const built = buildInitialCart(items, urlCart);
+    if (built) {
+      replaceCart(built);
+    }
+  }, [loading, items, replaceCart]);
 
   // Sync cart state → URL whenever cart changes
   const prevCartRef = useRef(cartState);

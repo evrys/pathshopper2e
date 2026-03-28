@@ -6,6 +6,8 @@ This is a small website for players of Pathfinder 2e to make shopping lists for 
 
 After making changes, run `pnpm checks` to verify everything passes (TypeScript, Biome linting, and tests). Fix any errors before considering work complete. Add tests for any new functionality you introduce.
 
+Use `pnpm format` to fix any formatting issues as needed.
+
 ## Stack
 
 This is a pure-frontend project, using the following SSG stack:

@@ -56,9 +56,9 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
   return { entries: next };
 }
 
-export function useCart(initialEntries?: Map<string, CartEntry>) {
+export function useCart() {
   const [state, dispatch] = useReducer(cartReducer, {
-    entries: initialEntries ?? new Map(),
+    entries: new Map(),
   });
 
   const addItem = useCallback(
