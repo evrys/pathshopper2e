@@ -29,14 +29,32 @@ const AON_CSV = "data/aon-all-equipment.csv";
 const AON_OVERRIDES = "data/aon-url-overrides.json";
 
 /**
+ * Normalize an item name for fuzzy matching against the AoN CSV.
+ * Strips parentheticals, collapses hyphens/spaces, lowercases.
+ */
+function normalizeForMatch(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/\s*\([^)]*\)/g, "") // remove "(10 feet)", "(Melee)", "(PFS Guide)", etc.
+    .replace(/[-\s]+/g, " ")
+    .replace(/\./g, "")
+    .trim();
+}
+
+/**
  * Parse the AoN CSV export and build a Map from item name to URL path.
  * The CSV has quoted fields so we need to handle commas inside quotes.
+ * Also returns a normalized-name fallback map for fuzzy matching.
  */
-function loadAonUrls(): Map<string, string> {
+function loadAonUrls(): {
+  exact: Map<string, string>;
+  normalized: Map<string, string>;
+} {
   const csv = readFileSync(AON_CSV, "utf-8");
   const lines = csv.split("\n");
   // header: name,pfs,source,rarity,trait,item_category,item_subcategory,level,price,bulk,usage,url
-  const map = new Map<string, string>();
+  const exact = new Map<string, string>();
+  const normalized = new Map<string, string>();
 
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -49,14 +67,18 @@ function loadAonUrls(): Map<string, string> {
 
     if (name && url && url.startsWith("/")) {
       // First match wins — keeps the first (usually remastered) entry
-      if (!map.has(name)) {
-        map.set(name, url);
+      if (!exact.has(name)) {
+        exact.set(name, url);
+      }
+      const norm = normalizeForMatch(name);
+      if (!normalized.has(norm)) {
+        normalized.set(norm, url);
       }
     }
   }
 
-  console.log(`Loaded ${map.size} AoN URLs from CSV.`);
-  return map;
+  console.log(`Loaded ${exact.size} AoN URLs from CSV.`);
+  return { exact, normalized };
 }
 
 /** Simple CSV row parser that handles quoted fields with commas */
@@ -192,17 +214,26 @@ function main() {
   cloneEquipmentPack();
   const { items, stackGroups } = processFiles();
 
-  // Annotate items with AoN URLs
+  // Annotate items with AoN URLs — try exact name first, then normalized fallback
   const aonUrls = loadAonUrls();
   let matched = 0;
+  let normalizedMatched = 0;
   for (const item of items) {
-    const url = aonUrls.get(item.name);
+    const url = aonUrls.exact.get(item.name);
     if (url) {
       item.aonUrl = url;
       matched++;
+    } else {
+      const normUrl = aonUrls.normalized.get(normalizeForMatch(item.name));
+      if (normUrl) {
+        item.aonUrl = normUrl;
+        normalizedMatched++;
+      }
     }
   }
-  console.log(`Matched ${matched}/${items.length} items to AoN URLs.`);
+  console.log(
+    `Matched ${matched} items exactly, ${normalizedMatched} via normalized name (${matched + normalizedMatched}/${items.length} total).`,
+  );
 
   // Apply manual URL overrides for items not in the CSV
   const overrides = JSON.parse(readFileSync(AON_OVERRIDES, "utf-8")) as Record<

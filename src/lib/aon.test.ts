@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { aonUrl } from "./aon";
 import type { Item } from "../types";
+import { aonUrl } from "./aon";
 
 function makeItem(overrides: Partial<Item> = {}): Item {
   return {
@@ -52,7 +52,6 @@ describe("dataset integration", () => {
     }>;
 
     const missing = items.filter((item) => !item.aonUrl);
-
     if (missing.length > 0) {
       const sample = missing
         .slice(0, 20)
