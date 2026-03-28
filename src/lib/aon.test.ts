@@ -48,10 +48,16 @@ describe("dataset integration", () => {
     const items = (await import("../../data/items.json")).default as Array<{
       name: string;
       type: string;
+      source: string;
       aonUrl?: string;
     }>;
 
-    const missing = items.filter((item) => !item.aonUrl);
+    /** Sources with joke/non-canonical items that don't have AoN pages */
+    const EXCLUDED_SOURCES = new Set(["Pathfinder Blog: April Fools"]);
+
+    const missing = items.filter(
+      (item) => !item.aonUrl && !EXCLUDED_SOURCES.has(item.source),
+    );
     if (missing.length > 0) {
       const sample = missing
         .slice(0, 20)

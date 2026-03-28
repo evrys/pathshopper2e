@@ -200,10 +200,21 @@ function processFiles(): {
     }
   }
 
-  // Sort by level, then name
-  items.sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
+  // Exclude items with no price (price object has no gp/sp/cp set)
+  const priced = items.filter(
+    (item) =>
+      item.price.gp !== undefined ||
+      item.price.sp !== undefined ||
+      item.price.cp !== undefined,
+  );
+  console.log(
+    `Filtered out ${items.length - priced.length} items with no price (${priced.length} remaining).`,
+  );
 
-  return { items, stackGroups };
+  // Sort by level, then name
+  priced.sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
+
+  return { items: priced, stackGroups };
 }
 
 /** AoN rules pages for treasure items that aren't individually listed. */
