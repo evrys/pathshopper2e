@@ -8,8 +8,20 @@ import { MultiSelect } from "./MultiSelect";
 type SortField = "name" | "level" | "price" | "type";
 type SortDir = "asc" | "desc";
 
+export interface FilterState {
+  search: string;
+  typeFilter: Set<string>;
+  rarityFilter: Set<string>;
+  minLevel: string;
+  maxLevel: string;
+  sortField: SortField;
+  sortDir: SortDir;
+}
+
 interface ItemTableProps {
   items: Item[];
+  filters: FilterState;
+  onFiltersChange: (filters: Partial<FilterState>) => void;
   onAddItem: (item: Item) => void;
 }
 
@@ -33,16 +45,21 @@ const RARITY_COLORS: Record<string, string> = {
   unique: "#8020a0",
 };
 
-export function ItemTable({ items, onAddItem }: ItemTableProps) {
-  const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<Set<string>>(new Set());
-  const [rarityFilter, setRarityFilter] = useState<Set<string>>(
-    new Set(["common", "uncommon"]),
-  );
-  const [minLevel, setMinLevel] = useState("");
-  const [maxLevel, setMaxLevel] = useState("");
-  const [sortField, setSortField] = useState<SortField>("name");
-  const [sortDir, setSortDir] = useState<SortDir>("asc");
+export function ItemTable({
+  items,
+  filters,
+  onFiltersChange,
+  onAddItem,
+}: ItemTableProps) {
+  const {
+    search,
+    typeFilter,
+    rarityFilter,
+    minLevel,
+    maxLevel,
+    sortField,
+    sortDir,
+  } = filters;
   const [page, setPage] = useState(0);
 
   const preFiltered = useMemo(() => {
@@ -108,10 +125,9 @@ export function ItemTable({ items, onAddItem }: ItemTableProps) {
 
   function handleSort(field: SortField) {
     if (sortField === field) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+      onFiltersChange({ sortDir: sortDir === "asc" ? "desc" : "asc" });
     } else {
-      setSortField(field);
-      setSortDir("asc");
+      onFiltersChange({ sortField: field, sortDir: "asc" });
     }
   }
 
@@ -131,7 +147,7 @@ export function ItemTable({ items, onAddItem }: ItemTableProps) {
           placeholder="Search items..."
           value={search}
           onChange={(e) => {
-            setSearch(e.target.value);
+            onFiltersChange({ search: e.target.value });
             resetPage();
           }}
           className="search-input"
@@ -144,7 +160,7 @@ export function ItemTable({ items, onAddItem }: ItemTableProps) {
           }))}
           selected={typeFilter}
           onChange={(next) => {
-            setTypeFilter(next);
+            onFiltersChange({ typeFilter: next });
             resetPage();
           }}
         />
@@ -158,7 +174,7 @@ export function ItemTable({ items, onAddItem }: ItemTableProps) {
           ]}
           selected={rarityFilter}
           onChange={(next) => {
-            setRarityFilter(next);
+            onFiltersChange({ rarityFilter: next });
             resetPage();
           }}
         />
@@ -167,7 +183,7 @@ export function ItemTable({ items, onAddItem }: ItemTableProps) {
           placeholder="Min Lvl"
           value={minLevel}
           onChange={(e) => {
-            setMinLevel(e.target.value);
+            onFiltersChange({ minLevel: e.target.value });
             resetPage();
           }}
           className="level-input"
@@ -179,7 +195,7 @@ export function ItemTable({ items, onAddItem }: ItemTableProps) {
           placeholder="Max Lvl"
           value={maxLevel}
           onChange={(e) => {
-            setMaxLevel(e.target.value);
+            onFiltersChange({ maxLevel: e.target.value });
             resetPage();
           }}
           className="level-input"

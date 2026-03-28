@@ -15,7 +15,8 @@ export type CartAction =
   | { type: "add"; item: Item }
   | { type: "remove"; itemId: string }
   | { type: "set-quantity"; itemId: string; quantity: number }
-  | { type: "clear" };
+  | { type: "clear" }
+  | { type: "replace"; entries: Map<string, CartEntry> };
 
 export function cartReducer(state: CartState, action: CartAction): CartState {
   const next = new Map(state.entries);
@@ -48,14 +49,16 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
       break;
     case "clear":
       return { entries: new Map() };
+    case "replace":
+      return { entries: action.entries };
   }
 
   return { entries: next };
 }
 
-export function useCart() {
+export function useCart(initialEntries?: Map<string, CartEntry>) {
   const [state, dispatch] = useReducer(cartReducer, {
-    entries: new Map(),
+    entries: initialEntries ?? new Map(),
   });
 
   const addItem = useCallback(
@@ -72,6 +75,10 @@ export function useCart() {
     [],
   );
   const clearCart = useCallback(() => dispatch({ type: "clear" }), []);
+  const replaceCart = useCallback(
+    (entries: Map<string, CartEntry>) => dispatch({ type: "replace", entries }),
+    [],
+  );
 
   const entries = [...state.entries.values()];
 
@@ -83,6 +90,7 @@ export function useCart() {
   const totalItems = entries.reduce((sum, e) => sum + e.quantity, 0);
 
   return {
+    state,
     entries,
     totalPrice,
     totalCopper,
@@ -91,5 +99,6 @@ export function useCart() {
     removeItem,
     setQuantity,
     clearCart,
+    replaceCart,
   };
 }
