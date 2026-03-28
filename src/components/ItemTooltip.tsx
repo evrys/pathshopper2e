@@ -1,6 +1,6 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { stripHtml } from "../lib/html";
+import { sanitizeHtml } from "../lib/html";
 import { formatPrice } from "../lib/price";
 import type { Item } from "../types";
 
@@ -93,7 +93,7 @@ export function ItemTooltip({
   if (!item || !anchor) return null;
 
   const price = formatPrice(item.price);
-  const description = item.description ? stripHtml(item.description) : null;
+  const description = item.description ? sanitizeHtml(item.description) : null;
   const headerBg =
     RARITY_HEADER_COLORS[item.rarity] ?? RARITY_HEADER_COLORS.common;
 
@@ -144,7 +144,11 @@ export function ItemTooltip({
         {description && (
           <>
             <hr className="item-tooltip-divider" />
-            <p className="item-tooltip-desc">{description}</p>
+            <div
+              className="item-tooltip-desc"
+              // biome-ignore lint/security/noDangerouslySetInnerHtml: HTML is sanitized by sanitizeHtml
+              dangerouslySetInnerHTML={{ __html: description }}
+            />
           </>
         )}
       </div>

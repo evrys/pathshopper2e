@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { stripHtml } from "./html";
+import { sanitizeHtml, stripHtml } from "./html";
 
 describe("stripHtml", () => {
   it("strips HTML tags", () => {
@@ -66,6 +66,27 @@ describe("stripHtml", () => {
     ).toBe("see for details");
   });
 
+  it("uses {display} override when present on @UUID", () => {
+    expect(
+      stripHtml(
+        "become @UUID[Compendium.pf2e.conditionitems.Item.Sickened]{Sickened 1}",
+      ),
+    ).toBe("become Sickened 1");
+    expect(
+      stripHtml(
+        "into a @UUID[Compendium.pf2e.equipment-srd.Item.Aeon Stone (Consumed)]{Aeon Stone (Dull Grey)}.",
+      ),
+    ).toBe("into a Aeon Stone (Dull Grey).");
+  });
+
+  it("removes @UUID without Item segment even with {display}", () => {
+    expect(
+      stripHtml(
+        "see @UUID[Compendium.pf2e.journals.JournalEntry.abc]{Some Page} for details",
+      ),
+    ).toBe("see for details");
+  });
+
   it("handles multiple @UUID references in one string", () => {
     expect(
       stripHtml(
@@ -126,16 +147,38 @@ describe("stripHtml", () => {
     ).toBe("DC 17 fortitude check");
   });
 
-  it("removes @Damage references", () => {
-    expect(stripHtml("takes @Damage[1d6[fire]] damage")).toBe("takes damage");
+  it("renders @Damage with formula and type", () => {
+    expect(stripHtml("takes @Damage[1d6[fire]] damage")).toBe(
+      "takes 1d6 fire damage",
+    );
     expect(stripHtml("deals @Damage[1[bleed]] per round")).toBe(
-      "deals per round",
+      "deals 1 bleed per round",
+    );
+    expect(stripHtml("@Damage[(1d4)[piercing]] damage")).toBe(
+      "(1d4) piercing damage",
     );
   });
 
-  it("removes @Template references", () => {
+  it("renders @Damage with comma-separated types as spaces", () => {
+    expect(stripHtml("it takes @Damage[3d6[persistent,poison]] damage")).toBe(
+      "it takes 3d6 persistent poison damage",
+    );
+    expect(stripHtml("@Damage[1d4[persistent,fire]]")).toBe(
+      "1d4 persistent fire",
+    );
+  });
+
+  it("removes @Damage without typed bracket syntax", () => {
+    expect(stripHtml("takes @Damage[2d6] damage")).toBe("takes damage");
+  });
+
+  it("renders @Template as distance-foot shape", () => {
     expect(stripHtml("in a @Template[type:emanation|distance:10] area")).toBe(
-      "in a area",
+      "in a 10-foot emanation area",
+    );
+    expect(stripHtml("a @Template[cone|distance:15]")).toBe("a 15-foot cone");
+    expect(stripHtml("a @Template[type:burst|distance:10]")).toBe(
+      "a 10-foot burst",
     );
   });
 
@@ -145,5 +188,81 @@ describe("stripHtml", () => {
         "see @Embed[Compendium.pf2e.classfeatures.Item.PoclGJ7BCEyIuqJe inline] for details",
       ),
     ).toBe("see for details");
+  });
+});
+
+describe("sanitizeHtml", () => {
+  it("keeps allowed structural tags", () => {
+    expect(sanitizeHtml("<p>Hello <strong>world</strong></p>")).toBe(
+      "<p>Hello <strong>world</strong></p>",
+    );
+  });
+
+  it("keeps em, hr, br tags", () => {
+    expect(sanitizeHtml("<em>italic</em>")).toBe("<em>italic</em>");
+    expect(sanitizeHtml("before<hr />after")).toBe("before<hr />after");
+    expect(sanitizeHtml("before<br/>after")).toBe("before<br />after");
+  });
+
+  it("keeps list tags", () => {
+    expect(sanitizeHtml("<ul><li>one</li><li>two</li></ul>")).toBe(
+      "<ul><li>one</li><li>two</li></ul>",
+    );
+  });
+
+  it("keeps table tags", () => {
+    expect(
+      sanitizeHtml("<table><thead><tr><th>A</th></tr></thead></table>"),
+    ).toBe("<table><thead><tr><th>A</th></tr></thead></table>");
+  });
+
+  it("strips span, div, and other disallowed tags", () => {
+    expect(sanitizeHtml('<span class="action-glyph">A</span> Interact')).toBe(
+      "A Interact",
+    );
+  });
+
+  it("strips attributes from allowed tags", () => {
+    expect(sanitizeHtml('<p class="foo">text</p>')).toBe("<p>text</p>");
+  });
+
+  it("resolves Foundry @UUID references", () => {
+    expect(
+      sanitizeHtml(
+        "<p>the @UUID[Compendium.pf2e.conditionitems.Item.Sickened]{Sickened 1} condition</p>",
+      ),
+    ).toBe("<p>the Sickened 1 condition</p>");
+  });
+
+  it("resolves Foundry @Check references", () => {
+    expect(sanitizeHtml("<p>a @Check[reflex|dc:15|basic] save</p>")).toBe(
+      "<p>a DC 15 basic reflex check save</p>",
+    );
+  });
+
+  it("resolves Foundry @Damage references", () => {
+    expect(sanitizeHtml("<p>takes @Damage[1d6[fire]] damage</p>")).toBe(
+      "<p>takes 1d6 fire damage</p>",
+    );
+  });
+
+  it("resolves Foundry @Template references", () => {
+    expect(sanitizeHtml("<p>a @Template[cone|distance:30] of energy</p>")).toBe(
+      "<p>a 30-foot cone of energy</p>",
+    );
+  });
+
+  it("strips [[/r ...]] inline roll expressions", () => {
+    expect(sanitizeHtml("<p>add [[/r 1d4]] damage</p>")).toBe(
+      "<p>add  damage</p>",
+    );
+  });
+
+  it("preserves Benefit/Drawback structure", () => {
+    const input =
+      "<p><strong>Benefit</strong> You gain a bonus.</p><p><strong>Drawback</strong> You take a penalty.</p>";
+    expect(sanitizeHtml(input)).toBe(
+      "<p><strong>Benefit</strong> You gain a bonus.</p><p><strong>Drawback</strong> You take a penalty.</p>",
+    );
   });
 });

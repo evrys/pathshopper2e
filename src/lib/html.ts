@@ -3,6 +3,7 @@
  * HTML entities into readable plain text.
  *
  * Foundry patterns handled:
+ * - `@UUID[...Item.Name]{Display}` → "Display" (custom display name override)
  * - `@UUID[...Item.Name]` → "Name" (human-readable display name)
  * - `@UUID[...Item.Effect: ...]` → removed (internal effect references)
  * - `@UUID[...]` (no Item segment) → removed
@@ -12,12 +13,71 @@
  * - `@Embed[...]` → removed (embedded content)
  */
 export function stripHtml(html: string): string {
-  return html
+  return replaceFoundryRefs(html)
     .replace(/<[^>]+>/g, "")
-    .replace(/@UUID\[[^\]]*\.Item\.([^\]]+)\]/g, (_match, name: string) =>
-      name.startsWith("Effect: ") ? "" : name,
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const ALLOWED_TAGS = new Set([
+  "p",
+  "strong",
+  "em",
+  "hr",
+  "br",
+  "ul",
+  "ol",
+  "li",
+  "table",
+  "thead",
+  "tbody",
+  "tr",
+  "th",
+  "td",
+  "h2",
+  "h3",
+]);
+
+/**
+ * Sanitize HTML for safe rendering via `dangerouslySetInnerHTML`.
+ *
+ * Resolves Foundry VTT enriched text patterns to plain text, keeps a
+ * curated set of safe structural/formatting tags, and strips everything
+ * else (scripts, spans, divs, unknown attributes, etc.).
+ */
+export function sanitizeHtml(html: string): string {
+  return replaceFoundryRefs(html)
+    .replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*\/?>/g, (match, tag: string) => {
+      const lower = tag.toLowerCase();
+      if (ALLOWED_TAGS.has(lower)) {
+        // Self-closing tags
+        if (lower === "hr" || lower === "br") return `<${lower} />`;
+        // Keep the tag but strip attributes
+        const isClosing = match.startsWith("</");
+        return isClosing ? `</${lower}>` : `<${lower}>`;
+      }
+      return "";
+    })
+    .replace(/\[\[\/r\s+[^\]]*\]\]/g, "")
+    .trim();
+}
+
+/** Replace Foundry VTT enriched text patterns (@UUID, @Check, etc.) with plain text. */
+function replaceFoundryRefs(html: string): string {
+  return html
+    .replace(
+      /@UUID\[[^\]]*\.Item\.([^\]]+)\](?:\{([^}]*)\})?/g,
+      (_match, name: string, display: string | undefined) => {
+        const label = display ?? name;
+        return label.startsWith("Effect: ") ? "" : label;
+      },
     )
-    .replace(/@UUID\[[^\]]*\]/g, "")
+    .replace(/@UUID\[[^\]]*\](?:\{[^}]*\})?/g, "")
     .replace(/@Check\[([^\]]*)\]/g, (_match, inner: string) => {
       const parts = inner.split("|");
       const type = parts[0] ?? "";
@@ -29,8 +89,10 @@ export function stripHtml(html: string): string {
       }
       return `${type} check`;
     })
-    .replace(/@Damage\[([^\[]*)\[([^\]]*)\]\]?/g, (_match, formula: string, type: string) =>
-      `${formula} ${type}`.trim(),
+    .replace(
+      /@Damage\[([^[]*)\[([^\]]*)\]\]?/g,
+      (_match, formula: string, type: string) =>
+        `${formula} ${type.replace(/,/g, " ")}`.trim(),
     )
     .replace(/@Damage\[.*?\]\]?/g, "")
     .replace(/@Template\[([^\]]*)\]/g, (_match, inner: string) => {
@@ -47,12 +109,5 @@ export function stripHtml(html: string): string {
       }
       return "";
     })
-    .replace(/@Embed\[[^\]]*\]/g, "")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\s+/g, " ")
-    .trim();
+    .replace(/@Embed\[[^\]]*\]/g, "");
 }

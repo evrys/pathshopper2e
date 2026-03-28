@@ -223,6 +223,52 @@
   word-wrap: break-word;
 }
 
+.item-tooltip-desc p {
+  margin: 0.4em 0;
+}
+
+.item-tooltip-desc p:first-child {
+  margin-top: 0;
+}
+
+.item-tooltip-desc p:last-child {
+  margin-bottom: 0;
+}
+
+.item-tooltip-desc hr {
+  border: none;
+  border-top: 1px solid #555;
+  margin: 0.5em 0;
+}
+
+.item-tooltip-desc ul,
+.item-tooltip-desc ol {
+  margin: 0.3em 0;
+  padding-left: 1.4em;
+}
+
+.item-tooltip-desc li {
+  margin: 0.2em 0;
+}
+
+.item-tooltip-desc table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.4em 0;
+  font-size: 0.9em;
+}
+
+.item-tooltip-desc th,
+.item-tooltip-desc td {
+  border: 1px solid #555;
+  padding: 0.2em 0.4em;
+  text-align: left;
+}
+
+.item-tooltip-desc th {
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .item-name a,
 .cart-item-name {
   color: var(--color-text);
