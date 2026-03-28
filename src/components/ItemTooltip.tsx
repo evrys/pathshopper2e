@@ -4,6 +4,7 @@ import "tippy.js/dist/tippy.css";
 import { sanitizeHtml } from "../lib/html";
 import { formatPrice } from "../lib/price";
 import type { Item } from "../types";
+import styles from "./ItemTooltip.module.css";
 
 /** Format a kebab-case usage string into a human-readable label. */
 function formatUsage(usage: string): string {
@@ -42,13 +43,13 @@ function TooltipContent({ item }: { item: Item }) {
     RARITY_HEADER_COLORS[item.rarity] ?? RARITY_HEADER_COLORS.common;
 
   return (
-    <div className="item-tooltip">
-      <div className="item-tooltip-header" style={{ background: headerBg }}>
-        <span className="item-tooltip-name">{item.name}</span>
-        <span className="item-tooltip-level">Item {item.level}</span>
+    <div className={styles.tooltip}>
+      <div className={styles.header} style={{ background: headerBg }}>
+        <span className={styles.name}>{item.name}</span>
+        <span className={styles.level}>Item {item.level}</span>
       </div>
-      <div className="item-tooltip-body">
-        <div className="item-tooltip-meta">
+      <div className={styles.body}>
+        <div className={styles.meta}>
           <span>
             <strong>Source</strong> {item.source}
           </span>
@@ -69,9 +70,9 @@ function TooltipContent({ item }: { item: Item }) {
           )}
         </div>
         {item.traits.length > 0 && (
-          <div className="item-tooltip-traits">
+          <div className={styles.traits}>
             {item.traits.map((t) => (
-              <span key={t} className="item-tooltip-trait">
+              <span key={t} className={styles.trait}>
                 {formatTrait(t)}
               </span>
             ))}
@@ -79,9 +80,9 @@ function TooltipContent({ item }: { item: Item }) {
         )}
         {description && (
           <>
-            <hr className="item-tooltip-divider" />
+            <hr className={styles.divider} />
             <div
-              className="item-tooltip-desc"
+              className={styles.desc}
               // biome-ignore lint/security/noDangerouslySetInnerHtml: HTML is sanitized by sanitizeHtml
               dangerouslySetInnerHTML={{ __html: description }}
             />

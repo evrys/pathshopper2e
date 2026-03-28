@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import "./App.css";
+import styles from "./App.module.css";
 import { Cart } from "./components/Cart";
 import { ItemTable, type FilterState } from "./components/ItemTable";
 import { useCart, type CartEntry } from "./hooks/useCart";
@@ -103,21 +103,21 @@ function App() {
 
   if (loading) {
     return (
-      <div className="loading">
+      <div className={styles.loading}>
         <p>Loading item data...</p>
       </div>
     );
   }
 
   return (
-    <div className="app">
-      <header className="app-header">
+    <div className={styles.app}>
+      <header className={styles.header}>
         <h1>Pathshopper</h1>
-        <p className="app-subtitle">Plan your equipment purchases</p>
+        <p className={styles.subtitle}>Plan your equipment purchases</p>
       </header>
 
-      <div className="app-body">
-        <main className="app-main">
+      <div className={styles.body}>
+        <main>
           <ItemTable
             items={items}
             filters={filters}
@@ -125,7 +125,7 @@ function App() {
             onAddItem={addItem}
           />
         </main>
-        <aside className="app-sidebar">
+        <aside className={styles.sidebar}>
           <Cart
             entries={entries}
             totalPrice={totalPrice}

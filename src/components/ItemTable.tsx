@@ -3,6 +3,7 @@ import { useFuzzySearch } from "../hooks/useFuzzySearch";
 import { aonUrl } from "../lib/aon";
 import { formatPrice, toCopper } from "../lib/price";
 import type { Item } from "../types";
+import styles from "./ItemTable.module.css";
 import { ItemTooltipWrapper } from "./ItemTooltip";
 import { MultiSelect } from "./MultiSelect";
 
@@ -141,8 +142,8 @@ export function ItemTable({
   const resetPage = () => setPage(0);
 
   return (
-    <div className="item-table-container">
-      <div className="item-filters">
+    <div className={styles.container}>
+      <div className={styles.filters}>
         <input
           type="text"
           placeholder="Search items..."
@@ -151,7 +152,7 @@ export function ItemTable({
             onFiltersChange({ search: e.target.value });
             resetPage();
           }}
-          className="search-input"
+          className={styles.searchInput}
         />
         <MultiSelect
           placeholder="All Types"
@@ -187,7 +188,7 @@ export function ItemTable({
             onFiltersChange({ minLevel: e.target.value });
             resetPage();
           }}
-          className="level-input"
+          className={styles.levelInput}
           min={0}
           max={30}
         />
@@ -199,27 +200,39 @@ export function ItemTable({
             onFiltersChange({ maxLevel: e.target.value });
             resetPage();
           }}
-          className="level-input"
+          className={styles.levelInput}
           min={0}
           max={30}
         />
-        <span className="result-count">{sorted.length} items</span>
+        <span className={styles.resultCount}>{sorted.length} items</span>
       </div>
 
-      <div className="item-table-scroll">
+      <div className={styles.tableScroll}>
         <table>
           <thead>
             <tr>
-              <th className="sortable" onClick={() => handleSort("name")}>
+              <th
+                className={styles.sortable}
+                onClick={() => handleSort("name")}
+              >
                 Name{sortIndicator("name")}
               </th>
-              <th className="sortable" onClick={() => handleSort("type")}>
+              <th
+                className={styles.sortable}
+                onClick={() => handleSort("type")}
+              >
                 Type{sortIndicator("type")}
               </th>
-              <th className="sortable" onClick={() => handleSort("level")}>
+              <th
+                className={styles.sortable}
+                onClick={() => handleSort("level")}
+              >
                 Lvl{sortIndicator("level")}
               </th>
-              <th className="sortable" onClick={() => handleSort("price")}>
+              <th
+                className={styles.sortable}
+                onClick={() => handleSort("price")}
+              >
                 Price{sortIndicator("price")}
               </th>
               <th>Rarity</th>
@@ -229,7 +242,7 @@ export function ItemTable({
           <tbody>
             {pageItems.map((item) => (
               <tr key={item.id}>
-                <td className="item-name">
+                <td className={styles.name}>
                   <ItemTooltipWrapper item={item}>
                     <a
                       href={aonUrl(item)}
@@ -240,21 +253,16 @@ export function ItemTable({
                     </a>
                   </ItemTooltipWrapper>
                 </td>
-                <td className="item-type">
-                  {TYPE_LABELS[item.type] ?? item.type}
-                </td>
-                <td className="item-level">{item.level}</td>
-                <td className="item-price">{formatPrice(item.price)}</td>
-                <td
-                  className="item-rarity"
-                  style={{ color: RARITY_COLORS[item.rarity] ?? "inherit" }}
-                >
+                <td>{TYPE_LABELS[item.type] ?? item.type}</td>
+                <td className={styles.level}>{item.level}</td>
+                <td className={styles.price}>{formatPrice(item.price)}</td>
+                <td style={{ color: RARITY_COLORS[item.rarity] ?? "inherit" }}>
                   {item.rarity}
                 </td>
-                <td className="item-actions">
+                <td className={styles.actions}>
                   <button
                     type="button"
-                    className="add-btn"
+                    className={styles.addBtn}
                     onClick={() => onAddItem(item)}
                     title={`Add ${item.name} to cart`}
                   >
@@ -265,7 +273,7 @@ export function ItemTable({
             ))}
             {pageItems.length === 0 && (
               <tr>
-                <td colSpan={6} className="no-results">
+                <td colSpan={6} className={styles.noResults}>
                   No items match your filters.
                 </td>
               </tr>
@@ -275,7 +283,7 @@ export function ItemTable({
       </div>
 
       {totalPages > 1 && (
-        <div className="pagination">
+        <div className={styles.pagination}>
           <button
             type="button"
             disabled={page === 0}

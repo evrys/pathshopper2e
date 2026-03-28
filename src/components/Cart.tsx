@@ -3,6 +3,7 @@ import type { CartEntry } from "../hooks/useCart";
 import { aonUrl } from "../lib/aon";
 import { formatPrice } from "../lib/price";
 import type { Price } from "../types";
+import styles from "./Cart.module.css";
 
 interface CartProps {
   entries: CartEntry[];
@@ -43,21 +44,21 @@ function ShareModal({ onClose }: { onClose: () => void }) {
   return (
     // biome-ignore lint/a11y/useKeyWithClickEvents: backdrop click to dismiss
     // biome-ignore lint/a11y/noStaticElementInteractions: backdrop is a dismiss target
-    <div className="share-backdrop" onClick={onClose}>
+    <div className={styles.backdrop} onClick={onClose}>
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: click stop propagation */}
       {/* biome-ignore lint/a11y/noStaticElementInteractions: modal container */}
-      <div className="share-modal" onClick={(e) => e.stopPropagation()}>
-        <p className="share-title">Share this cart</p>
-        <div className="share-url-row">
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <p className={styles.modalTitle}>Share this cart</p>
+        <div className={styles.urlRow}>
           <input
             ref={inputRef}
-            className="share-url-input"
+            className={styles.urlInput}
             type="text"
             value={url}
             readOnly
             onFocus={(e) => e.target.select()}
           />
-          <button type="button" className="share-copy-btn" onClick={handleCopy}>
+          <button type="button" className={styles.copyBtn} onClick={handleCopy}>
             {copied ? "Copied!" : "Copy"}
           </button>
         </div>
@@ -77,19 +78,19 @@ export function Cart({
   const [showShare, setShowShare] = useState(false);
 
   return (
-    <div className="cart">
-      <div className="cart-header">
+    <div className={styles.cart}>
+      <div className={styles.header}>
         <h2>Cart ({totalItems})</h2>
         {entries.length > 0 && (
-          <div className="cart-header-actions">
+          <div className={styles.headerActions}>
             <button
               type="button"
-              className="share-btn"
+              className={styles.shareBtn}
               onClick={() => setShowShare(true)}
             >
               Share
             </button>
-            <button type="button" className="clear-btn" onClick={onClear}>
+            <button type="button" className={styles.clearBtn} onClick={onClear}>
               Clear
             </button>
           </div>
@@ -97,28 +98,28 @@ export function Cart({
       </div>
 
       {entries.length === 0 ? (
-        <p className="cart-empty">
+        <p className={styles.empty}>
           Add items from the table to start building your loadout.
         </p>
       ) : (
-        <ul className="cart-items">
+        <ul className={styles.items}>
           {entries.map((entry) => (
-            <li key={entry.item.id} className="cart-item">
-              <div className="cart-item-info">
+            <li key={entry.item.id} className={styles.item}>
+              <div className={styles.itemInfo}>
                 <a
-                  className="cart-item-name"
+                  className={styles.itemName}
                   href={aonUrl(entry.item)}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   {entry.item.name}
                 </a>
-                <span className="cart-item-price">
+                <span className={styles.itemPrice}>
                   {formatPrice(entry.item.price)}
                   {entry.quantity > 1 && " each"}
                 </span>
               </div>
-              <div className="cart-item-controls">
+              <div className={styles.controls}>
                 <button
                   type="button"
                   onClick={() =>
@@ -127,7 +128,7 @@ export function Cart({
                 >
                   −
                 </button>
-                <span className="cart-item-qty">{entry.quantity}</span>
+                <span className={styles.qty}>{entry.quantity}</span>
                 <button
                   type="button"
                   onClick={() =>
@@ -138,7 +139,7 @@ export function Cart({
                 </button>
                 <button
                   type="button"
-                  className="remove-btn"
+                  className={styles.removeBtn}
                   onClick={() => onRemoveItem(entry.item.id)}
                   title="Remove"
                 >
@@ -151,7 +152,7 @@ export function Cart({
       )}
 
       {entries.length > 0 && (
-        <div className="cart-total">
+        <div className={styles.total}>
           <span>Total:</span>
           <strong>{formatPrice(totalPrice)}</strong>
         </div>

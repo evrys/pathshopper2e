@@ -121,3 +121,20 @@ th {
 tr:hover td {
   background: var(--color-surface-hover);
 }
+
+/* ── Third-party overrides (Tippy) ── */
+
+.tippy-box {
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.tippy-box > .tippy-content {
+  padding: 0;
+}
+
+.tippy-box > .tippy-arrow {
+  display: none;
+}

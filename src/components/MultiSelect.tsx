@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import styles from "./MultiSelect.module.css";
 
 interface MultiSelectProps {
   options: { value: string; label: string }[];
@@ -44,20 +45,20 @@ export function MultiSelect({
           .join(", ");
 
   return (
-    <div className="multiselect" ref={ref}>
+    <div className={styles.multiselect} ref={ref}>
       <button
         type="button"
-        className="multiselect-trigger"
+        className={styles.trigger}
         onClick={() => setOpen((o) => !o)}
       >
-        <span className="multiselect-label">{label}</span>
-        <span className="multiselect-arrow">{open ? "▲" : "▼"}</span>
+        <span className={styles.label}>{label}</span>
+        <span className={styles.arrow}>{open ? "▲" : "▼"}</span>
       </button>
       {open && (
-        <ul className="multiselect-menu">
+        <ul className={styles.menu}>
           {options.map((opt) => (
             <li key={opt.value}>
-              <label className="multiselect-option">
+              <label className={styles.option}>
                 <input
                   type="checkbox"
                   checked={selected.has(opt.value)}
