@@ -16,12 +16,6 @@ function stripHtml(html: string): string {
     .trim();
 }
 
-/** Truncate text to a max length, appending "…" if needed. */
-function truncate(text: string, max: number): string {
-  if (text.length <= max) return text;
-  return `${text.slice(0, max - 1)}…`;
-}
-
 /** Format a kebab-case usage string into a human-readable label. */
 function formatUsage(usage: string): string {
   return usage
@@ -111,9 +105,7 @@ export function ItemTooltip({
   if (!item || !anchor) return null;
 
   const price = formatPrice(item.price);
-  const description = item.description
-    ? truncate(stripHtml(item.description), 400)
-    : null;
+  const description = item.description ? stripHtml(item.description) : null;
   const headerBg =
     RARITY_HEADER_COLORS[item.rarity] ?? RARITY_HEADER_COLORS.common;
 
