@@ -53,6 +53,7 @@ describe("dataset integration", () => {
     }>;
 
     /** Sources with joke/non-canonical items that don't have AoN pages */
+    /** Sources with joke/non-canonical items that don't have AoN pages */
     const EXCLUDED_SOURCES = new Set(["Pathfinder Blog: April Fools"]);
 
     const missing = items.filter(

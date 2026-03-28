@@ -36,7 +36,38 @@ const NAME_CORRECTIONS: Record<string, string> = {
   "Wyrm on the Wing": "Wyrm's Wingspan",
   "Wyrm on the Wing (Greater)": "Wyrm's Wingspan (Greater)",
   "Wyrm on the Wing (Major)": "Wyrm's Wingspan (Major)",
+  "Extendable Pincer": "Extendible Pincer",
+  "Magazine with 5 Bolts": "Repeating Hand Crossbow Magazine",
+  "Magazine with 6 Pellets": "Magazine (Air Repeater)",
+  "Magazine with 8 Pellets": "Magazine (Long Air Repeater)",
+  "Ghast Stiletto": "Ghoul Stiletto",
+  "Wondrous Figurine, Stuffed Fox": "Wondrous Figurine (Stuffed Fox)",
+  "Musket Staff of Void": "Musket Staff of the Void",
+  "Dragonscale Staff": "Dragonscale Bo Staff",
+  "Bloodhammer Reserve Select": "Bloodhammer Reserve (Select)",
 };
+
+/**
+ * Items that exist in the Foundry source data but have no corresponding AoN
+ * page (e.g. removed or replaced in a later printing). Excluded from output.
+ */
+const EXCLUDED_ITEMS = new Set([
+  "Choker-Arm Mutagen (Lesser)",
+  "Choker-Arm Mutagen (Moderate)",
+  "Choker-Arm Mutagen (Greater)",
+  "Choker-Arm Mutagen (Major)",
+  "Cytillesh Toolkit",
+  "Darkening Poison",
+  "Formulated Sunlight",
+  "Sling Darts",
+  "Varisian Emblem (Avaria)",
+  "Varisian Emblem (Avidais)",
+  "Varisian Emblem (Carnasia)",
+  "Varisian Emblem (Idolis)",
+  "Varisian Emblem (Ragario)",
+  "Varisian Emblem (Vangloris)",
+  "Varisian Emblem (Voratalo)",
+]);
 
 /**
  * Normalize an item name for fuzzy matching against the AoN CSV.
@@ -221,10 +252,18 @@ function processFiles(): {
     `Filtered out ${items.length - priced.length} items with no price (${priced.length} remaining).`,
   );
 
-  // Sort by level, then name
-  priced.sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
+  // Exclude items with no AoN presence
+  const included = priced.filter((item) => !EXCLUDED_ITEMS.has(item.name));
+  if (priced.length - included.length > 0) {
+    console.log(
+      `Excluded ${priced.length - included.length} items with no AoN page (${included.length} remaining).`,
+    );
+  }
 
-  return { items: priced, stackGroups };
+  // Sort by level, then name
+  included.sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
+
+  return { items: included, stackGroups };
 }
 
 /** AoN rules pages for treasure items that aren't individually listed. */
