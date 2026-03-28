@@ -25,19 +25,3 @@ export function useItems() {
 
   return { items, loading };
 }
-
-/** Get unique values for a given field across all items */
-export function useItemFieldValues(
-  items: Item[],
-  field: "type" | "rarity" | "category" | "source",
-): string[] {
-  const [values, setValues] = useState<string[]>([]);
-
-  useEffect(() => {
-    const unique = [...new Set(items.map((i) => i[field]).filter(Boolean))];
-    unique.sort();
-    setValues(unique);
-  }, [items, field]);
-
-  return values;
-}

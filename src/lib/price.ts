@@ -60,32 +60,3 @@ export function parseBudget(input: string): Price | null {
 
   return null;
 }
-
-/**
- * Starting wealth by character level (in gp).
- * From the PF2e Player Core wealth-by-level table.
- * Index = character level.
- */
-export const WEALTH_BY_LEVEL: number[] = [
-  15, // Level 0 (not standard, but useful default)
-  15, // Level 1
-  20, // Level 2
-  25, // Level 3
-  30, // Level 4
-  50, // Level 5
-  75, // Level 6
-  90, // Level 7
-  100, // Level 8
-  120, // Level 9
-  140, // Level 10
-  175, // Level 11
-  210, // Level 12
-  300, // Level 13
-  375, // Level 14
-  490, // Level 15
-  600, // Level 16
-  750, // Level 17
-  1200, // Level 18
-  1600, // Level 19
-  3500, // Level 20
-];
