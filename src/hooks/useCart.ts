@@ -7,17 +7,17 @@ export interface CartEntry {
   quantity: number;
 }
 
-interface CartState {
+export interface CartState {
   entries: Map<string, CartEntry>;
 }
 
-type CartAction =
+export type CartAction =
   | { type: "add"; item: Item }
   | { type: "remove"; itemId: string }
   | { type: "set-quantity"; itemId: string; quantity: number }
   | { type: "clear" };
 
-function cartReducer(state: CartState, action: CartAction): CartState {
+export function cartReducer(state: CartState, action: CartAction): CartState {
   const next = new Map(state.entries);
 
   switch (action.type) {

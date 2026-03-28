@@ -51,8 +51,7 @@ export function ItemTable({ items, onAddItem }: ItemTableProps) {
       if (searchLower && !item.name.toLowerCase().includes(searchLower))
         return false;
       if (typeFilter && item.type !== typeFilter) return false;
-      if (rarityFilter.size > 0 && !rarityFilter.has(item.rarity))
-        return false;
+      if (rarityFilter.size > 0 && !rarityFilter.has(item.rarity)) return false;
       if (item.level < minLvl || item.level > maxLvl) return false;
       return true;
     });
