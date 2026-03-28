@@ -4,6 +4,7 @@ import { aonUrl } from "../lib/aon";
 import { formatPrice } from "../lib/price";
 import type { Price } from "../types";
 import styles from "./Cart.module.css";
+import { ItemTooltipWrapper } from "./ItemTooltip";
 
 interface CartProps {
   entries: CartEntry[];
@@ -106,14 +107,16 @@ export function Cart({
           {entries.map((entry) => (
             <li key={entry.item.id} className={styles.item}>
               <div className={styles.itemInfo}>
-                <a
-                  className={styles.itemName}
-                  href={aonUrl(entry.item)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {entry.item.name}
-                </a>
+                <ItemTooltipWrapper item={entry.item}>
+                  <a
+                    className={styles.itemName}
+                    href={aonUrl(entry.item)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {entry.item.name}
+                  </a>
+                </ItemTooltipWrapper>
                 <span className={styles.itemPrice}>
                   {formatPrice(entry.item.price)}
                   {entry.quantity > 1 && " each"}

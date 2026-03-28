@@ -6,22 +6,50 @@ import { formatPrice } from "../lib/price";
 import type { Item } from "../types";
 import styles from "./ItemTooltip.module.css";
 
+// Worn slots that are concatenated without a separator in the raw data.
+const WORN_SLOTS = new Set([
+  "amulet",
+  "anklets",
+  "armbands",
+  "backpack",
+  "belt",
+  "boots",
+  "bracelet",
+  "bracers",
+  "cap",
+  "cape",
+  "circlet",
+  "cloak",
+  "clothing",
+  "collar",
+  "crown",
+  "epaulet",
+  "eyeglasses",
+  "eyepiece",
+  "footwear",
+  "garment",
+  "gloves",
+  "headwear",
+  "horseshoes",
+  "mask",
+  "necklace",
+  "ring",
+  "saddle",
+  "sandles",
+  "shoes",
+]);
+
 /** Format a kebab-case usage string into a human-readable label. */
 function formatUsage(usage: string): string {
-  return usage
-    .replace(/-/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .replace(/\bIn\b/g, "in")
-    .replace(/\bOr\b/g, "or")
-    .replace(/\bA\b/g, "a")
-    .replace(/\bAn\b/g, "an")
-    .replace(/\bOf\b/g, "of")
-    .replace(/\bTo\b/g, "to")
-    .replace(/\bOn\b/g, "on")
-    .replace(/\bThe\b/g, "the")
-    .replace(/\bWo\b/g, "w/o")
-    .replace(/\bWith\b/g, "with")
-    .replace(/^./, (c) => c.toUpperCase());
+  // Handle "worn<slot>" concatenated values (e.g. "wornbracers" → "worn bracers")
+  if (usage.startsWith("worn")) {
+    const slot = usage.slice("worn".length);
+    if (WORN_SLOTS.has(slot)) {
+      usage = `worn ${slot}`;
+    }
+  }
+
+  return usage.replace(/-/g, " ").replace(/\bwo\b/g, "w/o");
 }
 
 /** Format a trait slug into a human-readable label. */
