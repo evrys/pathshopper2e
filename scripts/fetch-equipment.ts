@@ -45,6 +45,12 @@ const NAME_CORRECTIONS: Record<string, string> = {
   "Musket Staff of Void": "Musket Staff of the Void",
   "Dragonscale Staff": "Dragonscale Bo Staff",
   "Bloodhammer Reserve Select": "Bloodhammer Reserve (Select)",
+  "Disrupting Oil": "Burial Oil",
+  "Disrupting Oil (Greater)": "Burial Oil (Greater)",
+  "Yellow Musk Poison": "Yellow Musk Vial",
+  Cutlery: "Cutlery (Spoon Gun Ammo)",
+  "Treat (Standard)": "Treats (Standard)",
+  "Treat (Unique)": "Treats (Unique)",
 };
 
 /**

@@ -97,6 +97,7 @@
   "Fetching Bangles": "/Ikons.aspx?ID=3",
   "Fingerprint Kit": "/Equipment.aspx?ID=797",
   "Firecracker Fulu": "/Equipment.aspx?ID=2691",
+  "Fulu of Concealment": "/Equipment.aspx?ID=973",
   "Flowing Water (Greater)": "/Equipment.aspx?ID=3740",
   "Flowing Water (Lesser)": "/Equipment.aspx?ID=3740",
   "Flowing Water (Moderate)": "/Equipment.aspx?ID=3740",
@@ -134,6 +135,7 @@
   "Supramarine Chair": "/Equipment.aspx?ID=2777",
   "Lantern Implement": "/Implements.aspx?ID=20",
   "Light Barding": "/Equipment.aspx?ID=2778",
+  "Light Writer Plates": "/Equipment.aspx?ID=1152",
   "Lover's Ink": "/Equipment.aspx?ID=765",
   "Lucky Keepsake": "/Feats.aspx?ID=4505",
   "Maelstromic Destabilizer (Lesser)": "/Equipment.aspx?ID=3567",
@@ -148,6 +150,7 @@
   "Nail Bomb (Lesser)": "/Equipment.aspx?ID=3722",
   "Nail Bomb (Major)": "/Equipment.aspx?ID=3722",
   "Nail Bomb (Moderate)": "/Equipment.aspx?ID=3722",
+  "Nap Gas Dispenser": "/Equipment.aspx?ID=3799",
   "Necklace of Fireballs I": "/Equipment.aspx?ID=449",
   "Necklace of Fireballs II": "/Equipment.aspx?ID=449",
   "Necklace of Fireballs III": "/Equipment.aspx?ID=449",
@@ -350,5 +353,6 @@
   "Wood-Rotted Root (Major)": "/Equipment.aspx?ID=3730",
   "Wood-Rotted Root (Moderate)": "/Equipment.aspx?ID=3730",
   "Zetogeki Hide Armor": "/Equipment.aspx?ID=3667",
-  "Worldforge": "/Equipment.aspx?ID=3511"
+  "Worldforge": "/Equipment.aspx?ID=3511",
+  "Cutlery (Spoon Gun Ammo)": "/Weapons.aspx?ID=225"
 }
