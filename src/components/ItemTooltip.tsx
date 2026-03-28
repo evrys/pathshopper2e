@@ -1,20 +1,8 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { stripHtml } from "../lib/html";
 import { formatPrice } from "../lib/price";
 import type { Item } from "../types";
-
-/** Strip HTML tags and decode common entities for plain text. */
-function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]+>/g, "")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\s+/g, " ")
-    .trim();
-}
 
 /** Format a kebab-case usage string into a human-readable label. */
 function formatUsage(usage: string): string {

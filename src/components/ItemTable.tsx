@@ -230,15 +230,13 @@ export function ItemTable({
           <tbody>
             {pageItems.map((item) => (
               <tr key={item.id}>
-                <td
-                  className="item-name"
-                  onMouseEnter={(e) => showTooltip(item, e.currentTarget)}
-                  onMouseLeave={hideTooltip}
-                >
+                <td className="item-name">
                   <a
                     href={aonUrl(item)}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onMouseEnter={(e) => showTooltip(item, e.currentTarget)}
+                    onMouseLeave={hideTooltip}
                   >
                     {highlightMap.get(item.id) ?? item.name}
                   </a>
