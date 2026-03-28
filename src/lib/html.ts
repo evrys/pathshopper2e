@@ -84,58 +84,93 @@ const ACTION_GLYPHS: Record<string, string> = {
 
 /** Replace Foundry VTT enriched text patterns (@UUID, @Check, etc.) with plain text. */
 function replaceFoundryRefs(html: string): string {
-  return html
-    .replace(
-      /<span class="action-glyph">([^<]*)<\/span>/g,
-      (_match, code: string) => ACTION_GLYPHS[code.trim()] ?? code,
-    )
-    .replace(
-      /@UUID\[[^\]]*\.Item\.([^\]]+)\](?:\{([^}]*)\})?/g,
-      (_match, name: string, display: string | undefined) => {
-        const label = display ?? name;
-        return label.startsWith("Effect: ") ? "" : label;
-      },
-    )
-    .replace(/@UUID\[[^\]]*\](?:\{[^}]*\})?/g, "")
-    .replace(/@Check\[([^\]]*)\]/g, (_match, inner: string) => {
-      const parts = inner.split("|");
-      const type = parts[0] ?? "";
-      const dcPart = parts.find((p) => p.startsWith("dc:"));
-      const dc = dcPart?.slice(3);
-      const basic = parts.includes("basic") ? "basic " : "";
-      if (dc) {
-        return `DC ${dc} ${basic}${type} check`;
-      }
-      return `${type} check`;
-    })
-    .replace(
-      /@Damage\[([^[]*)\[([^\]]*)\]\]?/g,
-      (_match, formula: string, type: string) =>
-        `${formula} ${type.replace(/,/g, " ")}`.trim(),
-    )
-    .replace(/@Damage\[.*?\]\]?/g, "")
-    .replace(/@Template\[([^\]]*)\]/g, (_match, inner: string) => {
-      const params = Object.fromEntries(
-        inner.split("|").map((p) => {
-          const i = p.indexOf(":");
-          return i >= 0 ? [p.slice(0, i), p.slice(i + 1)] : ["type", p];
-        }),
-      );
-      const shape = params.type ?? "";
-      const distance = params.distance ?? "";
-      if (distance && shape) {
-        return `${distance}-foot ${shape}`;
-      }
-      return "";
-    })
-    .replace(/@Embed\[[^\]]*\]/g, "")
-    .replace(/\[\[\/r\s+(.*)\]\]/g, (_match, inner: string) => {
-      // Strip braces: {1d20+31} → 1d20+31
-      let formula = inner.replace(/^\{([^}]*)\}/, "$1").trim();
-      // Strip # comments: 1d20+31 #Label → 1d20+31
-      formula = formula.replace(/\s*#.*$/, "").trim();
-      // Extract damage-type brackets: (2d10+5)[healing] → 2d10+5 healing
-      formula = formula.replace(/\(([^)]*)\)\[([^\]]*)\]/, "$1 $2");
-      return formula;
-    });
+  return (
+    html
+      .replace(
+        /<span class="action-glyph">([^<]*)<\/span>/g,
+        (_match, code: string) => ACTION_GLYPHS[code.trim()] ?? code,
+      )
+      // @UUID with Item segment: use {display} or item name
+      .replace(
+        /@UUID\[[^\]]*\.Item\.([^\]]+)\](?:\{([^}]*)\})?/g,
+        (_match, name: string, display: string | undefined) => {
+          const label = display ?? name;
+          return label.startsWith("Effect: ") ? "" : label;
+        },
+      )
+      // @UUID without Item segment: use {display} or remove
+      .replace(
+        /@UUID\[[^\]]*\](?:\{([^}]*)\})?/g,
+        (_match, display: string | undefined) => display ?? "",
+      )
+      // @Check: use {display} or compute "DC N type check"
+      .replace(
+        /@Check\[([^\]]*)\](?:\{([^}]*)\})?/g,
+        (_match, inner: string, display: string | undefined) => {
+          if (display) return display;
+          const parts = inner.split("|");
+          const type = parts[0] ?? "";
+          const dcPart = parts.find((p) => p.startsWith("dc:"));
+          const dc = dcPart?.slice(3);
+          const basic = parts.includes("basic") ? "basic " : "";
+          if (dc) {
+            return `DC ${dc} ${basic}${type} check`;
+          }
+          return `${type} check`;
+        },
+      )
+      // @Damage: match the full pattern including nested brackets, then optional {display}
+      // The content can have nested [...] like: @Damage[6d6[acid],1d6[persistent,acid]]
+      .replace(
+        /@Damage\[([^[\]]*(?:\[[^\]]*\][^[\]]*)*)\](?:\{([^}]*)\})?/g,
+        (_match, inner: string, display: string | undefined) => {
+          if (display) return display;
+          // Parse typed damage: formula[type] → "formula type"
+          const typed = inner.match(/^([^[]*)\[([^\]]*)\]$/);
+          if (typed) return `${typed[1]} ${typed[2].replace(/,/g, " ")}`.trim();
+          return "";
+        },
+      )
+      // @Template: use {display} or compute "N-foot shape"
+      .replace(
+        /@Template\[([^\]]*)\](?:\{([^}]*)\})?/g,
+        (_match, inner: string, display: string | undefined) => {
+          if (display) return display;
+          const params = Object.fromEntries(
+            inner.split("|").map((p) => {
+              const i = p.indexOf(":");
+              return i >= 0 ? [p.slice(0, i), p.slice(i + 1)] : ["type", p];
+            }),
+          );
+          const shape = params.type ?? "";
+          const distance = params.distance ?? "";
+          if (distance && shape) {
+            return `${distance}-foot ${shape}`;
+          }
+          return "";
+        },
+      )
+      .replace(/@Embed\[[^\]]*\]/g, "")
+      // [[/r ...]], [[/br ...]], [[/gmr ...]], [[/act ...]] inline expressions
+      // Use {display} if present, otherwise extract formula
+      // Match up to ]] followed by {display}, end of string, or non-] char
+      .replace(
+        /\[\[\/(?:r|br|gmr|act)\s+(.*?)\]\](?=\{|$|[^\]])(?:\{([^}]*)\})?/g,
+        (_match, inner: string, display: string | undefined) => {
+          if (display) return display;
+          // Strip braces: {1d20+31} → 1d20+31
+          let formula = inner.replace(/^\{([^}]*)\}/, "$1").trim();
+          // Strip # comments: 1d20+31 #Label → 1d20+31
+          formula = formula.replace(/\s*#.*$/, "").trim();
+          // Extract damage-type brackets: (2d10+5)[healing] → 2d10+5 healing
+          formula = formula.replace(/\(([^)]*)\)\[([^\]]*)\]/, "$1 $2");
+          return formula;
+        },
+      )
+      // Malformed [[/... with {display} inside instead of after (e.g. [[/r 1d20+9{+9})
+      .replace(
+        /\[\[\/(?:r|br|gmr|act)\s+[^[\]]*\{([^}]*)\}/g,
+        (_match, display: string) => display,
+      )
+  );
 }

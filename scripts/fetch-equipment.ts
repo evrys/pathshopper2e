@@ -114,6 +114,7 @@ interface FoundryItem {
     level?: { value: number };
     price?: { value: Record<string, number> };
     category?: string;
+    stackGroup?: string;
     traits?: { rarity?: string; value?: string[] };
     bulk?: { value: number };
     usage?: { value: string };
@@ -150,19 +151,27 @@ function extractItem(raw: FoundryItem): Item {
   };
 }
 
-function processFiles(): Item[] {
+function processFiles(): {
+  items: Item[];
+  stackGroups: Map<string, string>;
+} {
   const equipDir = join(CLONE_DIR, SPARSE_PATH);
   const files = readdirSync(equipDir).filter((f) => f.endsWith(".json"));
   console.log(`Processing ${files.length} equipment files...`);
 
   const items: Item[] = [];
+  const stackGroups = new Map<string, string>();
 
   for (const file of files) {
     try {
       const raw = JSON.parse(
         readFileSync(join(equipDir, file), "utf-8"),
       ) as FoundryItem;
-      items.push(extractItem(raw));
+      const item = extractItem(raw);
+      items.push(item);
+      if (raw.system.stackGroup) {
+        stackGroups.set(item.id, raw.system.stackGroup);
+      }
     } catch (err) {
       console.warn(`Skipping ${file}: ${err}`);
     }
@@ -171,12 +180,16 @@ function processFiles(): Item[] {
   // Sort by level, then name
   items.sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
 
-  return items;
+  return { items, stackGroups };
 }
+
+/** AoN rules pages for treasure items that aren't individually listed. */
+const AON_GEMS_URL = "/Rules.aspx?ID=3228";
+const AON_ART_OBJECTS_URL = "/Rules.aspx?ID=3229";
 
 function main() {
   cloneEquipmentPack();
-  const items = processFiles();
+  const { items, stackGroups } = processFiles();
 
   // Annotate items with AoN URLs
   const aonUrls = loadAonUrls();
@@ -189,6 +202,28 @@ function main() {
     }
   }
   console.log(`Matched ${matched}/${items.length} items to AoN URLs.`);
+
+  // Assign fallback URLs for treasure items (gems & art objects)
+  let gemCount = 0;
+  let artCount = 0;
+  for (const item of items) {
+    if (item.aonUrl || item.type !== "treasure") continue;
+    const sg = stackGroups.get(item.id);
+    if (sg === "gems") {
+      item.aonUrl = AON_GEMS_URL;
+      gemCount++;
+    } else if (sg === "coins") {
+      // Skip currency items
+    } else {
+      item.aonUrl = AON_ART_OBJECTS_URL;
+      artCount++;
+    }
+  }
+  if (gemCount + artCount > 0) {
+    console.log(
+      `Assigned fallback AoN URLs: ${gemCount} gems, ${artCount} art objects.`,
+    );
+  }
 
   mkdirSync("data", { recursive: true });
   writeFileSync(OUTPUT, JSON.stringify(items));

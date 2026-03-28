@@ -13,7 +13,7 @@
     "fetch-data": "tsx scripts/fetch-equipment.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "checks": "pnpm tsc && pnpm biome && pnpm test"
+    "checks": "pnpm format && pnpm tsc && pnpm biome && pnpm test"
   },
   "dependencies": {
     "@leeoniya/ufuzzy": "^1.0.19",

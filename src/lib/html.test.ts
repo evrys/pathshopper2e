@@ -79,12 +79,12 @@ describe("stripHtml", () => {
     ).toBe("into a Aeon Stone (Dull Grey).");
   });
 
-  it("removes @UUID without Item segment even with {display}", () => {
+  it("uses {display} on @UUID without Item segment", () => {
     expect(
       stripHtml(
         "see @UUID[Compendium.pf2e.journals.JournalEntry.abc]{Some Page} for details",
       ),
-    ).toBe("see for details");
+    ).toBe("see Some Page for details");
   });
 
   it("handles multiple @UUID references in one string", () => {
@@ -306,5 +306,93 @@ describe("inline rolls", () => {
 
   it("renders inline rolls with damage type brackets", () => {
     expect(stripHtml("[[/r (2d10+5)[healing]]]")).toBe("2d10+5 healing");
+  });
+
+  it("uses {display} override on inline rolls", () => {
+    expect(stripHtml("a [[/r 1d20+9]]{+9} bonus")).toBe("a +9 bonus");
+    expect(stripHtml("DC [[/r 1d20+5]]{modifier} check")).toBe(
+      "DC modifier check",
+    );
+  });
+
+  it("renders [[/br ...]] base roll expressions", () => {
+    expect(stripHtml("[[/br 2d4 #hours]]{2d4 hours}")).toBe("2d4 hours");
+    expect(stripHtml("wait [[/br 1d6]] rounds")).toBe("wait 1d6 rounds");
+  });
+
+  it("renders [[/gmr ...]] GM roll expressions", () => {
+    expect(stripHtml("[[/gmr 1d4 #rounds]]{1d4 rounds}")).toBe("1d4 rounds");
+  });
+
+  it("renders [[/act ...]] action expressions", () => {
+    expect(stripHtml("DC [[/act escape dc=17]]{17}")).toBe("DC 17");
+  });
+
+  it("handles malformed [[/r with {display} inside brackets", () => {
+    expect(stripHtml("a [[/r 1d20+9{+9} bonus")).toBe("a +9 bonus");
+  });
+});
+
+describe("{display} overrides on @ patterns", () => {
+  it("uses {display} on @Damage", () => {
+    expect(
+      stripHtml(
+        "@Damage[6d6[acid],1d6[persistent,acid]]{6d6 acid damage and 1d6 persistent acid damage}",
+      ),
+    ).toBe("6d6 acid damage and 1d6 persistent acid damage");
+    expect(stripHtml("takes @Damage[2d6[fire]]{2d6 fire} damage")).toBe(
+      "takes 2d6 fire damage",
+    );
+  });
+
+  it("uses {display} on @Template", () => {
+    expect(
+      stripHtml("a @Template[square|distance:15]{15-foot-by-15-foot} area"),
+    ).toBe("a 15-foot-by-15-foot area");
+  });
+
+  it("uses {display} on @Check", () => {
+    expect(
+      stripHtml("succeed at a @Check[flat|dc:5]{DC 5 flat check} to recover"),
+    ).toBe("succeed at a DC 5 flat check to recover");
+    expect(stripHtml("@Check[fortitude|dc:17]{DC 17 Fortitude}")).toBe(
+      "DC 17 Fortitude",
+    );
+  });
+});
+
+describe("dataset integration", () => {
+  it("sanitizeHtml resolves all Foundry syntax in every item description", async () => {
+    // Dynamic import avoids bundling the large JSON into the app
+    const items = (await import("../../data/items.json")).default as Array<{
+      name: string;
+      description: string;
+    }>;
+
+    const foundryPatterns = [
+      { pattern: /@UUID\[/, label: "@UUID" },
+      { pattern: /@Check\[/, label: "@Check" },
+      { pattern: /@Damage\[/, label: "@Damage" },
+      { pattern: /@Template\[/, label: "@Template" },
+      { pattern: /@Embed\[/, label: "@Embed" },
+      { pattern: /\[\[\/(?:r|br|gmr|act)\s/, label: "[[/roll]]" },
+    ];
+
+    const failures: string[] = [];
+    for (const item of items) {
+      if (!item.description) continue;
+      const result = sanitizeHtml(item.description);
+      for (const { pattern, label } of foundryPatterns) {
+        if (pattern.test(result)) {
+          failures.push(`${item.name}: unresolved ${label}`);
+        }
+      }
+    }
+
+    if (failures.length > 0) {
+      throw new Error(
+        `${failures.length} items have unresolved Foundry syntax:\n${failures.join("\n")}`,
+      );
+    }
   });
 });
