@@ -28,9 +28,7 @@ function App() {
     <div className="app">
       <header className="app-header">
         <h1>Pathshopper</h1>
-        <p className="app-subtitle">
-          Plan your equipment purchases for any budget
-        </p>
+        <p className="app-subtitle">Plan your equipment purchases</p>
       </header>
 
       <div className="app-body">

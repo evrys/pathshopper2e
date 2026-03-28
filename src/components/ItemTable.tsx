@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { type ReactNode, useCallback, useMemo, useState } from "react";
+import { useFuzzySearch } from "../hooks/useFuzzySearch";
 import { aonUrl } from "../lib/aon";
 import { formatPrice, toCopper } from "../lib/price";
 import type { Item } from "../types";
@@ -34,30 +35,52 @@ const RARITY_COLORS: Record<string, string> = {
 
 export function ItemTable({ items, onAddItem }: ItemTableProps) {
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("");
-  const [rarityFilter, setRarityFilter] = useState<Set<string>>(new Set());
+  const [typeFilter, setTypeFilter] = useState<Set<string>>(new Set());
+  const [rarityFilter, setRarityFilter] = useState<Set<string>>(
+    new Set(["common", "uncommon"]),
+  );
   const [minLevel, setMinLevel] = useState("");
   const [maxLevel, setMaxLevel] = useState("");
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [page, setPage] = useState(0);
 
-  const filtered = useMemo(() => {
-    const searchLower = search.toLowerCase();
+  const preFiltered = useMemo(() => {
     const minLvl = minLevel ? Number.parseInt(minLevel, 10) : -Infinity;
     const maxLvl = maxLevel ? Number.parseInt(maxLevel, 10) : Infinity;
 
     return items.filter((item) => {
-      if (searchLower && !item.name.toLowerCase().includes(searchLower))
-        return false;
-      if (typeFilter && item.type !== typeFilter) return false;
+      if (typeFilter.size > 0 && !typeFilter.has(item.type)) return false;
       if (rarityFilter.size > 0 && !rarityFilter.has(item.rarity)) return false;
       if (item.level < minLvl || item.level > maxLvl) return false;
       return true;
     });
-  }, [items, search, typeFilter, rarityFilter, minLevel, maxLevel]);
+  }, [items, typeFilter, rarityFilter, minLevel, maxLevel]);
+
+  const getName = useCallback((item: Item) => item.name, []);
+  const fuzzyResults = useFuzzySearch(preFiltered, getName, search);
+
+  // Build a Map from item id → highlighted ReactNode for rendering
+  const highlightMap = useMemo(() => {
+    const map = new Map<string, ReactNode>();
+    for (const r of fuzzyResults) {
+      if (r.highlighted) {
+        map.set(r.item.id, r.highlighted);
+      }
+    }
+    return map;
+  }, [fuzzyResults]);
+
+  const filtered = useMemo(
+    () => fuzzyResults.map((r) => r.item),
+    [fuzzyResults],
+  );
+
+  // When searching, fuzzy results are already relevance-sorted — skip column sort
+  const isSearching = search.trim() !== "";
 
   const sorted = useMemo(() => {
+    if (isSearching) return filtered;
     const arr = [...filtered];
     const dir = sortDir === "asc" ? 1 : -1;
     arr.sort((a, b) => {
@@ -75,7 +98,7 @@ export function ItemTable({ items, onAddItem }: ItemTableProps) {
       }
     });
     return arr;
-  }, [filtered, sortField, sortDir]);
+  }, [filtered, sortField, sortDir, isSearching]);
 
   const totalPages = Math.ceil(sorted.length / ITEMS_PER_PAGE);
   const pageItems = sorted.slice(
@@ -113,20 +136,18 @@ export function ItemTable({ items, onAddItem }: ItemTableProps) {
           }}
           className="search-input"
         />
-        <select
-          value={typeFilter}
-          onChange={(e) => {
-            setTypeFilter(e.target.value);
+        <MultiSelect
+          placeholder="All Types"
+          options={Object.entries(TYPE_LABELS).map(([value, label]) => ({
+            value,
+            label,
+          }))}
+          selected={typeFilter}
+          onChange={(next) => {
+            setTypeFilter(next);
             resetPage();
           }}
-        >
-          <option value="">All Types</option>
-          {Object.entries(TYPE_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
+        />
         <MultiSelect
           placeholder="All Rarities"
           options={[
@@ -197,7 +218,7 @@ export function ItemTable({ items, onAddItem }: ItemTableProps) {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    {item.name}
+                    {highlightMap.get(item.id) ?? item.name}
                   </a>
                 </td>
                 <td className="item-type">

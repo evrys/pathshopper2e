@@ -23,7 +23,7 @@ export function Cart({
   return (
     <div className="cart">
       <div className="cart-header">
-        <h2>🛒 Cart ({totalItems})</h2>
+        <h2>Cart ({totalItems})</h2>
         {entries.length > 0 && (
           <button type="button" className="clear-btn" onClick={onClear}>
             Clear

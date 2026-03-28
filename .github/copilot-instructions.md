@@ -4,7 +4,7 @@ This is a small website for players of Pathfinder 2e to make shopping lists for 
 
 ## Validation
 
-After making changes, run `pnpm checks` to verify everything passes (TypeScript, Biome linting, and tests). Fix any errors before considering work complete.
+After making changes, run `pnpm checks` to verify everything passes (TypeScript, Biome linting, and tests). Fix any errors before considering work complete. Add tests for any new functionality you introduce.
 
 ## Stack
 

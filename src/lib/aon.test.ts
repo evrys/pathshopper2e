@@ -29,13 +29,14 @@ describe("aonUrl", () => {
 
   it("falls back to search URL when no stored URL", () => {
     const item = makeItem({ aonUrl: undefined });
-    expect(aonUrl(item)).toBe(
-      "https://2e.aonprd.com/Search.aspx?q=Longsword",
-    );
+    expect(aonUrl(item)).toBe("https://2e.aonprd.com/Search.aspx?q=Longsword");
   });
 
   it("encodes special characters in search fallback", () => {
-    const item = makeItem({ name: "Healing Potion (Minor)", aonUrl: undefined });
+    const item = makeItem({
+      name: "Healing Potion (Minor)",
+      aonUrl: undefined,
+    });
     expect(aonUrl(item)).toBe(
       "https://2e.aonprd.com/Search.aspx?q=Healing%20Potion%20(Minor)",
     );

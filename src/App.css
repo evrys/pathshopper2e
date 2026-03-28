@@ -194,6 +194,15 @@
   font-size: 0.8125rem;
 }
 
+/* ── Fuzzy match highlights ── */
+
+.item-name mark {
+  background: rgba(245, 158, 11, 0.3);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
 /* ── Cart ── */
 
 .cart {
