@@ -1,6 +1,6 @@
-import { useReducer, useCallback } from "react";
+import { useCallback, useReducer } from "react";
+import { fromCopper, toCopper } from "../lib/price";
 import type { Item, Price } from "../types";
-import { toCopper, fromCopper } from "../lib/price";
 
 export interface CartEntry {
   item: Item;

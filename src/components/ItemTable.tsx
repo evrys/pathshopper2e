@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
+import { aonUrl } from "../lib/aon";
 import { formatPrice, toCopper } from "../lib/price";
 import type { Item } from "../types";
+import { MultiSelect } from "./MultiSelect";
 
 type SortField = "name" | "level" | "price" | "type";
 type SortDir = "asc" | "desc";
@@ -33,7 +35,7 @@ const RARITY_COLORS: Record<string, string> = {
 export function ItemTable({ items, onAddItem }: ItemTableProps) {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
-  const [rarityFilter, setRarityFilter] = useState("");
+  const [rarityFilter, setRarityFilter] = useState<Set<string>>(new Set());
   const [minLevel, setMinLevel] = useState("");
   const [maxLevel, setMaxLevel] = useState("");
   const [sortField, setSortField] = useState<SortField>("name");
@@ -49,7 +51,8 @@ export function ItemTable({ items, onAddItem }: ItemTableProps) {
       if (searchLower && !item.name.toLowerCase().includes(searchLower))
         return false;
       if (typeFilter && item.type !== typeFilter) return false;
-      if (rarityFilter && item.rarity !== rarityFilter) return false;
+      if (rarityFilter.size > 0 && !rarityFilter.has(item.rarity))
+        return false;
       if (item.level < minLvl || item.level > maxLvl) return false;
       return true;
     });
@@ -125,19 +128,20 @@ export function ItemTable({ items, onAddItem }: ItemTableProps) {
             </option>
           ))}
         </select>
-        <select
-          value={rarityFilter}
-          onChange={(e) => {
-            setRarityFilter(e.target.value);
+        <MultiSelect
+          placeholder="All Rarities"
+          options={[
+            { value: "common", label: "Common" },
+            { value: "uncommon", label: "Uncommon" },
+            { value: "rare", label: "Rare" },
+            { value: "unique", label: "Unique" },
+          ]}
+          selected={rarityFilter}
+          onChange={(next) => {
+            setRarityFilter(next);
             resetPage();
           }}
-        >
-          <option value="">All Rarities</option>
-          <option value="common">Common</option>
-          <option value="uncommon">Uncommon</option>
-          <option value="rare">Rare</option>
-          <option value="unique">Unique</option>
-        </select>
+        />
         <input
           type="number"
           placeholder="Min Lvl"
@@ -189,7 +193,13 @@ export function ItemTable({ items, onAddItem }: ItemTableProps) {
             {pageItems.map((item) => (
               <tr key={item.id}>
                 <td className="item-name" title={item.traits.join(", ")}>
-                  {item.name}
+                  <a
+                    href={aonUrl(item)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {item.name}
+                  </a>
                 </td>
                 <td className="item-type">
                   {TYPE_LABELS[item.type] ?? item.type}

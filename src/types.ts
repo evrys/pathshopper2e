@@ -33,4 +33,6 @@ export interface Item {
   remaster: boolean;
   /** HTML description */
   description: string;
+  /** URL path on Archives of Nethys, e.g. "/Weapons.aspx?ID=386" */
+  aonUrl?: string;
 }

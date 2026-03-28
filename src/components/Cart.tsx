@@ -1,5 +1,6 @@
-import { formatPrice } from "../lib/price";
 import type { CartEntry } from "../hooks/useCart";
+import { aonUrl } from "../lib/aon";
+import { formatPrice } from "../lib/price";
 import type { Price } from "../types";
 
 interface CartProps {
@@ -19,7 +20,6 @@ export function Cart({
   onRemoveItem,
   onClear,
 }: CartProps) {
-
   return (
     <div className="cart">
       <div className="cart-header">
@@ -40,7 +40,14 @@ export function Cart({
           {entries.map((entry) => (
             <li key={entry.item.id} className="cart-item">
               <div className="cart-item-info">
-                <span className="cart-item-name">{entry.item.name}</span>
+                <a
+                  className="cart-item-name"
+                  href={aonUrl(entry.item)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {entry.item.name}
+                </a>
                 <span className="cart-item-price">
                   {formatPrice(entry.item.price)}
                   {entry.quantity > 1 && " each"}

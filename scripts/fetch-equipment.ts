@@ -8,9 +8,15 @@
  * Usage: pnpm fetch-data
  */
 
-import { mkdirSync, writeFileSync, existsSync, rmSync } from "node:fs";
 import { execSync } from "node:child_process";
-import { readdirSync, readFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import type { Item, Price } from "../src/types.ts";
 
@@ -19,6 +25,59 @@ const BRANCH = "master";
 const SPARSE_PATH = "packs/equipment";
 const CLONE_DIR = "node_modules/.cache/pf2e-data";
 const OUTPUT = "data/items.json";
+const AON_CSV = "data/aon-all-equipment.csv";
+
+/**
+ * Parse the AoN CSV export and build a Map from item name to URL path.
+ * The CSV has quoted fields so we need to handle commas inside quotes.
+ */
+function loadAonUrls(): Map<string, string> {
+  const csv = readFileSync(AON_CSV, "utf-8");
+  const lines = csv.split("\n");
+  // header: name,pfs,source,rarity,trait,item_category,item_subcategory,level,price,bulk,usage,url
+  const map = new Map<string, string>();
+
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    // Parse CSV row respecting quoted fields
+    const fields = parseCsvRow(line);
+    const name = fields[0];
+    const url = fields[fields.length - 1]; // url is the last column
+
+    if (name && url && url.startsWith("/")) {
+      // First match wins — keeps the first (usually remastered) entry
+      if (!map.has(name)) {
+        map.set(name, url);
+      }
+    }
+  }
+
+  console.log(`Loaded ${map.size} AoN URLs from CSV.`);
+  return map;
+}
+
+/** Simple CSV row parser that handles quoted fields with commas */
+function parseCsvRow(line: string): string[] {
+  const fields: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      inQuotes = !inQuotes;
+    } else if (ch === "," && !inQuotes) {
+      fields.push(current);
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+  fields.push(current);
+  return fields;
+}
 
 function cloneEquipmentPack() {
   // Clean previous clone
@@ -118,6 +177,18 @@ function processFiles(): Item[] {
 function main() {
   cloneEquipmentPack();
   const items = processFiles();
+
+  // Annotate items with AoN URLs
+  const aonUrls = loadAonUrls();
+  let matched = 0;
+  for (const item of items) {
+    const url = aonUrls.get(item.name);
+    if (url) {
+      item.aonUrl = url;
+      matched++;
+    }
+  }
+  console.log(`Matched ${matched}/${items.length} items to AoN URLs.`);
 
   mkdirSync("data", { recursive: true });
   writeFileSync(OUTPUT, JSON.stringify(items));
