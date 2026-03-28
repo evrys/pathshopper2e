@@ -11,6 +11,8 @@
  * - `@Damage[formula[type]]` → "formula type" (e.g. "1d6 fire")
  * - `@Template[type:shape|distance:N]` → "N-foot shape" (e.g. "10-foot emanation")
  * - `@Embed[...]` → removed (embedded content)
+ * - `[[/r formula]]` → "formula" (Foundry inline rolls)
+ * - `<span class="action-glyph">X</span>` → action icon (◆, ◆◆, ◆◆◆, ◇, ↺)
  */
 export function stripHtml(html: string): string {
   return replaceFoundryRefs(html)
@@ -63,13 +65,30 @@ export function sanitizeHtml(html: string): string {
       }
       return "";
     })
-    .replace(/\[\[\/r\s+[^\]]*\]\]/g, "")
     .trim();
 }
+
+/** Map Foundry action-glyph codes to Unicode symbols. */
+const ACTION_GLYPHS: Record<string, string> = {
+  "1": "◆",
+  "2": "◆◆",
+  "3": "◆◆◆",
+  A: "◆",
+  a: "◆",
+  D: "◆◆◆",
+  f: "◇",
+  F: "◇",
+  r: "↺",
+  R: "↺",
+};
 
 /** Replace Foundry VTT enriched text patterns (@UUID, @Check, etc.) with plain text. */
 function replaceFoundryRefs(html: string): string {
   return html
+    .replace(
+      /<span class="action-glyph">([^<]*)<\/span>/g,
+      (_match, code: string) => ACTION_GLYPHS[code.trim()] ?? code,
+    )
     .replace(
       /@UUID\[[^\]]*\.Item\.([^\]]+)\](?:\{([^}]*)\})?/g,
       (_match, name: string, display: string | undefined) => {
@@ -109,5 +128,14 @@ function replaceFoundryRefs(html: string): string {
       }
       return "";
     })
-    .replace(/@Embed\[[^\]]*\]/g, "");
+    .replace(/@Embed\[[^\]]*\]/g, "")
+    .replace(/\[\[\/r\s+(.*)\]\]/g, (_match, inner: string) => {
+      // Strip braces: {1d20+31} → 1d20+31
+      let formula = inner.replace(/^\{([^}]*)\}/, "$1").trim();
+      // Strip # comments: 1d20+31 #Label → 1d20+31
+      formula = formula.replace(/\s*#.*$/, "").trim();
+      // Extract damage-type brackets: (2d10+5)[healing] → 2d10+5 healing
+      formula = formula.replace(/\(([^)]*)\)\[([^\]]*)\]/, "$1 $2");
+      return formula;
+    });
 }

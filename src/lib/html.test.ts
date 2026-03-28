@@ -189,6 +189,21 @@ describe("stripHtml", () => {
       ),
     ).toBe("see for details");
   });
+
+  it("converts action glyphs to Unicode symbols", () => {
+    expect(stripHtml('<span class="action-glyph">1</span> Interact')).toBe(
+      "◆ Interact",
+    );
+    expect(stripHtml('<span class="action-glyph">2</span> Cast a Spell')).toBe(
+      "◆◆ Cast a Spell",
+    );
+    expect(stripHtml('<span class="action-glyph">3</span>')).toBe("◆◆◆");
+    expect(stripHtml('<span class="action-glyph">f</span> envision')).toBe(
+      "◇ envision",
+    );
+    expect(stripHtml('<span class="action-glyph">R</span>')).toBe("↺");
+    expect(stripHtml('<span class="action-glyph">A</span>')).toBe("◆");
+  });
 });
 
 describe("sanitizeHtml", () => {
@@ -216,10 +231,15 @@ describe("sanitizeHtml", () => {
     ).toBe("<table><thead><tr><th>A</th></tr></thead></table>");
   });
 
-  it("strips span, div, and other disallowed tags", () => {
+  it("converts action glyph spans to Unicode symbols", () => {
     expect(sanitizeHtml('<span class="action-glyph">A</span> Interact')).toBe(
-      "A Interact",
+      "◆ Interact",
     );
+    expect(
+      sanitizeHtml(
+        '<p><strong>Activate</strong> <span class="action-glyph">f</span> envision</p>',
+      ),
+    ).toBe("<p><strong>Activate</strong> ◇ envision</p>");
   });
 
   it("strips attributes from allowed tags", () => {
@@ -252,9 +272,12 @@ describe("sanitizeHtml", () => {
     );
   });
 
-  it("strips [[/r ...]] inline roll expressions", () => {
+  it("renders [[/r ...]] inline roll expressions as formulas", () => {
     expect(sanitizeHtml("<p>add [[/r 1d4]] damage</p>")).toBe(
-      "<p>add  damage</p>",
+      "<p>add 1d4 damage</p>",
+    );
+    expect(sanitizeHtml("<p>modifier of [[/r 1d20+31]].</p>")).toBe(
+      "<p>modifier of 1d20+31.</p>",
     );
   });
 
@@ -264,5 +287,24 @@ describe("sanitizeHtml", () => {
     expect(sanitizeHtml(input)).toBe(
       "<p><strong>Benefit</strong> You gain a bonus.</p><p><strong>Drawback</strong> You take a penalty.</p>",
     );
+  });
+});
+
+describe("inline rolls", () => {
+  it("renders simple inline rolls", () => {
+    expect(stripHtml("add [[/r 1d4]] damage")).toBe("add 1d4 damage");
+  });
+
+  it("renders inline rolls with braces", () => {
+    expect(stripHtml("roll [[/r {1d20+31}]]")).toBe("roll 1d20+31");
+  });
+
+  it("renders inline rolls with # comments", () => {
+    expect(stripHtml("[[/r 1d4 #rounds]] later")).toBe("1d4 later");
+    expect(stripHtml("[[/r {1d20+18} #Counteract Modifier]]")).toBe("1d20+18");
+  });
+
+  it("renders inline rolls with damage type brackets", () => {
+    expect(stripHtml("[[/r (2d10+5)[healing]]]")).toBe("2d10+5 healing");
   });
 });
