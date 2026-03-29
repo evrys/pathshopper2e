@@ -128,7 +128,7 @@
 }
 
 .snippet mark {
-  background: rgba(245, 158, 11, 0.3);
+  background: rgba(232, 115, 30, 0.3);
   color: inherit;
   border-radius: 2px;
   padding: 0 1px;
@@ -161,12 +161,12 @@
 }
 
 .traitMatched {
-  background: rgba(245, 158, 11, 0.25);
+  background: rgba(232, 115, 30, 0.25);
   color: var(--color-text-muted);
 }
 
 .traitMatched:hover {
-  background: rgba(245, 158, 11, 0.4);
+  background: rgba(232, 115, 30, 0.4);
 }
 
 .level,
@@ -219,7 +219,7 @@
 /* ── Fuzzy match highlights ── */
 
 .name mark {
-  background: rgba(245, 158, 11, 0.3);
+  background: rgba(232, 115, 30, 0.3);
   color: inherit;
   border-radius: 2px;
   padding: 0 1px;
