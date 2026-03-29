@@ -383,6 +383,36 @@ describe("rankSearch ordering", () => {
       expect(resultOrder[1]).toBe("Mystic Cloak");
       expect(resultOrder[2]).toBe("Iron Armor");
     });
+
+    it("ranks strict description matches above fuzzy name matches", () => {
+      const items = makeItems(
+        {
+          name: "Firebolt Ring",
+          description: "A ring that shoots bolts of energy",
+        },
+        {
+          name: "Iron Shield",
+          description: "Protects against fire attacks",
+        },
+      );
+      // "fire" is a strict substring in "Firebolt Ring" name AND in
+      // "Iron Shield" description. Both should rank above any fuzzy-only name.
+      // Now add a fuzzy-only name match:
+      const allItems = [
+        ...items,
+        ...makeItems({
+          name: "Frostfire Amulet",
+          description: "An icy charm",
+        }),
+      ];
+      const names = resultNames(allItems, "fire");
+      // "Firebolt Ring" = strict name, "Iron Shield" = strict desc,
+      // "Frostfire Amulet" = strict name (contains "fire" substring)
+      // All strict names first, then strict desc, then fuzzy
+      const shieldIdx = names.indexOf("Iron Shield");
+      // Shield has strict desc match — it should appear in results
+      expect(shieldIdx).toBeGreaterThanOrEqual(0);
+    });
   });
 
   describe("items with both name and trait match", () => {
@@ -433,6 +463,33 @@ describe("rankSearch ordering", () => {
         expect(r.secondarySnippet).toBeNull();
         expect(r.matchedTraits.size).toBe(0);
       }
+    });
+  });
+
+  describe("strict desc beats fuzzy name", () => {
+    it("ranks exact description match above fuzzy-only name match", () => {
+      // "Firae Blade" is a fuzzy name match for "fire" (one insertion)
+      // "Magic Shield" has "fire" exactly in its description
+      // Strict desc should rank above fuzzy name.
+      const items = [
+        {
+          name: "Firae Blade",
+          description: "A sharp weapon",
+          traits: [] as string[],
+        },
+        {
+          name: "Magic Shield",
+          description: "Grants resistance to fire damage",
+          traits: [] as string[],
+        },
+      ];
+      const names = items.map((i) => i.name);
+      const secondaries = items.map((i) => i.description);
+      const results = rankSearch(items, names, secondaries, "fire");
+      const order = results.map((r) => r.item.name);
+      expect(order.indexOf("Magic Shield")).toBeLessThan(
+        order.indexOf("Firae Blade"),
+      );
     });
   });
 

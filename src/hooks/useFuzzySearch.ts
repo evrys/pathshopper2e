@@ -133,7 +133,7 @@ export interface FuzzyResult<T> {
  * Core ranking logic extracted as a pure function for testability.
  *
  * Priority order:
- *   strict name → trait-only → fuzzy name → strict desc → fuzzy desc
+ *   strict name → trait-only → strict desc → fuzzy name → fuzzy desc
  */
 export function rankSearch<T>(
   items: T[],
@@ -219,11 +219,12 @@ export function rankSearch<T>(
   }
 
   // 4) Merge in priority order:
-  //    strict name → trait-only → fuzzy name → strict desc → fuzzy desc
+  //    strict name → trait-only → strict desc → fuzzy name → fuzzy desc
   const seen = new Set<number>();
   const results: FuzzyResult<T>[] = [];
 
   function addNameHit(hit: { idx: number; ranges: number[] }) {
+    if (seen.has(hit.idx)) return;
     seen.add(hit.idx);
     const name = names[hit.idx];
     const merged = mergeAdjacentRanges(hit.ranges, name);
@@ -273,8 +274,8 @@ export function rankSearch<T>(
       matchedTraits: traitMatches(idx),
     });
   }
-  for (const hit of fuzzyNameHits) addNameHit(hit);
   for (const hit of strictSecHits) addSecHit(hit);
+  for (const hit of fuzzyNameHits) addNameHit(hit);
   for (const hit of fuzzySecHits) addSecHit(hit);
 
   return results;
