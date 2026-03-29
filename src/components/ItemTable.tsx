@@ -5,9 +5,9 @@ import { aonUrl } from "../lib/aon";
 import { formatPrice, toCopper } from "../lib/price";
 import { formatTrait, traitUrl } from "../lib/traits";
 import type { Item } from "../types";
+import { FilterModal } from "./FilterModal";
 import styles from "./ItemTable.module.css";
 import { ItemTooltipWrapper } from "./ItemTooltip";
-import { MultiSelect } from "./MultiSelect";
 
 type SortField = "name" | "level" | "price" | "type";
 type SortDir = "asc" | "desc";
@@ -30,14 +30,14 @@ interface ItemTableProps {
 }
 
 const TYPE_LABELS: Record<string, string> = {
-  weapon: "⚔️ Weapon",
-  armor: "🛡️ Armor",
-  shield: "🛡️ Shield",
-  equipment: "🎒 Equipment",
-  consumable: "🧪 Consumable",
-  treasure: "💎 Treasure",
-  backpack: "👜 Container",
-  kit: "📦 Kit",
+  weapon: "Weapon",
+  armor: "Armor",
+  shield: "Shield",
+  equipment: "Equipment",
+  consumable: "Consumable",
+  treasure: "Treasure",
+  backpack: "Container",
+  kit: "Kit",
 };
 
 const RARITY_COLORS: Record<string, string> = {
@@ -198,7 +198,7 @@ export function ItemTable({
     estimateSize: (index) => {
       const item = sorted[index];
       const data = fuzzyDataMap.get(item.id);
-      const hasSnippet = !!data?.snippet && !data?.highlighted;
+      const hasSnippet = !!data?.snippet;
       const hasTraits = !!data?.matchedTraits?.size;
       if (hasSnippet && hasTraits) return 72;
       if (hasSnippet || hasTraits) return 56;
@@ -231,51 +231,12 @@ export function ItemTable({
             </button>
           )}
         </span>
-        <MultiSelect
-          placeholder="All Types"
-          options={Object.entries(TYPE_LABELS).map(([value, label]) => ({
-            value,
-            label,
-          }))}
-          selected={typeFilter}
-          onChange={(next) => {
-            onFiltersChange({ typeFilter: next });
-          }}
-        />
-        <MultiSelect
-          placeholder="All Rarities"
-          options={[
-            { value: "common", label: "Common" },
-            { value: "uncommon", label: "Uncommon" },
-            { value: "rare", label: "Rare" },
-            { value: "unique", label: "Unique" },
-          ]}
-          selected={rarityFilter}
-          onChange={(next) => {
-            onFiltersChange({ rarityFilter: next });
-          }}
-        />
-        <input
-          type="number"
-          placeholder="Min Lvl"
-          value={minLevel}
-          onChange={(e) => {
-            onFiltersChange({ minLevel: e.target.value });
-          }}
-          className={styles.levelInput}
-          min={0}
-          max={30}
-        />
-        <input
-          type="number"
-          placeholder="Max Lvl"
-          value={maxLevel}
-          onChange={(e) => {
-            onFiltersChange({ maxLevel: e.target.value });
-          }}
-          className={styles.levelInput}
-          min={0}
-          max={30}
+        <FilterModal
+          typeFilter={typeFilter}
+          rarityFilter={rarityFilter}
+          minLevel={minLevel}
+          maxLevel={maxLevel}
+          onFiltersChange={onFiltersChange}
         />
         <span className={styles.resultCount}>{sorted.length} items</span>
       </div>
@@ -348,7 +309,7 @@ export function ItemTable({
                         {fuzzyData?.highlighted ?? item.name}
                       </a>
                     </ItemTooltipWrapper>
-                    {snippet && !fuzzyData?.highlighted && (
+                    {snippet && (
                       <span className={styles.snippet}>{snippet}</span>
                     )}
                     {matchedTraits && matchedTraits.size > 0 && (

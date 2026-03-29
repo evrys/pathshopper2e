@@ -43,10 +43,6 @@
   color: var(--color-text);
 }
 
-.levelInput {
-  width: 80px;
-}
-
 .resultCount {
   font-size: 0.75rem;
   color: var(--color-text-muted);
