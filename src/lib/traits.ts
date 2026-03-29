@@ -19,3 +19,8 @@ export function traitUrl(trait: string): string | undefined {
   const path = traitUrls?.[trait];
   return path ? `${AON_BASE}${path}` : undefined;
 }
+
+/** Format a trait slug like "deadly-d10" into a title-cased label "Deadly D10". */
+export function formatTrait(trait: string): string {
+  return trait.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}

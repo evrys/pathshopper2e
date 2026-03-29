@@ -4,8 +4,8 @@
  *
  * Usage: node scripts/fetch-missing-aon-urls.mjs > /tmp/found-urls.json
  */
-import { writeFileSync } from "fs";
-import { createRequire } from "module";
+import { writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
 const items = require("../data/items.json");

@@ -4,8 +4,8 @@
  *
  * Usage: node scripts/apply-aon-overrides.mjs
  */
-import { readFileSync, writeFileSync } from "fs";
-import { createRequire } from "module";
+import { readFileSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
 const items = require("../data/items.json");

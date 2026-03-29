@@ -3,7 +3,7 @@ import { type ReactNode, useCallback, useMemo, useRef } from "react";
 import { useFuzzySearch } from "../hooks/useFuzzySearch";
 import { aonUrl } from "../lib/aon";
 import { formatPrice, toCopper } from "../lib/price";
-import { traitUrl } from "../lib/traits";
+import { formatTrait, traitUrl } from "../lib/traits";
 import type { Item } from "../types";
 import styles from "./ItemTable.module.css";
 import { ItemTooltipWrapper } from "./ItemTooltip";
@@ -46,6 +46,40 @@ const RARITY_COLORS: Record<string, string> = {
   rare: "#2060d0",
   unique: "#8020a0",
 };
+
+function TraitBadges({
+  traits,
+  matchedTraits,
+}: {
+  traits: string[];
+  matchedTraits?: Set<string>;
+}) {
+  if (traits.length === 0) return null;
+  return (
+    <span className={styles.traits}>
+      {traits.map((t) => {
+        const label = formatTrait(t);
+        const href = traitUrl(t);
+        const cls = matchedTraits?.has(t) ? styles.traitMatched : styles.trait;
+        return href ? (
+          <a
+            key={t}
+            className={cls}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {label}
+          </a>
+        ) : (
+          <span key={t} className={cls}>
+            {label}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
 
 export function ItemTable({
   items,
@@ -92,32 +126,23 @@ export function ItemTable({
     getTraits,
   );
 
-  // Build Maps from item id → highlighted name / description snippet / matched traits
-  const highlightMap = useMemo(() => {
-    const map = new Map<string, ReactNode>();
-    for (const r of fuzzyResults) {
-      if (r.highlighted) {
-        map.set(r.item.id, r.highlighted);
+  // Build a single lookup map from item id → fuzzy search display data
+  const fuzzyDataMap = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        highlighted: ReactNode | null;
+        snippet: ReactNode | null;
+        matchedTraits: Set<string>;
       }
-    }
-    return map;
-  }, [fuzzyResults]);
-
-  const snippetMap = useMemo(() => {
-    const map = new Map<string, ReactNode>();
+    >();
     for (const r of fuzzyResults) {
-      if (r.secondarySnippet) {
-        map.set(r.item.id, r.secondarySnippet);
-      }
-    }
-    return map;
-  }, [fuzzyResults]);
-
-  const traitMatchMap = useMemo(() => {
-    const map = new Map<string, Set<string>>();
-    for (const r of fuzzyResults) {
-      if (r.matchedTraits.size > 0) {
-        map.set(r.item.id, r.matchedTraits);
+      if (r.highlighted || r.secondarySnippet || r.matchedTraits.size > 0) {
+        map.set(r.item.id, {
+          highlighted: r.highlighted,
+          snippet: r.secondarySnippet,
+          matchedTraits: r.matchedTraits,
+        });
       }
     }
     return map;
@@ -172,7 +197,8 @@ export function ItemTable({
     getScrollElement: () => scrollRef.current,
     estimateSize: (index) => {
       const item = sorted[index];
-      const hasSnippet = snippetMap.has(item.id);
+      const data = fuzzyDataMap.get(item.id);
+      const hasSnippet = !!data?.snippet;
       const hasTraits = item.traits.length > 0;
       if (hasSnippet && hasTraits) return 72;
       if (hasSnippet || hasTraits) return 56;
@@ -296,8 +322,9 @@ export function ItemTable({
           >
             {virtualizer.getVirtualItems().map((virtualRow) => {
               const item = sorted[virtualRow.index];
-              const snippet = snippetMap.get(item.id);
-              const matchedTraits = traitMatchMap.get(item.id);
+              const fuzzyData = fuzzyDataMap.get(item.id);
+              const snippet = fuzzyData?.snippet;
+              const matchedTraits = fuzzyData?.matchedTraits;
               return (
                 <div
                   key={item.id}
@@ -318,40 +345,16 @@ export function ItemTable({
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        {highlightMap.get(item.id) ?? item.name}
+                        {fuzzyData?.highlighted ?? item.name}
                       </a>
                     </ItemTooltipWrapper>
                     {snippet && (
                       <span className={styles.snippet}>{snippet}</span>
                     )}
-                    {item.traits.length > 0 && (
-                      <span className={styles.traits}>
-                        {item.traits.map((t) => {
-                          const label = t
-                            .replace(/-/g, " ")
-                            .replace(/\b\w/g, (c) => c.toUpperCase());
-                          const href = traitUrl(t);
-                          const cls = matchedTraits?.has(t)
-                            ? styles.traitMatched
-                            : styles.trait;
-                          return href ? (
-                            <a
-                              key={t}
-                              className={cls}
-                              href={href}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              {label}
-                            </a>
-                          ) : (
-                            <span key={t} className={cls}>
-                              {label}
-                            </span>
-                          );
-                        })}
-                      </span>
-                    )}
+                    <TraitBadges
+                      traits={item.traits}
+                      matchedTraits={matchedTraits}
+                    />
                   </span>
                   <span>{TYPE_LABELS[item.type] ?? item.type}</span>
                   <span className={styles.level}>{item.level}</span>

@@ -1,61 +1,12 @@
 import Tippy from "@tippyjs/react";
 import type { ReactElement } from "react";
 import "tippy.js/dist/tippy.css";
+import { formatUsage } from "../lib/format";
 import { sanitizeHtml } from "../lib/html";
 import { formatPrice } from "../lib/price";
+import { formatTrait } from "../lib/traits";
 import type { Item } from "../types";
 import styles from "./ItemTooltip.module.css";
-
-// Worn slots that are concatenated without a separator in the raw data.
-const WORN_SLOTS = new Set([
-  "amulet",
-  "anklets",
-  "armbands",
-  "backpack",
-  "belt",
-  "boots",
-  "bracelet",
-  "bracers",
-  "cap",
-  "cape",
-  "circlet",
-  "cloak",
-  "clothing",
-  "collar",
-  "crown",
-  "epaulet",
-  "eyeglasses",
-  "eyepiece",
-  "footwear",
-  "garment",
-  "gloves",
-  "headwear",
-  "horseshoes",
-  "mask",
-  "necklace",
-  "ring",
-  "saddle",
-  "sandles",
-  "shoes",
-]);
-
-/** Format a kebab-case usage string into a human-readable label. */
-function formatUsage(usage: string): string {
-  // Handle "worn<slot>" concatenated values (e.g. "wornbracers" → "worn bracers")
-  if (usage.startsWith("worn")) {
-    const slot = usage.slice("worn".length);
-    if (WORN_SLOTS.has(slot)) {
-      usage = `worn ${slot}`;
-    }
-  }
-
-  return usage.replace(/-/g, " ").replace(/\bwo\b/g, "w/o");
-}
-
-/** Format a trait slug into a human-readable label. */
-function formatTrait(trait: string): string {
-  return trait.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
 
 const RARITY_HEADER_COLORS: Record<string, string> = {
   common: "#5b3a29",

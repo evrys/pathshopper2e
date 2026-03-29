@@ -2,7 +2,7 @@
  * Dumps all items missing AoN URLs as JSON for manual lookup.
  * Usage: node scripts/dump-missing.mjs
  */
-import { createRequire } from "module";
+import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
 const items = require("../data/items.json");
