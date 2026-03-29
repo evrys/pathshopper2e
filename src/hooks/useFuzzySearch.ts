@@ -98,116 +98,170 @@ function buildSnippet(text: string, ranges: number[]): ReactNode[] {
   return parts;
 }
 
+/**
+ * Run a single uFuzzy search and return the ranked item indices with their
+ * highlight ranges.  Returns an empty array when nothing matches.
+ */
+function searchOne(
+  haystack: string[],
+  needle: string,
+): { idx: number; ranges: number[] }[] {
+  const [idxs, info, order] = uf.search(haystack, needle);
+  if (!idxs || idxs.length === 0) return [];
+
+  if (!info || !order) {
+    return idxs.map((idx) => ({ idx, ranges: [] }));
+  }
+
+  return order.map((orderIdx) => ({
+    idx: info.idx[orderIdx],
+    ranges: [...info.ranges[orderIdx]],
+  }));
+}
+
 export interface FuzzyResult<T> {
   item: T;
   /** React nodes with <mark> around matched chars in the name, or null */
   highlighted: ReactNode | null;
   /** A highlighted snippet from the secondary text around the match, or null */
   secondarySnippet: ReactNode | null;
+  /** Trait strings that matched the search needle (case-insensitive substring) */
+  matchedTraits: Set<string>;
 }
 
 /**
- * Fuzzy-search a list of items by a string key, with an optional secondary
- * text field (e.g. description) that participates in matching but is not
- * highlighted.
+ * Fuzzy-search a list of items by name, with an optional secondary text field
+ * (e.g. description) that also participates in matching.
  *
- * Returns items in relevance order when a needle is provided,
- * or all items (with highlighted=null) when needle is empty.
+ * Name matches are always ranked above description-only matches so that e.g.
+ * searching "dragon" returns "Dragonbone Arrowhead" before items that merely
+ * mention "dragon" in their description.
  */
 export function useFuzzySearch<T>(
   items: T[],
   getName: (item: T) => string,
   needle: string,
   getSecondary?: (item: T) => string,
+  getTraits?: (item: T) => string[],
 ): FuzzyResult<T>[] {
-  /** Just the names — used for highlighting. */
   const names = useMemo(() => items.map(getName), [items, getName]);
-
-  /**
-   * Combined haystack for uFuzzy: "name\nsecondaryText".
-   * The newline prevents cross-field fuzzy bleeding.
-   */
-  const haystack = useMemo(
-    () =>
-      getSecondary
-        ? items.map((item, i) => `${names[i]}\n${getSecondary(item)}`)
-        : names,
-    [items, names, getSecondary],
+  const secondaries = useMemo(
+    () => (getSecondary ? items.map(getSecondary) : []),
+    [items, getSecondary],
   );
 
   return useMemo(() => {
     const trimmed = needle.trim();
+    const emptyTraits = new Set<string>();
 
     if (!trimmed) {
       return items.map((item) => ({
         item,
         highlighted: null,
         secondarySnippet: null,
+        matchedTraits: emptyTraits,
       }));
     }
 
-    const [idxs, info, order] = uf.search(haystack, trimmed);
+    const lowerNeedle = trimmed.toLowerCase();
 
-    if (!idxs || idxs.length === 0) {
-      return [];
-    }
-
-    // When info/order are available, use ranked results with highlights.
-    // When null (too many results for ranking), fall back to unranked filter matches.
-    if (!info || !order) {
-      return idxs.map((idx) => ({
-        item: items[idx],
-        highlighted: null,
-        secondarySnippet: null,
-      }));
-    }
-
-    const results: FuzzyResult<T>[] = [];
-
-    for (const orderIdx of order) {
-      const itemIdx = info.idx[orderIdx];
-      const ranges = info.ranges[orderIdx];
-      const item = items[itemIdx];
-      const name = names[itemIdx];
-      const nameLen = name.length;
-      // +1 to skip the \n separator
-      const secondaryOffset = nameLen + 1;
-
-      // Split ranges into name vs secondary portions
-      const nameRanges: number[] = [];
-      const secRanges: number[] = [];
-      for (let i = 0; i < ranges.length; i += 2) {
-        const start = ranges[i];
-        const end = ranges[i + 1];
-        if (start >= secondaryOffset) {
-          // Entirely in secondary text — shift to secondary-local coords
-          secRanges.push(start - secondaryOffset, end - secondaryOffset);
-        } else if (end <= nameLen) {
-          nameRanges.push(start, end);
-        } else {
-          // Spans the boundary — clamp each side
-          nameRanges.push(start, nameLen);
-          secRanges.push(0, end - secondaryOffset);
+    /** Return the set of traits that match the needle for a given item. */
+    function traitMatches(idx: number): Set<string> {
+      if (!getTraits) return emptyTraits;
+      const traits = getTraits(items[idx]);
+      const matched = new Set<string>();
+      for (const t of traits) {
+        if (t.toLowerCase().includes(lowerNeedle)) {
+          matched.add(t);
         }
       }
-
-      // ── Name highlighting ──
-      const merged = mergeAdjacentRanges(nameRanges, name);
-      let highlighted: ReactNode | null = null;
-      if (merged.length > 0) {
-        highlighted = highlightRanges(name, merged);
-      }
-
-      // ── Secondary snippet ──
-      let secondarySnippet: ReactNode | null = null;
-      if (getSecondary && secRanges.length > 0) {
-        const secondary = getSecondary(item);
-        secondarySnippet = buildSnippet(secondary, secRanges);
-      }
-
-      results.push({ item, highlighted, secondarySnippet });
+      return matched;
     }
 
+    // 1) Search names
+    const nameHits = searchOne(names, trimmed);
+
+    // 2) Search descriptions (if available)
+    const secHits =
+      secondaries.length > 0 ? searchOne(secondaries, trimmed) : [];
+
+    // Build a quick lookup: idx → secHit
+    const secHitMap = new Map(secHits.map((h) => [h.idx, h]));
+
+    // Classify name hits as strict (substring) vs fuzzy
+    const strictNameHits: typeof nameHits = [];
+    const fuzzyNameHits: typeof nameHits = [];
+    for (const hit of nameHits) {
+      if (names[hit.idx].toLowerCase().includes(lowerNeedle)) {
+        strictNameHits.push(hit);
+      } else {
+        fuzzyNameHits.push(hit);
+      }
+    }
+
+    // Classify description-only hits as strict vs fuzzy
+    const nameHitIdxs = new Set(nameHits.map((h) => h.idx));
+    const strictSecHits: typeof secHits = [];
+    const fuzzySecHits: typeof secHits = [];
+    for (const hit of secHits) {
+      if (nameHitIdxs.has(hit.idx)) continue; // already covered by name
+      if (secondaries[hit.idx].toLowerCase().includes(lowerNeedle)) {
+        strictSecHits.push(hit);
+      } else {
+        fuzzySecHits.push(hit);
+      }
+    }
+
+    // 3) Merge in priority order:
+    //    strict name → strict description-only → fuzzy name → fuzzy description-only
+    const seen = new Set<number>();
+    const results: FuzzyResult<T>[] = [];
+
+    function addNameHit(hit: { idx: number; ranges: number[] }) {
+      seen.add(hit.idx);
+      const name = names[hit.idx];
+      const merged = mergeAdjacentRanges(hit.ranges, name);
+      const highlighted =
+        merged.length > 0 ? highlightRanges(name, merged) : null;
+
+      let secondarySnippet: ReactNode | null = null;
+      const secHit = secHitMap.get(hit.idx);
+      if (secHit && secHit.ranges.length > 0) {
+        secondarySnippet = buildSnippet(secondaries[hit.idx], secHit.ranges);
+      }
+
+      const matchedTraits = traitMatches(hit.idx);
+      results.push({
+        item: items[hit.idx],
+        highlighted,
+        secondarySnippet,
+        matchedTraits,
+      });
+    }
+
+    function addSecHit(hit: { idx: number; ranges: number[] }) {
+      if (seen.has(hit.idx)) return;
+      seen.add(hit.idx);
+
+      let secondarySnippet: ReactNode | null = null;
+      if (hit.ranges.length > 0) {
+        secondarySnippet = buildSnippet(secondaries[hit.idx], hit.ranges);
+      }
+
+      const matchedTraits = traitMatches(hit.idx);
+      results.push({
+        item: items[hit.idx],
+        highlighted: null,
+        secondarySnippet,
+        matchedTraits,
+      });
+    }
+
+    for (const hit of strictNameHits) addNameHit(hit);
+    for (const hit of strictSecHits) addSecHit(hit);
+    for (const hit of fuzzyNameHits) addNameHit(hit);
+    for (const hit of fuzzySecHits) addSecHit(hit);
+
     return results;
-  }, [items, names, haystack, needle, getSecondary]);
+  }, [items, names, secondaries, needle, getTraits]);
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { stripHtml } from "../lib/html";
+import { loadTraitUrls } from "../lib/traits";
 import type { Item } from "../types";
 
 let cachedItems: Item[] | null = null;
@@ -11,13 +12,18 @@ export function useItems() {
   useEffect(() => {
     if (cachedItems) return;
 
-    fetch("/data/items.json")
-      .then((res) => res.json())
-      .then((data: Item[]) => {
-        // Pre-strip HTML descriptions once so search never has to redo it.
-        for (const item of data) {
-          (item as Item).plainDescription = stripHtml(item.description);
-        }
+    Promise.all([
+      fetch("/data/items.json")
+        .then((res) => res.json())
+        .then((data: Item[]) => {
+          for (const item of data) {
+            (item as Item).plainDescription = stripHtml(item.description);
+          }
+          return data;
+        }),
+      loadTraitUrls(),
+    ])
+      .then(([data]) => {
         cachedItems = data;
         setItems(data);
         setLoading(false);

@@ -3,6 +3,7 @@ import { type ReactNode, useCallback, useMemo, useRef } from "react";
 import { useFuzzySearch } from "../hooks/useFuzzySearch";
 import { aonUrl } from "../lib/aon";
 import { formatPrice, toCopper } from "../lib/price";
+import { traitUrl } from "../lib/traits";
 import type { Item } from "../types";
 import styles from "./ItemTable.module.css";
 import { ItemTooltipWrapper } from "./ItemTooltip";
@@ -75,15 +76,23 @@ export function ItemTable({
   }, [items, typeFilter, rarityFilter, minLevel, maxLevel]);
 
   const getName = useCallback((item: Item) => item.name, []);
-  const getDescription = useCallback((item: Item) => item.plainDescription, []);
+  const getSecondary = useCallback(
+    (item: Item) =>
+      item.traits.length > 0
+        ? `${item.plainDescription} ${item.traits.join(" ")}`
+        : item.plainDescription,
+    [],
+  );
+  const getTraits = useCallback((item: Item) => item.traits, []);
   const fuzzyResults = useFuzzySearch(
     preFiltered,
     getName,
     search,
-    getDescription,
+    getSecondary,
+    getTraits,
   );
 
-  // Build Maps from item id → highlighted name / description snippet
+  // Build Maps from item id → highlighted name / description snippet / matched traits
   const highlightMap = useMemo(() => {
     const map = new Map<string, ReactNode>();
     for (const r of fuzzyResults) {
@@ -99,6 +108,16 @@ export function ItemTable({
     for (const r of fuzzyResults) {
       if (r.secondarySnippet) {
         map.set(r.item.id, r.secondarySnippet);
+      }
+    }
+    return map;
+  }, [fuzzyResults]);
+
+  const traitMatchMap = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    for (const r of fuzzyResults) {
+      if (r.matchedTraits.size > 0) {
+        map.set(r.item.id, r.matchedTraits);
       }
     }
     return map;
@@ -151,22 +170,41 @@ export function ItemTable({
   const virtualizer = useVirtualizer({
     count: sorted.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: (index) => (snippetMap.has(sorted[index].id) ? 56 : 36),
+    estimateSize: (index) => {
+      const item = sorted[index];
+      const hasSnippet = snippetMap.has(item.id);
+      const hasTraits = item.traits.length > 0;
+      if (hasSnippet && hasTraits) return 72;
+      if (hasSnippet || hasTraits) return 56;
+      return 36;
+    },
     overscan: 20,
   });
 
   return (
     <div className={styles.container}>
       <div className={styles.filters}>
-        <input
-          type="text"
-          placeholder="Search items..."
-          value={search}
-          onChange={(e) => {
-            onFiltersChange({ search: e.target.value });
-          }}
-          className={styles.searchInput}
-        />
+        <span className={styles.searchWrap}>
+          <input
+            type="text"
+            placeholder="Search items..."
+            value={search}
+            onChange={(e) => {
+              onFiltersChange({ search: e.target.value });
+            }}
+            className={styles.searchInput}
+          />
+          {search && (
+            <button
+              type="button"
+              className={styles.searchClear}
+              onClick={() => onFiltersChange({ search: "" })}
+              aria-label="Clear search"
+            >
+              ✕
+            </button>
+          )}
+        </span>
         <MultiSelect
           placeholder="All Types"
           options={Object.entries(TYPE_LABELS).map(([value, label]) => ({
@@ -259,6 +297,7 @@ export function ItemTable({
             {virtualizer.getVirtualItems().map((virtualRow) => {
               const item = sorted[virtualRow.index];
               const snippet = snippetMap.get(item.id);
+              const matchedTraits = traitMatchMap.get(item.id);
               return (
                 <div
                   key={item.id}
@@ -284,6 +323,34 @@ export function ItemTable({
                     </ItemTooltipWrapper>
                     {snippet && (
                       <span className={styles.snippet}>{snippet}</span>
+                    )}
+                    {item.traits.length > 0 && (
+                      <span className={styles.traits}>
+                        {item.traits.map((t) => {
+                          const label = t
+                            .replace(/-/g, " ")
+                            .replace(/\b\w/g, (c) => c.toUpperCase());
+                          const href = traitUrl(t);
+                          const cls = matchedTraits?.has(t)
+                            ? styles.traitMatched
+                            : styles.trait;
+                          return href ? (
+                            <a
+                              key={t}
+                              className={cls}
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {label}
+                            </a>
+                          ) : (
+                            <span key={t} className={cls}>
+                              {label}
+                            </span>
+                          );
+                        })}
+                      </span>
                     )}
                   </span>
                   <span>{TYPE_LABELS[item.type] ?? item.type}</span>
