@@ -38,7 +38,6 @@ function App() {
     addItem,
     removeItem,
     setQuantity,
-    clearCart,
     replaceCart,
   } = useCart();
 
@@ -134,7 +133,6 @@ function App() {
             totalItems={totalItems}
             onSetQuantity={setQuantity}
             onRemoveItem={removeItem}
-            onClear={clearCart}
           />
         </aside>
       </div>

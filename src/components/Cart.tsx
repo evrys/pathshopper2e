@@ -12,7 +12,6 @@ interface CartProps {
   totalItems: number;
   onSetQuantity: (itemId: string, quantity: number) => void;
   onRemoveItem: (itemId: string) => void;
-  onClear: () => void;
 }
 
 function ShareModal({ onClose }: { onClose: () => void }) {
@@ -74,7 +73,6 @@ export function Cart({
   totalItems,
   onSetQuantity,
   onRemoveItem,
-  onClear,
 }: CartProps) {
   const [showShare, setShowShare] = useState(false);
 
@@ -90,9 +88,6 @@ export function Cart({
               onClick={() => setShowShare(true)}
             >
               Share
-            </button>
-            <button type="button" className={styles.clearBtn} onClick={onClear}>
-              Clear
             </button>
           </div>
         )}
