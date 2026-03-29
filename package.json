@@ -10,7 +10,8 @@
     "biome": "biome check --error-on-warnings",
     "format": "biome format --write .",
     "preview": "vite preview",
-    "fetch-data": "tsx scripts/fetch-equipment.ts",
+    "fetch-data": "tsx scripts/fetch-data.ts",
+    "process-data": "tsx scripts/process-items.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "checks": "pnpm format && pnpm tsc && pnpm biome && pnpm test"

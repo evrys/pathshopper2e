@@ -10,6 +10,7 @@ describe("URL state serialization", () => {
     types: new Set<string>(),
     rarities: new Set(["common", "uncommon"]),
     remaster: new Set(["remastered"]),
+    classes: new Set<string>(),
     minLevel: "",
     maxLevel: "",
     sort: "name:asc",
@@ -31,7 +32,7 @@ describe("URL state serialization", () => {
         ...defaults,
         types: new Set(["weapon", "armor"]),
       });
-      expect(hash).toContain("type=armor%2Cweapon");
+      expect(hash).toContain("type=armor+weapon");
     });
 
     it("serializes non-default rarity filter", () => {
@@ -57,6 +58,18 @@ describe("URL state serialization", () => {
 
     it("omits remaster when it matches defaults", () => {
       expect(serialize(defaults)).not.toContain("remaster");
+    });
+
+    it("serializes class filter", () => {
+      const hash = serialize({
+        ...defaults,
+        classes: new Set(["fighter", "ranger"]),
+      });
+      expect(hash).toContain("class=fighter+ranger");
+    });
+
+    it("omits class when empty", () => {
+      expect(serialize(defaults)).not.toContain("class");
     });
 
     it("serializes level range", () => {
@@ -112,12 +125,12 @@ describe("URL state serialization", () => {
     });
 
     it("parses type filter", () => {
-      const state = deserialize("#type=weapon%2Carmor");
+      const state = deserialize("#type=weapon+armor");
       expect(state.types).toEqual(new Set(["weapon", "armor"]));
     });
 
     it("parses rarity filter", () => {
-      const state = deserialize("#rarity=rare%2Cunique");
+      const state = deserialize("#rarity=rare+unique");
       expect(state.rarities).toEqual(new Set(["rare", "unique"]));
     });
 
@@ -127,7 +140,7 @@ describe("URL state serialization", () => {
     });
 
     it("parses remaster filter", () => {
-      const state = deserialize("#remaster=legacy%2Cremastered");
+      const state = deserialize("#remaster=legacy+remastered");
       expect(state.remaster).toEqual(new Set(["legacy", "remastered"]));
     });
 
@@ -139,6 +152,16 @@ describe("URL state serialization", () => {
     it("treats empty remaster param as all content", () => {
       const state = deserialize("#remaster=");
       expect(state.remaster.size).toBe(0);
+    });
+
+    it("parses class filter", () => {
+      const state = deserialize("#class=fighter+ranger");
+      expect(state.classes).toEqual(new Set(["fighter", "ranger"]));
+    });
+
+    it("returns empty class set when absent", () => {
+      const state = deserialize("");
+      expect(state.classes.size).toBe(0);
     });
 
     it("parses level range", () => {
@@ -153,7 +176,7 @@ describe("URL state serialization", () => {
     });
 
     it("parses cart with mixed quantities", () => {
-      const state = deserialize("#cart=sword-1%3A2%2Cpotion-1");
+      const state = deserialize("#cart=sword-1%3A2+potion-1");
       expect(state.cart.get("sword-1")).toBe(2);
       expect(state.cart.get("potion-1")).toBe(1);
     });
@@ -171,6 +194,7 @@ describe("URL state serialization", () => {
         types: new Set(["consumable"]),
         rarities: new Set(["common"]),
         remaster: new Set(["legacy"]),
+        classes: new Set(["cleric", "druid"]),
         minLevel: "1",
         maxLevel: "5",
         sort: "level:desc",
@@ -187,6 +211,7 @@ describe("URL state serialization", () => {
       expect(parsed.types).toEqual(state.types);
       expect(parsed.rarities).toEqual(state.rarities);
       expect(parsed.remaster).toEqual(state.remaster);
+      expect(parsed.classes).toEqual(state.classes);
       expect(parsed.minLevel).toBe(state.minLevel);
       expect(parsed.maxLevel).toBe(state.maxLevel);
       expect(parsed.sort).toBe(state.sort);

@@ -5,6 +5,9 @@ export interface Price {
   cp?: number;
 }
 
+/** Item as stored in JSON (before runtime enrichment) */
+export type JsonItem = Omit<Item, "plainDescription">;
+
 /** A Pathfinder 2e equipment item */
 export interface Item {
   /** Unique identifier from Foundry */
@@ -37,4 +40,6 @@ export interface Item {
   plainDescription: string;
   /** URL path on Archives of Nethys, e.g. "/Weapons.aspx?ID=386" */
   aonUrl?: string;
+  /** Classes this item is proficiency-appropriate for (omitted = all classes) */
+  suggestedClasses?: string[];
 }

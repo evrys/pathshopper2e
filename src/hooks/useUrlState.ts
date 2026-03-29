@@ -9,6 +9,7 @@ export interface UrlState {
   types: Set<string>;
   rarities: Set<string>;
   remaster: Set<string>;
+  classes: Set<string>;
   minLevel: string;
   maxLevel: string;
   sort: string; // "field:dir", e.g. "name:asc"
@@ -24,6 +25,7 @@ const DEFAULTS: UrlState = {
   types: new Set(),
   rarities: DEFAULT_RARITIES,
   remaster: DEFAULT_REMASTER,
+  classes: new Set(),
   minLevel: "",
   maxLevel: "",
   sort: "name:asc",
@@ -44,11 +46,13 @@ function serialize(state: UrlState): string {
 
   if (state.search) params.set("q", state.search);
   if (state.types.size > 0)
-    params.set("type", [...state.types].sort().join(","));
+    params.set("type", [...state.types].sort().join("+"));
   if (!setsEqual(state.rarities, DEFAULT_RARITIES))
-    params.set("rarity", [...state.rarities].sort().join(","));
+    params.set("rarity", [...state.rarities].sort().join("+"));
   if (!setsEqual(state.remaster, DEFAULT_REMASTER))
-    params.set("remaster", [...state.remaster].sort().join(","));
+    params.set("remaster", [...state.remaster].sort().join("+"));
+  if (state.classes.size > 0)
+    params.set("class", [...state.classes].sort().join("+"));
   if (state.minLevel) params.set("minlvl", state.minLevel);
   if (state.maxLevel) params.set("maxlvl", state.maxLevel);
   if (state.sort !== DEFAULTS.sort) params.set("sort", state.sort);
@@ -56,23 +60,31 @@ function serialize(state: UrlState): string {
   if (state.cart.size > 0) {
     const cartStr = [...state.cart]
       .map(([id, qty]) => (qty === 1 ? id : `${id}:${qty}`))
-      .join(",");
+      .join("+");
     params.set("cart", cartStr);
   }
 
-  const str = params.toString();
+  // Build the hash ourselves to avoid URLSearchParams encoding `+` as `%2B`
+  const parts: string[] = [];
+  for (const [key, value] of params) {
+    parts.push(
+      `${encodeURIComponent(key)}=${encodeURIComponent(value).replace(/%2B/gi, "+")}`,
+    );
+  }
+  const str = parts.join("&");
   return str ? `#${str}` : "";
 }
 
 /** Parse URL hash string back into state. */
 function deserialize(hash: string): UrlState {
   const str = hash.startsWith("#") ? hash.slice(1) : hash;
-  const params = new URLSearchParams(str);
+  // Replace unencoded `+` with `%2B` before URLSearchParams parses them as spaces
+  const params = new URLSearchParams(str.replace(/\+/g, "%2B"));
 
   const search = params.get("q") ?? "";
 
   const typeStr = params.get("type");
-  const types = typeStr ? new Set(typeStr.split(",")) : new Set<string>();
+  const types = typeStr ? new Set(typeStr.split("+")) : new Set<string>();
 
   const rarityStr = params.get("rarity");
   // If rarity param is absent, use defaults. If present but empty, means "all rarities" (empty set).
@@ -81,7 +93,7 @@ function deserialize(hash: string): UrlState {
       ? new Set(DEFAULT_RARITIES)
       : rarityStr === ""
         ? new Set<string>()
-        : new Set(rarityStr.split(","));
+        : new Set(rarityStr.split("+"));
 
   const remasterStr = params.get("remaster");
   // If remaster param is absent, use defaults. If present but empty, means "all content" (empty set).
@@ -90,7 +102,10 @@ function deserialize(hash: string): UrlState {
       ? new Set(DEFAULT_REMASTER)
       : remasterStr === ""
         ? new Set<string>()
-        : new Set(remasterStr.split(","));
+        : new Set(remasterStr.split("+"));
+
+  const classStr = params.get("class");
+  const classes = classStr ? new Set(classStr.split("+")) : new Set<string>();
 
   const minLevel = params.get("minlvl") ?? "";
   const maxLevel = params.get("maxlvl") ?? "";
@@ -99,7 +114,7 @@ function deserialize(hash: string): UrlState {
   const cart = new Map<string, number>();
   const cartStr = params.get("cart");
   if (cartStr) {
-    for (const entry of cartStr.split(",")) {
+    for (const entry of cartStr.split("+")) {
       const colonIdx = entry.lastIndexOf(":");
       if (colonIdx === -1) {
         cart.set(entry, 1);
@@ -117,7 +132,17 @@ function deserialize(hash: string): UrlState {
     }
   }
 
-  return { search, types, rarities, remaster, minLevel, maxLevel, sort, cart };
+  return {
+    search,
+    types,
+    rarities,
+    remaster,
+    classes,
+    minLevel,
+    maxLevel,
+    sort,
+    cart,
+  };
 }
 
 /** Subscribe to hash changes. */
