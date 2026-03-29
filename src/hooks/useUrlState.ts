@@ -8,6 +8,7 @@ export interface UrlState {
   search: string;
   types: Set<string>;
   rarities: Set<string>;
+  remaster: Set<string>;
   minLevel: string;
   maxLevel: string;
   sort: string; // "field:dir", e.g. "name:asc"
@@ -16,11 +17,13 @@ export interface UrlState {
 }
 
 const DEFAULT_RARITIES = new Set(["common", "uncommon"]);
+const DEFAULT_REMASTER = new Set(["remastered"]);
 
 const DEFAULTS: UrlState = {
   search: "",
   types: new Set(),
   rarities: DEFAULT_RARITIES,
+  remaster: DEFAULT_REMASTER,
   minLevel: "",
   maxLevel: "",
   sort: "name:asc",
@@ -44,6 +47,8 @@ function serialize(state: UrlState): string {
     params.set("type", [...state.types].sort().join(","));
   if (!setsEqual(state.rarities, DEFAULT_RARITIES))
     params.set("rarity", [...state.rarities].sort().join(","));
+  if (!setsEqual(state.remaster, DEFAULT_REMASTER))
+    params.set("remaster", [...state.remaster].sort().join(","));
   if (state.minLevel) params.set("minlvl", state.minLevel);
   if (state.maxLevel) params.set("maxlvl", state.maxLevel);
   if (state.sort !== DEFAULTS.sort) params.set("sort", state.sort);
@@ -78,6 +83,15 @@ function deserialize(hash: string): UrlState {
         ? new Set<string>()
         : new Set(rarityStr.split(","));
 
+  const remasterStr = params.get("remaster");
+  // If remaster param is absent, use defaults. If present but empty, means "all content" (empty set).
+  const remaster =
+    remasterStr === null
+      ? new Set(DEFAULT_REMASTER)
+      : remasterStr === ""
+        ? new Set<string>()
+        : new Set(remasterStr.split(","));
+
   const minLevel = params.get("minlvl") ?? "";
   const maxLevel = params.get("maxlvl") ?? "";
   const sort = params.get("sort") ?? "name:asc";
@@ -103,7 +117,7 @@ function deserialize(hash: string): UrlState {
     }
   }
 
-  return { search, types, rarities, minLevel, maxLevel, sort, cart };
+  return { search, types, rarities, remaster, minLevel, maxLevel, sort, cart };
 }
 
 /** Subscribe to hash changes. */

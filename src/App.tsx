@@ -77,6 +77,7 @@ function App() {
     search: urlState.search,
     typeFilter: urlState.types,
     rarityFilter: urlState.rarities,
+    remasterFilter: urlState.remaster,
     minLevel: urlState.minLevel,
     maxLevel: urlState.maxLevel,
     sortField: sortField ?? "name",
@@ -89,6 +90,7 @@ function App() {
       if ("search" in partial) update.search = partial.search;
       if ("typeFilter" in partial) update.types = partial.typeFilter;
       if ("rarityFilter" in partial) update.rarities = partial.rarityFilter;
+      if ("remasterFilter" in partial) update.remaster = partial.remasterFilter;
       if ("minLevel" in partial) update.minLevel = partial.minLevel;
       if ("maxLevel" in partial) update.maxLevel = partial.maxLevel;
       if ("sortField" in partial || "sortDir" in partial) {

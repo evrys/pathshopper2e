@@ -9,13 +9,14 @@ import { FilterModal } from "./FilterModal";
 import styles from "./ItemTable.module.css";
 import { ItemTooltipWrapper } from "./ItemTooltip";
 
-type SortField = "name" | "level" | "price" | "type";
+type SortField = "name" | "level" | "price" | "type" | "rarity";
 type SortDir = "asc" | "desc";
 
 export interface FilterState {
   search: string;
   typeFilter: Set<string>;
   rarityFilter: Set<string>;
+  remasterFilter: Set<string>;
   minLevel: string;
   maxLevel: string;
   sortField: SortField;
@@ -45,6 +46,13 @@ const RARITY_COLORS: Record<string, string> = {
   uncommon: "#e07020",
   rare: "#2060d0",
   unique: "#8020a0",
+};
+
+const RARITY_ORDER: Record<string, number> = {
+  common: 0,
+  uncommon: 1,
+  rare: 2,
+  unique: 3,
 };
 
 function TraitBadges({
@@ -91,6 +99,7 @@ export function ItemTable({
     search,
     typeFilter,
     rarityFilter,
+    remasterFilter,
     minLevel,
     maxLevel,
     sortField,
@@ -104,10 +113,15 @@ export function ItemTable({
     return items.filter((item) => {
       if (typeFilter.size > 0 && !typeFilter.has(item.type)) return false;
       if (rarityFilter.size > 0 && !rarityFilter.has(item.rarity)) return false;
+      if (
+        remasterFilter.size > 0 &&
+        !remasterFilter.has(item.remaster ? "remastered" : "legacy")
+      )
+        return false;
       if (item.level < minLvl || item.level > maxLvl) return false;
       return true;
     });
-  }, [items, typeFilter, rarityFilter, minLevel, maxLevel]);
+  }, [items, typeFilter, rarityFilter, remasterFilter, minLevel, maxLevel]);
 
   const getName = useCallback((item: Item) => item.name, []);
   const getSecondary = useCallback(
@@ -170,6 +184,11 @@ export function ItemTable({
           return dir * (toCopper(a.price) - toCopper(b.price));
         case "type":
           return dir * a.type.localeCompare(b.type);
+        case "rarity":
+          return (
+            dir *
+            ((RARITY_ORDER[a.rarity] ?? 99) - (RARITY_ORDER[b.rarity] ?? 99))
+          );
         default:
           return 0;
       }
@@ -234,6 +253,7 @@ export function ItemTable({
         <FilterModal
           typeFilter={typeFilter}
           rarityFilter={rarityFilter}
+          remasterFilter={remasterFilter}
           minLevel={minLevel}
           maxLevel={maxLevel}
           onFiltersChange={onFiltersChange}
@@ -271,7 +291,13 @@ export function ItemTable({
           >
             Price{sortIndicator("price")}
           </button>
-          <span>Rarity</span>
+          <button
+            type="button"
+            className={styles.sortable}
+            onClick={() => handleSort("rarity")}
+          >
+            Rarity{sortIndicator("rarity")}
+          </button>
           <span />
         </div>
 

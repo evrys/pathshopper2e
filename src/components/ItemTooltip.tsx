@@ -82,15 +82,12 @@ export function ItemTooltipWrapper({
   return (
     <Tippy
       delay={[300, 0]}
-      placement="bottom-start"
-      interactive
       appendTo={() => document.body}
-      maxWidth={420}
+      maxWidth={480}
       content={<TooltipContent item={item} />}
       popperOptions={{
         modifiers: [
           { name: "flip", options: { fallbackPlacements: ["top-start"] } },
-          { name: "preventOverflow", options: { padding: 8 } },
         ],
       }}
     >

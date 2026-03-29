@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import styles from "./FilterModal.module.css";
 import { MultiSelect } from "./MultiSelect";
 
+const DEFAULT_RARITIES = new Set(["common", "uncommon"]);
+const DEFAULT_REMASTER = new Set(["remastered"]);
+
 const TYPE_LABELS: Record<string, string> = {
   weapon: "⚔️ Weapon",
   armor: "🛡️ Armor",
@@ -20,14 +23,21 @@ const RARITY_OPTIONS = [
   { value: "unique", label: "Unique" },
 ];
 
+const REMASTER_OPTIONS = [
+  { value: "remastered", label: "Remastered" },
+  { value: "legacy", label: "Legacy" },
+];
+
 interface FilterModalProps {
   typeFilter: Set<string>;
   rarityFilter: Set<string>;
+  remasterFilter: Set<string>;
   minLevel: string;
   maxLevel: string;
   onFiltersChange: (filters: {
     typeFilter?: Set<string>;
     rarityFilter?: Set<string>;
+    remasterFilter?: Set<string>;
     minLevel?: string;
     maxLevel?: string;
   }) => void;
@@ -36,6 +46,7 @@ interface FilterModalProps {
 export function FilterModal({
   typeFilter,
   rarityFilter,
+  remasterFilter,
   minLevel,
   maxLevel,
   onFiltersChange,
@@ -46,6 +57,7 @@ export function FilterModal({
   const activeCount =
     (typeFilter.size > 0 ? 1 : 0) +
     (rarityFilter.size > 0 ? 1 : 0) +
+    (remasterFilter.size > 0 ? 1 : 0) +
     (minLevel ? 1 : 0) +
     (maxLevel ? 1 : 0);
 
@@ -63,6 +75,17 @@ export function FilterModal({
     onFiltersChange({
       typeFilter: new Set<string>(),
       rarityFilter: new Set<string>(),
+      remasterFilter: new Set<string>(),
+      minLevel: "",
+      maxLevel: "",
+    });
+  }
+
+  function handleReset() {
+    onFiltersChange({
+      typeFilter: new Set<string>(),
+      rarityFilter: new Set(DEFAULT_RARITIES),
+      remasterFilter: new Set(DEFAULT_REMASTER),
       minLevel: "",
       maxLevel: "",
     });
@@ -130,6 +153,16 @@ export function FilterModal({
               </div>
 
               <div className={styles.filterGroup}>
+                <span className={styles.groupLabel}>Content</span>
+                <MultiSelect
+                  placeholder="All Content"
+                  options={REMASTER_OPTIONS}
+                  selected={remasterFilter}
+                  onChange={(next) => onFiltersChange({ remasterFilter: next })}
+                />
+              </div>
+
+              <div className={styles.filterGroup}>
                 <span className={styles.groupLabel}>Level Range</span>
                 <div className={styles.levelRow}>
                   <input
@@ -166,9 +199,16 @@ export function FilterModal({
                   className={styles.clearBtn}
                   onClick={handleClear}
                 >
-                  Clear all
+                  Clear
                 </button>
               )}
+              <button
+                type="button"
+                className={styles.clearBtn}
+                onClick={handleReset}
+              >
+                Reset
+              </button>
               <button
                 type="button"
                 className={styles.doneBtn}
