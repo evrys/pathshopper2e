@@ -130,6 +130,157 @@ export interface FuzzyResult<T> {
 }
 
 /**
+ * Core ranking logic extracted as a pure function for testability.
+ *
+ * Priority order:
+ *   strict name → trait-only → fuzzy name → strict desc → fuzzy desc
+ */
+export function rankSearch<T>(
+  items: T[],
+  names: string[],
+  secondaries: string[],
+  needle: string,
+  getTraits?: (item: T) => string[],
+): FuzzyResult<T>[] {
+  const trimmed = needle.trim();
+  const emptyTraits = new Set<string>();
+
+  if (!trimmed) {
+    return items.map((item) => ({
+      item,
+      highlighted: null,
+      secondarySnippet: null,
+      matchedTraits: emptyTraits,
+    }));
+  }
+
+  const lowerNeedle = trimmed.toLowerCase();
+
+  /** Return the set of traits that match the needle for a given item. */
+  function traitMatches(idx: number): Set<string> {
+    if (!getTraits) return emptyTraits;
+    const traits = getTraits(items[idx]);
+    const matched = new Set<string>();
+    for (const t of traits) {
+      // Normalize hyphens so "deadly d10" matches trait slug "deadly-d10"
+      if (t.toLowerCase().replace(/-/g, " ").includes(lowerNeedle)) {
+        matched.add(t);
+      }
+    }
+    return matched;
+  }
+
+  // 1) Search names
+  const nameHits = searchOne(names, trimmed);
+
+  // 2) Search descriptions (if available)
+  const secHits = secondaries.length > 0 ? searchOne(secondaries, trimmed) : [];
+
+  // Build a quick lookup: idx → secHit
+  const secHitMap = new Map(secHits.map((h) => [h.idx, h]));
+
+  // Classify name hits as strict (substring) vs fuzzy
+  const strictNameHits: typeof nameHits = [];
+  const fuzzyNameHits: typeof nameHits = [];
+  for (const hit of nameHits) {
+    if (names[hit.idx].toLowerCase().includes(lowerNeedle)) {
+      strictNameHits.push(hit);
+    } else {
+      fuzzyNameHits.push(hit);
+    }
+  }
+
+  // Classify description-only hits as strict vs fuzzy
+  const nameHitIdxs = new Set(nameHits.map((h) => h.idx));
+  const strictSecHits: typeof secHits = [];
+  const fuzzySecHits: typeof secHits = [];
+  for (const hit of secHits) {
+    if (nameHitIdxs.has(hit.idx)) continue; // already covered by name
+    if (secondaries[hit.idx].toLowerCase().includes(lowerNeedle)) {
+      strictSecHits.push(hit);
+    } else {
+      fuzzySecHits.push(hit);
+    }
+  }
+
+  // 3) Collect trait-only matches (items not matched by name or description)
+  const traitOnlyIdxs: number[] = [];
+  if (getTraits) {
+    const nameOrSecIdxs = new Set([
+      ...nameHits.map((h) => h.idx),
+      ...secHits.map((h) => h.idx),
+    ]);
+    for (let i = 0; i < items.length; i++) {
+      if (nameOrSecIdxs.has(i)) continue;
+      if (traitMatches(i).size > 0) {
+        traitOnlyIdxs.push(i);
+      }
+    }
+  }
+
+  // 4) Merge in priority order:
+  //    strict name → trait-only → fuzzy name → strict desc → fuzzy desc
+  const seen = new Set<number>();
+  const results: FuzzyResult<T>[] = [];
+
+  function addNameHit(hit: { idx: number; ranges: number[] }) {
+    seen.add(hit.idx);
+    const name = names[hit.idx];
+    const merged = mergeAdjacentRanges(hit.ranges, name);
+    const highlighted =
+      merged.length > 0 ? highlightRanges(name, merged) : null;
+
+    let secondarySnippet: ReactNode | null = null;
+    const secHit = secHitMap.get(hit.idx);
+    if (secHit && secHit.ranges.length > 0) {
+      secondarySnippet = buildSnippet(secondaries[hit.idx], secHit.ranges);
+    }
+
+    const matchedTraits = traitMatches(hit.idx);
+    results.push({
+      item: items[hit.idx],
+      highlighted,
+      secondarySnippet,
+      matchedTraits,
+    });
+  }
+
+  function addSecHit(hit: { idx: number; ranges: number[] }) {
+    if (seen.has(hit.idx)) return;
+    seen.add(hit.idx);
+
+    let secondarySnippet: ReactNode | null = null;
+    if (hit.ranges.length > 0) {
+      secondarySnippet = buildSnippet(secondaries[hit.idx], hit.ranges);
+    }
+
+    const matchedTraits = traitMatches(hit.idx);
+    results.push({
+      item: items[hit.idx],
+      highlighted: null,
+      secondarySnippet,
+      matchedTraits,
+    });
+  }
+
+  for (const hit of strictNameHits) addNameHit(hit);
+  for (const idx of traitOnlyIdxs) {
+    seen.add(idx);
+    results.push({
+      item: items[idx],
+      highlighted: null,
+      secondarySnippet: null,
+      matchedTraits: traitMatches(idx),
+    });
+  }
+  for (const hit of fuzzyNameHits) addNameHit(hit);
+  for (const hit of strictSecHits) addSecHit(hit);
+  for (const hit of fuzzySecHits) addSecHit(hit);
+
+  return results;
+}
+
+/**
  * Fuzzy-search a list of items by name, with an optional secondary text field
  * (e.g. description) that also participates in matching.
  *
@@ -150,118 +301,8 @@ export function useFuzzySearch<T>(
     [items, getSecondary],
   );
 
-  return useMemo(() => {
-    const trimmed = needle.trim();
-    const emptyTraits = new Set<string>();
-
-    if (!trimmed) {
-      return items.map((item) => ({
-        item,
-        highlighted: null,
-        secondarySnippet: null,
-        matchedTraits: emptyTraits,
-      }));
-    }
-
-    const lowerNeedle = trimmed.toLowerCase();
-
-    /** Return the set of traits that match the needle for a given item. */
-    function traitMatches(idx: number): Set<string> {
-      if (!getTraits) return emptyTraits;
-      const traits = getTraits(items[idx]);
-      const matched = new Set<string>();
-      for (const t of traits) {
-        if (t.toLowerCase().includes(lowerNeedle)) {
-          matched.add(t);
-        }
-      }
-      return matched;
-    }
-
-    // 1) Search names
-    const nameHits = searchOne(names, trimmed);
-
-    // 2) Search descriptions (if available)
-    const secHits =
-      secondaries.length > 0 ? searchOne(secondaries, trimmed) : [];
-
-    // Build a quick lookup: idx → secHit
-    const secHitMap = new Map(secHits.map((h) => [h.idx, h]));
-
-    // Classify name hits as strict (substring) vs fuzzy
-    const strictNameHits: typeof nameHits = [];
-    const fuzzyNameHits: typeof nameHits = [];
-    for (const hit of nameHits) {
-      if (names[hit.idx].toLowerCase().includes(lowerNeedle)) {
-        strictNameHits.push(hit);
-      } else {
-        fuzzyNameHits.push(hit);
-      }
-    }
-
-    // Classify description-only hits as strict vs fuzzy
-    const nameHitIdxs = new Set(nameHits.map((h) => h.idx));
-    const strictSecHits: typeof secHits = [];
-    const fuzzySecHits: typeof secHits = [];
-    for (const hit of secHits) {
-      if (nameHitIdxs.has(hit.idx)) continue; // already covered by name
-      if (secondaries[hit.idx].toLowerCase().includes(lowerNeedle)) {
-        strictSecHits.push(hit);
-      } else {
-        fuzzySecHits.push(hit);
-      }
-    }
-
-    // 3) Merge in priority order:
-    //    strict name → strict description-only → fuzzy name → fuzzy description-only
-    const seen = new Set<number>();
-    const results: FuzzyResult<T>[] = [];
-
-    function addNameHit(hit: { idx: number; ranges: number[] }) {
-      seen.add(hit.idx);
-      const name = names[hit.idx];
-      const merged = mergeAdjacentRanges(hit.ranges, name);
-      const highlighted =
-        merged.length > 0 ? highlightRanges(name, merged) : null;
-
-      let secondarySnippet: ReactNode | null = null;
-      const secHit = secHitMap.get(hit.idx);
-      if (secHit && secHit.ranges.length > 0) {
-        secondarySnippet = buildSnippet(secondaries[hit.idx], secHit.ranges);
-      }
-
-      const matchedTraits = traitMatches(hit.idx);
-      results.push({
-        item: items[hit.idx],
-        highlighted,
-        secondarySnippet,
-        matchedTraits,
-      });
-    }
-
-    function addSecHit(hit: { idx: number; ranges: number[] }) {
-      if (seen.has(hit.idx)) return;
-      seen.add(hit.idx);
-
-      let secondarySnippet: ReactNode | null = null;
-      if (hit.ranges.length > 0) {
-        secondarySnippet = buildSnippet(secondaries[hit.idx], hit.ranges);
-      }
-
-      const matchedTraits = traitMatches(hit.idx);
-      results.push({
-        item: items[hit.idx],
-        highlighted: null,
-        secondarySnippet,
-        matchedTraits,
-      });
-    }
-
-    for (const hit of strictNameHits) addNameHit(hit);
-    for (const hit of strictSecHits) addSecHit(hit);
-    for (const hit of fuzzyNameHits) addNameHit(hit);
-    for (const hit of fuzzySecHits) addSecHit(hit);
-
-    return results;
-  }, [items, names, secondaries, needle, getTraits]);
+  return useMemo(
+    () => rankSearch(items, names, secondaries, needle, getTraits),
+    [items, names, secondaries, needle, getTraits],
+  );
 }

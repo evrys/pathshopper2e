@@ -1,6 +1,7 @@
 import uFuzzy from "@leeoniya/ufuzzy";
 import { createElement, type ReactNode } from "react";
 import { describe, expect, it } from "vitest";
+import { rankSearch } from "./useFuzzySearch";
 
 /**
  * Mirror the hook's search logic as a pure function for testing.
@@ -203,6 +204,268 @@ describe("fuzzy search", () => {
       expect(results.length).toBeGreaterThan(0);
       // "Staff of Fire" should be the top result for "fire"
       expect(results[0].name).toBe("Staff of Fire");
+    });
+  });
+});
+
+// ── rankSearch ordering tests ──────────────────────────────────────────────
+
+interface TestItem {
+  name: string;
+  description: string;
+  traits: string[];
+}
+
+function makeItems(...defs: Partial<TestItem>[]): TestItem[] {
+  return defs.map((d, i) => ({
+    name: d.name ?? `Item ${i}`,
+    description: d.description ?? "",
+    traits: d.traits ?? [],
+  }));
+}
+
+function searchItems(
+  items: TestItem[],
+  needle: string,
+  { withTraits = true }: { withTraits?: boolean } = {},
+) {
+  const names = items.map((i) => i.name);
+  const secondaries = items.map(
+    (i) =>
+      `${i.description}${i.traits.length > 0 ? ` ${i.traits.join(" ")}` : ""}`,
+  );
+  const getTraits = withTraits ? (i: TestItem) => i.traits : undefined;
+  return rankSearch(items, names, secondaries, needle, getTraits);
+}
+
+function resultNames(items: TestItem[], needle: string) {
+  return searchItems(items, needle).map((r) => r.item.name);
+}
+
+describe("rankSearch ordering", () => {
+  describe("name vs description priority", () => {
+    const items = makeItems(
+      { name: "Flaming Sword", description: "A sharp blade" },
+      { name: "Iron Shield", description: "Protects against flaming attacks" },
+    );
+
+    it("ranks strict name matches above strict description matches", () => {
+      const names = resultNames(items, "flaming");
+      expect(names.indexOf("Flaming Sword")).toBeLessThan(
+        names.indexOf("Iron Shield"),
+      );
+    });
+
+    it("ranks strict name match above fuzzy description match", () => {
+      const names = resultNames(items, "flaming");
+      expect(names[0]).toBe("Flaming Sword");
+    });
+  });
+
+  describe("strict vs fuzzy name ordering", () => {
+    const items = makeItems(
+      { name: "Fire Staff" },
+      { name: "Flaming Rune" },
+      { name: "Firebolt Launcher" },
+    );
+
+    it("ranks strict name substring matches before fuzzy name matches", () => {
+      const names = resultNames(items, "fire");
+      // Both "Fire Staff" and "Firebolt Launcher" contain "fire" as substring
+      // They should come before any fuzzy-only match
+      const fireStaffIdx = names.indexOf("Fire Staff");
+      const fireboltIdx = names.indexOf("Firebolt Launcher");
+      expect(fireStaffIdx).toBeLessThan(2);
+      expect(fireboltIdx).toBeLessThan(2);
+    });
+  });
+
+  describe("trait matches before description matches", () => {
+    it("ranks trait-only matches above description-only matches", () => {
+      // Use separate secondaries that DON'T include traits, to isolate
+      // the trait-only tier from the description tier.
+      const items = [
+        {
+          name: "Ogre Hook",
+          description: "A weapon favored by ogres",
+          traits: ["deadly-d10", "trip"],
+        },
+        {
+          name: "Some Potion",
+          description: "This potion grants the deadly d10 power",
+          traits: ["consumable"],
+        },
+      ];
+      const names = items.map((i) => i.name);
+      // Only use description text (without trait slugs) as secondary
+      const secondaries = items.map((i) => i.description);
+      const getTraits = (i: (typeof items)[0]) => i.traits;
+      const results = rankSearch(
+        items,
+        names,
+        secondaries,
+        "deadly",
+        getTraits,
+      );
+      const resultOrder = results.map((r) => r.item.name);
+      expect(resultOrder.indexOf("Ogre Hook")).toBeLessThan(
+        resultOrder.indexOf("Some Potion"),
+      );
+    });
+
+    it("trait match with hyphen normalizes spaces", () => {
+      const items = makeItems({
+        name: "Ogre Hook",
+        description: "A weapon favored by ogres",
+        traits: ["deadly-d10", "trip"],
+      });
+      const results = searchItems(items, "deadly d10");
+      const ogre = results.find((r) => r.item.name === "Ogre Hook");
+      expect(ogre).toBeDefined();
+      expect(ogre?.matchedTraits.has("deadly-d10")).toBe(true);
+    });
+  });
+
+  describe("trait-only matches appear in results", () => {
+    const items = makeItems(
+      { name: "Alpha", description: "no match here", traits: ["fire"] },
+      { name: "Beta", description: "no match here either", traits: ["cold"] },
+    );
+
+    it("includes items that only match by trait", () => {
+      const names = resultNames(items, "fire");
+      expect(names).toContain("Alpha");
+      expect(names).not.toContain("Beta");
+    });
+
+    it("sets matchedTraits on trait-only hits", () => {
+      const results = searchItems(items, "fire");
+      const alpha = results.find((r) => r.item.name === "Alpha");
+      expect(alpha?.matchedTraits.has("fire")).toBe(true);
+    });
+  });
+
+  describe("full priority order", () => {
+    it("orders: strict name → trait-only → strict description", () => {
+      const items = [
+        {
+          name: "Dragon Helm",
+          description: "A fancy helmet",
+          traits: ["invested"],
+        },
+        {
+          name: "Iron Armor",
+          description: "Protects against dragon breath",
+          traits: ["bulwark"],
+        },
+        {
+          name: "Mystic Cloak",
+          description: "A cloak with no relation",
+          traits: ["dragon"],
+        },
+      ];
+      const names = items.map((i) => i.name);
+      // Exclude traits from secondaries so trait-only tier is isolated
+      const secondaries = items.map((i) => i.description);
+      const getTraits = (i: (typeof items)[0]) => i.traits;
+      const results = rankSearch(
+        items,
+        names,
+        secondaries,
+        "dragon",
+        getTraits,
+      );
+      const resultOrder = results.map((r) => r.item.name);
+      // Dragon Helm: strict name match (contains "dragon")
+      // Mystic Cloak: trait-only match (trait "dragon")
+      // Iron Armor: strict description match (contains "dragon")
+      expect(resultOrder[0]).toBe("Dragon Helm");
+      expect(resultOrder[1]).toBe("Mystic Cloak");
+      expect(resultOrder[2]).toBe("Iron Armor");
+    });
+  });
+
+  describe("items with both name and trait match", () => {
+    const items = makeItems(
+      {
+        name: "Flaming Sword",
+        description: "A burning blade",
+        traits: ["fire", "magical"],
+      },
+      {
+        name: "Ice Shield",
+        description: "Cold protection",
+        traits: ["fire-resistant"],
+      },
+    );
+
+    it("name+trait match still appears in name tier with traits highlighted", () => {
+      const results = searchItems(items, "fire");
+      // Flaming Sword doesn't match "fire" in name strictly, but might match
+      // via description or trait; either way it should show trait matches
+      const sword = results.find((r) => r.item.name === "Flaming Sword");
+      expect(sword).toBeDefined();
+      expect(sword?.matchedTraits.has("fire")).toBe(true);
+    });
+  });
+
+  describe("no needle returns all items", () => {
+    const items = makeItems(
+      { name: "Alpha" },
+      { name: "Beta" },
+      { name: "Gamma" },
+    );
+
+    it("returns all items with empty string", () => {
+      const results = searchItems(items, "");
+      expect(results).toHaveLength(3);
+    });
+
+    it("returns all items with whitespace", () => {
+      const results = searchItems(items, "   ");
+      expect(results).toHaveLength(3);
+    });
+
+    it("has no highlights or matched traits when empty", () => {
+      const results = searchItems(items, "");
+      for (const r of results) {
+        expect(r.highlighted).toBeNull();
+        expect(r.secondarySnippet).toBeNull();
+        expect(r.matchedTraits.size).toBe(0);
+      }
+    });
+  });
+
+  describe("deduplication", () => {
+    const items = makeItems({
+      name: "Fire Sword",
+      description: "A blade of fire",
+      traits: ["fire"],
+    });
+
+    it("does not duplicate items that match in multiple tiers", () => {
+      const results = searchItems(items, "fire");
+      expect(results).toHaveLength(1);
+      expect(results[0].item.name).toBe("Fire Sword");
+    });
+
+    it("still marks matched traits even when name also matches", () => {
+      const results = searchItems(items, "fire");
+      expect(results[0].matchedTraits.has("fire")).toBe(true);
+    });
+  });
+
+  describe("description snippet on name matches", () => {
+    const items = makeItems({
+      name: "Fire Sword",
+      description: "A blade wreathed in fire that burns enemies",
+      traits: [],
+    });
+
+    it("includes description snippet when name and description both match", () => {
+      const results = searchItems(items, "fire");
+      expect(results[0].highlighted).not.toBeNull();
+      expect(results[0].secondarySnippet).not.toBeNull();
     });
   });
 });
