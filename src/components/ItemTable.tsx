@@ -199,7 +199,7 @@ export function ItemTable({
       const item = sorted[index];
       const data = fuzzyDataMap.get(item.id);
       const hasSnippet = !!data?.snippet;
-      const hasTraits = item.traits.length > 0;
+      const hasTraits = !!data?.matchedTraits?.size;
       if (hasSnippet && hasTraits) return 72;
       if (hasSnippet || hasTraits) return 56;
       return 36;
@@ -351,10 +351,12 @@ export function ItemTable({
                     {snippet && (
                       <span className={styles.snippet}>{snippet}</span>
                     )}
-                    <TraitBadges
-                      traits={item.traits}
-                      matchedTraits={matchedTraits}
-                    />
+                    {matchedTraits && matchedTraits.size > 0 && (
+                      <TraitBadges
+                        traits={item.traits}
+                        matchedTraits={matchedTraits}
+                      />
+                    )}
                   </span>
                   <span>{TYPE_LABELS[item.type] ?? item.type}</span>
                   <span className={styles.level}>{item.level}</span>
