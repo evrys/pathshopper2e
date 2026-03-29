@@ -49,7 +49,7 @@ function ShareModal({ onClose }: { onClose: () => void }) {
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: click stop propagation */}
       {/* biome-ignore lint/a11y/noStaticElementInteractions: modal container */}
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <p className={styles.modalTitle}>Share this cart</p>
+        <p className={styles.modalTitle}>Share this list</p>
         <div className={styles.urlRow}>
           <input
             ref={inputRef}
@@ -81,7 +81,7 @@ export function Cart({
   return (
     <div className={styles.cart}>
       <div className={styles.header}>
-        <h2>Cart ({totalItems})</h2>
+        <h2>Shopping List ({totalItems})</h2>
         {entries.length > 0 && (
           <div className={styles.headerActions}>
             <button

@@ -362,7 +362,7 @@ export function ItemTable({
                       type="button"
                       className={styles.addBtn}
                       onClick={() => onAddItem(item)}
-                      title={`Add ${item.name} to cart`}
+                      title={`Add ${item.name} to list`}
                     >
                       +
                     </button>
