@@ -198,7 +198,7 @@ export function ItemTable({
     estimateSize: (index) => {
       const item = sorted[index];
       const data = fuzzyDataMap.get(item.id);
-      const hasSnippet = !!data?.snippet;
+      const hasSnippet = !!data?.snippet && !data?.highlighted;
       const hasTraits = !!data?.matchedTraits?.size;
       if (hasSnippet && hasTraits) return 72;
       if (hasSnippet || hasTraits) return 56;
@@ -348,7 +348,7 @@ export function ItemTable({
                         {fuzzyData?.highlighted ?? item.name}
                       </a>
                     </ItemTooltipWrapper>
-                    {snippet && (
+                    {snippet && !fuzzyData?.highlighted && (
                       <span className={styles.snippet}>{snippet}</span>
                     )}
                     {matchedTraits && matchedTraits.size > 0 && (
