@@ -6,10 +6,6 @@ This is a small website for players of Pathfinder 2e to make shopping lists for 
 
 After making changes, run `pnpm checks` to verify everything passes (TypeScript, Biome linting, and tests). Fix any errors before considering work complete. Add tests for any new functionality you introduce.
 
-## Commits
-
-After completing a task, review the `git diff` and check if it is sensible. Then commit your changes, and write clear commit messages describing what you changed and why.
-
 ## Stack
 
 This is a pure-frontend project, using the following SSG stack:

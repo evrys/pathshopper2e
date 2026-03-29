@@ -105,7 +105,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  display: block;
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: bottom;
 }
 
 .name a:hover {
