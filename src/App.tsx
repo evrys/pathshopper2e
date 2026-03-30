@@ -118,7 +118,9 @@ function App() {
   return (
     <div className={styles.app}>
       <header className={styles.header}>
-        <h1>Pathshopper</h1>
+        <h1>
+          Pathshopper <span className={styles.beta}>beta</span>
+        </h1>
         <p className={styles.subtitle}>Plan your equipment purchases</p>
       </header>
 
