@@ -10,7 +10,6 @@ describe("URL state serialization", () => {
     types: new Set<string>(),
     rarities: new Set(["common", "uncommon"]),
     remaster: new Set(["remastered"]),
-    classes: new Set<string>(),
     minLevel: "",
     maxLevel: "",
     sort: "name:asc",
@@ -58,18 +57,6 @@ describe("URL state serialization", () => {
 
     it("omits remaster when it matches defaults", () => {
       expect(serialize(defaults)).not.toContain("remaster");
-    });
-
-    it("serializes class filter", () => {
-      const hash = serialize({
-        ...defaults,
-        classes: new Set(["fighter", "ranger"]),
-      });
-      expect(hash).toContain("class=fighter+ranger");
-    });
-
-    it("omits class when empty", () => {
-      expect(serialize(defaults)).not.toContain("class");
     });
 
     it("serializes level range", () => {
@@ -154,16 +141,6 @@ describe("URL state serialization", () => {
       expect(state.remaster.size).toBe(0);
     });
 
-    it("parses class filter", () => {
-      const state = deserialize("#class=fighter+ranger");
-      expect(state.classes).toEqual(new Set(["fighter", "ranger"]));
-    });
-
-    it("returns empty class set when absent", () => {
-      const state = deserialize("");
-      expect(state.classes.size).toBe(0);
-    });
-
     it("parses level range", () => {
       const state = deserialize("#minlvl=3&maxlvl=10");
       expect(state.minLevel).toBe("3");
@@ -194,7 +171,6 @@ describe("URL state serialization", () => {
         types: new Set(["consumable"]),
         rarities: new Set(["common"]),
         remaster: new Set(["legacy"]),
-        classes: new Set(["cleric", "druid"]),
         minLevel: "1",
         maxLevel: "5",
         sort: "level:desc",
@@ -211,7 +187,6 @@ describe("URL state serialization", () => {
       expect(parsed.types).toEqual(state.types);
       expect(parsed.rarities).toEqual(state.rarities);
       expect(parsed.remaster).toEqual(state.remaster);
-      expect(parsed.classes).toEqual(state.classes);
       expect(parsed.minLevel).toBe(state.minLevel);
       expect(parsed.maxLevel).toBe(state.maxLevel);
       expect(parsed.sort).toBe(state.sort);

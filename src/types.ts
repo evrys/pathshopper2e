@@ -40,6 +40,4 @@ export interface Item {
   plainDescription: string;
   /** URL path on Archives of Nethys, e.g. "/Weapons.aspx?ID=386" */
   aonUrl?: string;
-  /** Classes this item is proficiency-appropriate for (omitted = all classes) */
-  suggestedClasses?: string[];
 }

@@ -6,7 +6,6 @@
  * - Extracting relevant fields from the Foundry format
  * - Filtering out unpriced / excluded items
  * - Matching items to AoN URLs
- * - Annotating items with suggested classes based on proficiency rules
  *
  * Usage: pnpm process-data
  */
@@ -98,160 +97,6 @@ const EXCLUDED_ITEMS = new Set([
   "Greengut",
   "Blightburn Necklace",
 ]);
-
-// ── Class proficiency profiles ──────────────────────────────────────
-
-interface ClassProfile {
-  weaponCategories: string[];
-  armorCategories: string[];
-  wantsShield: boolean;
-}
-
-const CLASS_PROFILES: Record<string, ClassProfile> = {
-  barbarian: {
-    weaponCategories: ["simple", "martial"],
-    armorCategories: ["light", "medium"],
-    wantsShield: false,
-  },
-  bard: {
-    weaponCategories: ["simple"],
-    armorCategories: ["light"],
-    wantsShield: false,
-  },
-  champion: {
-    weaponCategories: ["simple", "martial"],
-    armorCategories: ["light", "medium", "heavy"],
-    wantsShield: true,
-  },
-  cleric: {
-    weaponCategories: ["simple"],
-    armorCategories: ["light", "medium"],
-    wantsShield: true,
-  },
-  druid: {
-    weaponCategories: ["simple"],
-    armorCategories: ["light", "medium"],
-    wantsShield: true,
-  },
-  fighter: {
-    weaponCategories: ["simple", "martial", "advanced"],
-    armorCategories: ["light", "medium", "heavy"],
-    wantsShield: true,
-  },
-  gunslinger: {
-    weaponCategories: ["simple", "martial"],
-    armorCategories: ["light", "medium"],
-    wantsShield: false,
-  },
-  inventor: {
-    weaponCategories: ["simple", "martial"],
-    armorCategories: ["light", "medium"],
-    wantsShield: true,
-  },
-  investigator: {
-    weaponCategories: ["simple", "martial"],
-    armorCategories: ["light"],
-    wantsShield: false,
-  },
-  kineticist: {
-    weaponCategories: ["simple"],
-    armorCategories: ["light"],
-    wantsShield: false,
-  },
-  magus: {
-    weaponCategories: ["simple", "martial"],
-    armorCategories: ["light", "medium"],
-    wantsShield: false,
-  },
-  monk: {
-    weaponCategories: ["simple", "unarmed"],
-    armorCategories: ["unarmored"],
-    wantsShield: false,
-  },
-  oracle: {
-    weaponCategories: ["simple"],
-    armorCategories: ["light"],
-    wantsShield: false,
-  },
-  psychic: {
-    weaponCategories: ["simple"],
-    armorCategories: ["unarmored"],
-    wantsShield: false,
-  },
-  ranger: {
-    weaponCategories: ["simple", "martial"],
-    armorCategories: ["light", "medium"],
-    wantsShield: false,
-  },
-  rogue: {
-    weaponCategories: ["simple"],
-    armorCategories: ["light"],
-    wantsShield: false,
-  },
-  sorcerer: {
-    weaponCategories: ["simple"],
-    armorCategories: ["unarmored"],
-    wantsShield: false,
-  },
-  summoner: {
-    weaponCategories: ["simple"],
-    armorCategories: ["light"],
-    wantsShield: false,
-  },
-  swashbuckler: {
-    weaponCategories: ["simple", "martial"],
-    armorCategories: ["light"],
-    wantsShield: false,
-  },
-  thaumaturge: {
-    weaponCategories: ["simple", "martial"],
-    armorCategories: ["light", "medium"],
-    wantsShield: false,
-  },
-  witch: {
-    weaponCategories: ["simple"],
-    armorCategories: ["unarmored"],
-    wantsShield: false,
-  },
-  wizard: {
-    weaponCategories: ["simple"],
-    armorCategories: ["unarmored"],
-    wantsShield: false,
-  },
-};
-
-/**
- * Compute which classes an item is suitable for, based on proficiency rules.
- * Weapons/armor/shields are class-restricted; everything else suits all classes.
- */
-function suggestedClassesForItem(
-  type: string,
-  category: string,
-): string[] | undefined {
-  if (type === "weapon") {
-    const classes = Object.entries(CLASS_PROFILES)
-      .filter(([, p]) => p.weaponCategories.includes(category))
-      .map(([c]) => c)
-      .sort();
-    return classes.length > 0 ? classes : undefined;
-  }
-  if (type === "armor") {
-    const classes = Object.entries(CLASS_PROFILES)
-      .filter(([, p]) => p.armorCategories.includes(category))
-      .map(([c]) => c)
-      .sort();
-    return classes.length > 0 ? classes : undefined;
-  }
-  if (type === "shield") {
-    const classes = Object.entries(CLASS_PROFILES)
-      .filter(([, p]) => p.wantsShield)
-      .map(([c]) => c)
-      .sort();
-    return classes.length > 0 ? classes : undefined;
-  }
-  // Consumables, equipment, etc. → no restriction (omit field)
-  return undefined;
-}
 
 // ── AoN URL matching ────────────────────────────────────────────────
 
@@ -360,11 +205,6 @@ function extractItem(raw: FoundryItem): JsonItem & { _stackGroup?: string } {
     remaster: sys.publication?.remaster ?? false,
     description: sys.description?.value ?? "",
   };
-
-  const classes = suggestedClassesForItem(type, category);
-  if (classes) {
-    item.suggestedClasses = classes;
-  }
 
   return Object.assign(item, {
     _stackGroup: sys.stackGroup,
@@ -492,12 +332,6 @@ function main() {
       `Assigned fallback AoN URLs: ${gemCount} gems, ${artCount} art objects.`,
     );
   }
-
-  // Log class annotation stats
-  const withClasses = included.filter((i) => i.suggestedClasses).length;
-  console.log(
-    `Annotated ${withClasses} items with class suggestions (${included.length - withClasses} are class-agnostic).`,
-  );
 
   mkdirSync("data", { recursive: true });
   writeFileSync(OUTPUT, JSON.stringify(included));

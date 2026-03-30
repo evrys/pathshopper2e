@@ -28,43 +28,16 @@ const REMASTER_OPTIONS = [
   { value: "legacy", label: "Legacy" },
 ];
 
-const CLASS_OPTIONS = [
-  { value: "barbarian", label: "Barbarian" },
-  { value: "bard", label: "Bard" },
-  { value: "champion", label: "Champion" },
-  { value: "cleric", label: "Cleric" },
-  { value: "druid", label: "Druid" },
-  { value: "fighter", label: "Fighter" },
-  { value: "gunslinger", label: "Gunslinger" },
-  { value: "inventor", label: "Inventor" },
-  { value: "investigator", label: "Investigator" },
-  { value: "kineticist", label: "Kineticist" },
-  { value: "magus", label: "Magus" },
-  { value: "monk", label: "Monk" },
-  { value: "oracle", label: "Oracle" },
-  { value: "psychic", label: "Psychic" },
-  { value: "ranger", label: "Ranger" },
-  { value: "rogue", label: "Rogue" },
-  { value: "sorcerer", label: "Sorcerer" },
-  { value: "summoner", label: "Summoner" },
-  { value: "swashbuckler", label: "Swashbuckler" },
-  { value: "thaumaturge", label: "Thaumaturge" },
-  { value: "witch", label: "Witch" },
-  { value: "wizard", label: "Wizard" },
-];
-
 interface FilterModalProps {
   typeFilter: Set<string>;
   rarityFilter: Set<string>;
   remasterFilter: Set<string>;
-  classFilter: Set<string>;
   minLevel: string;
   maxLevel: string;
   onFiltersChange: (filters: {
     typeFilter?: Set<string>;
     rarityFilter?: Set<string>;
     remasterFilter?: Set<string>;
-    classFilter?: Set<string>;
     minLevel?: string;
     maxLevel?: string;
   }) => void;
@@ -74,7 +47,6 @@ export function FilterModal({
   typeFilter,
   rarityFilter,
   remasterFilter,
-  classFilter,
   minLevel,
   maxLevel,
   onFiltersChange,
@@ -86,7 +58,6 @@ export function FilterModal({
     (typeFilter.size > 0 ? 1 : 0) +
     (rarityFilter.size > 0 ? 1 : 0) +
     (remasterFilter.size > 0 ? 1 : 0) +
-    (classFilter.size > 0 ? 1 : 0) +
     (minLevel ? 1 : 0) +
     (maxLevel ? 1 : 0);
 
@@ -105,7 +76,6 @@ export function FilterModal({
       typeFilter: new Set<string>(),
       rarityFilter: new Set<string>(),
       remasterFilter: new Set<string>(),
-      classFilter: new Set<string>(),
       minLevel: "",
       maxLevel: "",
     });
@@ -116,7 +86,6 @@ export function FilterModal({
       typeFilter: new Set<string>(),
       rarityFilter: new Set(DEFAULT_RARITIES),
       remasterFilter: new Set(DEFAULT_REMASTER),
-      classFilter: new Set<string>(),
       minLevel: "",
       maxLevel: "",
     });
@@ -190,16 +159,6 @@ export function FilterModal({
                   options={REMASTER_OPTIONS}
                   selected={remasterFilter}
                   onChange={(next) => onFiltersChange({ remasterFilter: next })}
-                />
-              </div>
-
-              <div className={styles.filterGroup}>
-                <span className={styles.groupLabel}>Class</span>
-                <MultiSelect
-                  placeholder="All Classes"
-                  options={CLASS_OPTIONS}
-                  selected={classFilter}
-                  onChange={(next) => onFiltersChange({ classFilter: next })}
                 />
               </div>
 
