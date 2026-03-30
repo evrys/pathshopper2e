@@ -1,5 +1,7 @@
-import Tippy from "@tippyjs/react";
-import type { ReactElement } from "react";
+import type { ReactNode } from "react";
+import { useEffect, useRef } from "react";
+import { createRoot } from "react-dom/client";
+import tippy from "tippy.js";
 import "tippy.js/dist/tippy.css";
 import { formatUsage } from "../lib/format";
 import { sanitizeHtml } from "../lib/html";
@@ -77,16 +79,33 @@ export function ItemTooltipWrapper({
   children,
 }: {
   item: Item;
-  children: ReactElement;
+  children: ReactNode;
 }) {
-  return (
-    <Tippy
-      delay={[300, 0]}
-      maxWidth={480}
-      content={<TooltipContent item={item} />}
-      placement={"right"}
-    >
-      {children}
-    </Tippy>
-  );
+  const anchorRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const el = anchorRef.current;
+    if (!el) return;
+
+    // Create a detached container for React to render the tooltip content into
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    root.render(<TooltipContent item={item} />);
+
+    const instance = tippy(el, {
+      content: container,
+      delay: [300, 0],
+      maxWidth: 480,
+      placement: "right",
+      allowHTML: true,
+    });
+
+    return () => {
+      instance.destroy();
+      // Defer unmount to avoid "synchronously unmount while rendering" warning
+      queueMicrotask(() => root.unmount());
+    };
+  }, [item]);
+
+  return <span ref={anchorRef}>{children}</span>;
 }

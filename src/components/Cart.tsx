@@ -76,8 +76,14 @@ export function Cart({
           </a>
         )}
         {isMobile && (
-          <span className={styles.collapseIcon} aria-hidden>
-            {mobileCollapsed ? "▸" : "▾"}
+          <span
+            className={styles.collapseIcon}
+            style={{
+              transform: mobileCollapsed ? "rotate(-90deg)" : undefined,
+            }}
+            aria-hidden
+          >
+            ▾
           </span>
         )}
       </div>

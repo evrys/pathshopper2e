@@ -21,7 +21,6 @@
   "dependencies": {
     "@leeoniya/ufuzzy": "^1.0.19",
     "@tanstack/react-virtual": "^3.13.23",
-    "@tippyjs/react": "^4.2.6",
     "react": "^19.2.2",
     "react-dom": "^19.2.2",
     "tippy.js": "^6.3.7"
