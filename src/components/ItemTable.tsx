@@ -2,6 +2,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { type ReactNode, useCallback, useMemo, useRef } from "react";
 import { useFuzzySearch } from "../hooks/useFuzzySearch";
 import { aonUrl } from "../lib/aon";
+import { TYPE_LABELS } from "../lib/constants";
 import { formatPrice, toCopper } from "../lib/price";
 import { formatTrait, traitUrl } from "../lib/traits";
 import type { Item } from "../types";
@@ -29,17 +30,6 @@ interface ItemTableProps {
   onFiltersChange: (filters: Partial<FilterState>) => void;
   onAddItem: (item: Item) => void;
 }
-
-const TYPE_LABELS: Record<string, string> = {
-  weapon: "Weapon",
-  armor: "Armor",
-  shield: "Shield",
-  equipment: "Equipment",
-  consumable: "Consumable",
-  treasure: "Treasure",
-  backpack: "Container",
-  kit: "Kit",
-};
 
 const RARITY_COLORS: Record<string, string> = {
   common: "inherit",

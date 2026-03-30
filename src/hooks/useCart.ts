@@ -1,6 +1,6 @@
 import { useCallback, useReducer } from "react";
-import { fromCopper, toCopper } from "../lib/price";
-import type { Item, Price } from "../types";
+import { sumPrices, toCopper } from "../lib/price";
+import type { Item } from "../types";
 
 export interface CartEntry {
   item: Item;
@@ -82,11 +82,13 @@ export function useCart() {
 
   const entries = [...state.entries.values()];
 
+  const totalPrice = sumPrices(
+    entries.map((e) => ({ price: e.item.price, quantity: e.quantity })),
+  );
   const totalCopper = entries.reduce(
     (sum, e) => sum + toCopper(e.item.price) * e.quantity,
     0,
   );
-  const totalPrice: Price = fromCopper(totalCopper);
   const totalItems = entries.reduce((sum, e) => sum + e.quantity, 0);
 
   return {

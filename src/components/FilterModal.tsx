@@ -1,20 +1,16 @@
 import { useEffect, useRef, useState } from "react";
+import {
+  DEFAULT_RARITIES,
+  DEFAULT_REMASTER,
+  TYPE_LABELS,
+} from "../lib/constants";
 import styles from "./FilterModal.module.css";
 import { MultiSelect } from "./MultiSelect";
 
-const DEFAULT_RARITIES = new Set(["common", "uncommon"]);
-const DEFAULT_REMASTER = new Set(["remastered"]);
-
-const TYPE_LABELS: Record<string, string> = {
-  weapon: "⚔️ Weapon",
-  armor: "🛡️ Armor",
-  shield: "🛡️ Shield",
-  equipment: "🎒 Equipment",
-  consumable: "🧪 Consumable",
-  treasure: "💎 Treasure",
-  backpack: "👜 Container",
-  kit: "📦 Kit",
-};
+const TYPE_OPTIONS = Object.entries(TYPE_LABELS).map(([value, label]) => ({
+  value,
+  label,
+}));
 
 const RARITY_OPTIONS = [
   { value: "common", label: "Common" },
@@ -131,12 +127,7 @@ export function FilterModal({
                 <span className={styles.groupLabel}>Item Type</span>
                 <MultiSelect
                   placeholder="All Types"
-                  options={Object.entries(TYPE_LABELS).map(
-                    ([value, label]) => ({
-                      value,
-                      label,
-                    }),
-                  )}
+                  options={TYPE_OPTIONS}
                   selected={typeFilter}
                   onChange={(next) => onFiltersChange({ typeFilter: next })}
                 />

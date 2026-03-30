@@ -1,4 +1,4 @@
-const AON_BASE = "https://2e.aonprd.com";
+import { AON_BASE } from "./aon";
 
 let traitUrls: Record<string, string> | null = null;
 

@@ -1,6 +1,6 @@
 import type { Item } from "../types";
 
-const AON_BASE = "https://2e.aonprd.com";
+export const AON_BASE = "https://2e.aonprd.com";
 
 /** Get the Archives of Nethys URL for an item, falling back to search */
 export function aonUrl(item: Item): string {

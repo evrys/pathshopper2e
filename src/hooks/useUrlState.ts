@@ -1,4 +1,6 @@
 import { useCallback, useRef, useSyncExternalStore } from "react";
+import { DEFAULT_RARITIES, DEFAULT_REMASTER } from "../lib/constants";
+import { parseCartString } from "../lib/url";
 
 /**
  * App state that gets persisted in the URL hash.
@@ -16,9 +18,6 @@ export interface UrlState {
   /** Cart as Map of item id → quantity */
   cart: Map<string, number>;
 }
-
-const DEFAULT_RARITIES = new Set(["common", "uncommon"]);
-const DEFAULT_REMASTER = new Set(["remastered"]);
 
 const DEFAULTS: UrlState = {
   search: "",
@@ -108,26 +107,7 @@ function deserialize(hash: string): UrlState {
   const sort = params.get("sort") ?? ":asc";
   const charName = params.get("char") ?? "";
 
-  const cart = new Map<string, number>();
-  const cartStr = params.get("cart");
-  if (cartStr) {
-    for (const entry of cartStr.split("+")) {
-      const colonIdx = entry.lastIndexOf(":");
-      if (colonIdx === -1) {
-        cart.set(entry, 1);
-      } else {
-        const id = entry.slice(0, colonIdx);
-        const qty = Number.parseInt(entry.slice(colonIdx + 1), 10);
-        if (id && Number.isFinite(qty) && qty > 0) {
-          cart.set(id, qty);
-        } else if (id && Number.isNaN(qty)) {
-          // No numeric suffix after colon — treat whole thing as id with qty 1
-          cart.set(entry, 1);
-        }
-        // qty <= 0: skip (invalid)
-      }
-    }
-  }
+  const cart = parseCartString(params.get("cart") ?? "");
 
   return {
     search,

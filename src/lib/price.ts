@@ -60,3 +60,14 @@ export function parseBudget(input: string): Price | null {
 
   return null;
 }
+
+/** Sum prices across entries with quantities and return the total as a Price. */
+export function sumPrices(
+  entries: { price: Price; quantity: number }[],
+): Price {
+  let totalCp = 0;
+  for (const { price, quantity } of entries) {
+    totalCp += toCopper(price) * quantity;
+  }
+  return fromCopper(totalCp);
+}

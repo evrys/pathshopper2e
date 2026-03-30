@@ -1,34 +1,11 @@
-import { useState, useSyncExternalStore } from "react";
+import { useState } from "react";
 import type { CartEntry } from "../hooks/useCart";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 import { aonUrl } from "../lib/aon";
 import { formatPrice } from "../lib/price";
 import type { Price } from "../types";
 import styles from "./Cart.module.css";
 import { ItemTooltipWrapper } from "./ItemTooltip";
-
-const MOBILE_QUERY = "(max-width: 640px)";
-
-function getIsMobileSnapshot() {
-  return window.matchMedia(MOBILE_QUERY).matches;
-}
-
-function getIsMobileServerSnapshot() {
-  return false;
-}
-
-function subscribeToMedia(callback: () => void) {
-  const mql = window.matchMedia(MOBILE_QUERY);
-  mql.addEventListener("change", callback);
-  return () => mql.removeEventListener("change", callback);
-}
-
-function useIsMobile() {
-  return useSyncExternalStore(
-    subscribeToMedia,
-    getIsMobileSnapshot,
-    getIsMobileServerSnapshot,
-  );
-}
 
 interface CartProps {
   entries: CartEntry[];
@@ -76,7 +53,7 @@ export function Cart({
   onSetQuantity,
   onRemoveItem,
 }: CartProps) {
-  const isMobile = useIsMobile();
+  const isMobile = useMediaQuery("(max-width: 640px)");
   const [mobileCollapsed, setMobileCollapsed] = useState(true);
   const expanded = !isMobile || !mobileCollapsed;
   const title = charName ? `${charName}\u2019s Shopping List` : "Shopping List";

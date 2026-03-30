@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { formatPrice, fromCopper, parseBudget, toCopper } from "./price";
+import {
+  formatPrice,
+  fromCopper,
+  parseBudget,
+  sumPrices,
+  toCopper,
+} from "./price";
 
 describe("toCopper", () => {
   it("converts gp to copper", () => {
@@ -85,5 +91,39 @@ describe("parseBudget", () => {
 
   it("returns null for invalid input", () => {
     expect(parseBudget("abc")).toBeNull();
+  });
+});
+
+describe("sumPrices", () => {
+  it("returns empty price for no entries", () => {
+    expect(sumPrices([])).toEqual({});
+  });
+
+  it("sums a single entry with qty 1", () => {
+    expect(sumPrices([{ price: { gp: 10 }, quantity: 1 }])).toEqual({
+      gp: 10,
+    });
+  });
+
+  it("multiplies price by quantity", () => {
+    expect(sumPrices([{ price: { gp: 5 }, quantity: 3 }])).toEqual({
+      gp: 15,
+    });
+  });
+
+  it("sums multiple entries with mixed denominations", () => {
+    const result = sumPrices([
+      { price: { gp: 2, sp: 5 }, quantity: 2 },
+      { price: { sp: 3, cp: 7 }, quantity: 1 },
+    ]);
+    // 2*(250cp) + 1*(37cp) = 537cp = 5gp 3sp 7cp
+    expect(result).toEqual({ gp: 5, sp: 3, cp: 7 });
+  });
+
+  it("rolls up denominations correctly", () => {
+    // 10 items at 15 sp each = 150 sp = 15 gp
+    expect(sumPrices([{ price: { sp: 15 }, quantity: 10 }])).toEqual({
+      gp: 15,
+    });
   });
 });

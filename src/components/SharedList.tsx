@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 import { useItems } from "../hooks/useItems";
 import { aonUrl } from "../lib/aon";
-import { formatPrice, fromCopper, toCopper } from "../lib/price";
-import type { Item, Price } from "../types";
+import { formatPrice, sumPrices } from "../lib/price";
+import { parseCartString } from "../lib/url";
+import type { Item } from "../types";
 import { ItemTooltipWrapper } from "./ItemTooltip";
 import styles from "./SharedList.module.css";
 
@@ -20,34 +21,9 @@ function parseShareHash(hash: string): {
   const params = new URLSearchParams(str.replace(/\+/g, "%2B"));
 
   const charName = params.get("char") ?? "";
-  const cart = new Map<string, number>();
-  const cartStr = params.get("cart");
-  if (cartStr) {
-    for (const entry of cartStr.split("+")) {
-      const colonIdx = entry.lastIndexOf(":");
-      if (colonIdx === -1) {
-        cart.set(entry, 1);
-      } else {
-        const id = entry.slice(0, colonIdx);
-        const qty = Number.parseInt(entry.slice(colonIdx + 1), 10);
-        if (id && Number.isFinite(qty) && qty > 0) {
-          cart.set(id, qty);
-        } else if (id && Number.isNaN(qty)) {
-          cart.set(entry, 1);
-        }
-      }
-    }
-  }
+  const cart = parseCartString(params.get("cart") ?? "");
 
   return { cart, charName };
-}
-
-function computeTotal(entries: ListEntry[]): Price {
-  let totalCp = 0;
-  for (const { item, quantity } of entries) {
-    totalCp += toCopper(item.price) * quantity;
-  }
-  return fromCopper(totalCp);
 }
 
 export function SharedList() {
@@ -68,7 +44,13 @@ export function SharedList() {
     return result;
   }, [items, loading, cart]);
 
-  const totalPrice = useMemo(() => computeTotal(entries), [entries]);
+  const totalPrice = useMemo(
+    () =>
+      sumPrices(
+        entries.map((e) => ({ price: e.item.price, quantity: e.quantity })),
+      ),
+    [entries],
+  );
   const totalItems = entries.reduce((sum, e) => sum + e.quantity, 0);
 
   const title = charName ? `${charName}\u2019s Shopping List` : "Shopping List";
