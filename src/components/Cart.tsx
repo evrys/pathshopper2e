@@ -40,7 +40,7 @@ interface CartProps {
   onRemoveItem: (itemId: string) => void;
 }
 
-/** Build a share URL pointing to the readonly /list page with cart + charName in the hash. */
+/** Build a share URL pointing to the readonly list view with cart + charName in the hash. */
 function buildShareUrl(entries: CartEntry[], charName: string): string {
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
   const params = new URLSearchParams();
@@ -64,7 +64,7 @@ function buildShareUrl(entries: CartEntry[], charName: string): string {
     );
   }
   const hash = parts.length > 0 ? `#${parts.join("&")}` : "";
-  return `${window.location.origin}${base}/list${hash}`;
+  return `${window.location.origin}${base}/?view=list${hash}`;
 }
 
 export function Cart({

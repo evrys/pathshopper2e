@@ -10,9 +10,9 @@ if (!root) {
   throw new Error("Root element not found");
 }
 
-const base = import.meta.env.BASE_URL.replace(/\/$/, "");
-const path = window.location.pathname.replace(base, "").replace(/\/$/, "");
-const Page = path === "/list" ? SharedList : App;
+const isSharedList =
+  new URLSearchParams(window.location.search).get("view") === "list";
+const Page = isSharedList ? SharedList : App;
 
 createRoot(root).render(
   <StrictMode>
