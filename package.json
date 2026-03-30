@@ -6,7 +6,7 @@
   "packageManager": "pnpm@10.30.3",
   "scripts": {
     "dev": "vite dev --port 5900",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
     "tsc": "tsc --pretty --noEmit",
     "biome": "biome check --error-on-warnings",
     "format": "biome format --write .",
