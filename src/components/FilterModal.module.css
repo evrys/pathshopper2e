@@ -160,3 +160,14 @@
 .doneBtn:hover {
   background: var(--color-primary-hover);
 }
+
+@media (max-width: 640px) {
+  .overlay {
+    padding-top: 5vh;
+    align-items: flex-start;
+  }
+
+  .panel {
+    width: calc(100vw - 1rem);
+  }
+}

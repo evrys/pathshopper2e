@@ -50,8 +50,22 @@
   .body {
     grid-template-columns: 1fr;
   }
+}
 
-  .sidebar {
-    order: -1;
+@media (max-width: 640px) {
+  .app {
+    padding: 0.75rem 0.5rem 2rem;
+  }
+
+  .body {
+    gap: 0.75rem;
+  }
+
+  .header h1 {
+    font-size: 1.25rem;
+  }
+
+  .subtitle {
+    font-size: 0.8125rem;
   }
 }

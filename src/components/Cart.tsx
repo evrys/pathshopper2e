@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { CartEntry } from "../hooks/useCart";
 import { aonUrl } from "../lib/aon";
 import { formatPrice } from "../lib/price";
@@ -51,100 +52,113 @@ export function Cart({
   onSetQuantity,
   onRemoveItem,
 }: CartProps) {
+  const [collapsed, setCollapsed] = useState(true);
   const title = charName ? `${charName}\u2019s Shopping List` : "Shopping List";
 
   return (
     <div className={styles.cart}>
-      <div className={styles.header}>
+      <button
+        type="button"
+        className={styles.header}
+        onClick={() => setCollapsed((c) => !c)}
+      >
         <h2>
           {title} ({totalItems})
         </h2>
-        {entries.length > 0 && (
-          <div className={styles.headerActions}>
+        <div className={styles.headerActions}>
+          {entries.length > 0 && (
             <a
               className={styles.shareBtn}
               href={buildShareUrl(entries, charName)}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
             >
               Share
             </a>
-          </div>
-        )}
-      </div>
-
-      <div className={styles.charNameRow}>
-        <input
-          className={styles.charNameInput}
-          type="text"
-          placeholder="Character name"
-          aria-label="Character name"
-          value={charName}
-          onChange={(e) => onCharNameChange(e.target.value)}
-        />
-      </div>
-
-      {entries.length === 0 ? (
-        <p className={styles.empty}>
-          Add items from the table to start building your loadout.
-        </p>
-      ) : (
-        <ul className={styles.items}>
-          {entries.map((entry) => (
-            <li key={entry.item.id} className={styles.item}>
-              <div className={styles.itemInfo}>
-                <ItemTooltipWrapper item={entry.item}>
-                  <a
-                    className={styles.itemName}
-                    href={aonUrl(entry.item)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {entry.item.name}
-                  </a>
-                </ItemTooltipWrapper>
-                <span className={styles.itemPrice}>
-                  {formatPrice(entry.item.price)}
-                  {entry.quantity > 1 && " each"}
-                </span>
-              </div>
-              <div className={styles.controls}>
-                <button
-                  type="button"
-                  onClick={() =>
-                    onSetQuantity(entry.item.id, entry.quantity - 1)
-                  }
-                >
-                  −
-                </button>
-                <span className={styles.qty}>{entry.quantity}</span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    onSetQuantity(entry.item.id, entry.quantity + 1)
-                  }
-                >
-                  +
-                </button>
-                <button
-                  type="button"
-                  className={styles.removeBtn}
-                  onClick={() => onRemoveItem(entry.item.id)}
-                  title="Remove"
-                >
-                  ✕
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {entries.length > 0 && (
-        <div className={styles.total}>
-          <span>Total:</span>
-          <strong>{formatPrice(totalPrice)}</strong>
+          )}
+          <span className={styles.collapseIcon} aria-hidden>
+            {collapsed ? "▸" : "▾"}
+          </span>
         </div>
+      </button>
+
+      {!collapsed && (
+        <>
+          <div className={styles.charNameRow}>
+            <input
+              className={styles.charNameInput}
+              type="text"
+              placeholder="Character name"
+              aria-label="Character name"
+              value={charName}
+              onChange={(e) => onCharNameChange(e.target.value)}
+            />
+          </div>
+
+          {entries.length === 0 ? (
+            <p className={styles.empty}>
+              Add items from the table to start building your loadout.
+            </p>
+          ) : (
+            <ul className={styles.items}>
+              {entries.map((entry) => (
+                <li key={entry.item.id} className={styles.item}>
+                  <div className={styles.itemInfo}>
+                    <ItemTooltipWrapper item={entry.item}>
+                      <a
+                        className={styles.itemName}
+                        href={aonUrl(entry.item)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {entry.item.name}
+                      </a>
+                    </ItemTooltipWrapper>
+                    <span className={styles.itemPrice}>
+                      {formatPrice(entry.item.price)}
+                      {entry.quantity > 1 && " each"}
+                    </span>
+                  </div>
+                  <div className={styles.controls}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onSetQuantity(entry.item.id, entry.quantity - 1)
+                      }
+                    >
+                      −
+                    </button>
+                    <span className={styles.qty}>{entry.quantity}</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onSetQuantity(entry.item.id, entry.quantity + 1)
+                      }
+                    >
+                      +
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.removeBtn}
+                      onClick={() => onRemoveItem(entry.item.id)}
+                      title="Remove"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {entries.length > 0 && (
+            <div className={styles.total}>
+              <span>Total:</span>
+              <strong>{formatPrice(totalPrice)}</strong>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

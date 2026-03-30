@@ -281,7 +281,7 @@ export function ItemTable({
           </button>
           <button
             type="button"
-            className={styles.sortable}
+            className={`${styles.sortable} ${styles.colType}`}
             onClick={() => handleSort("type")}
           >
             Type{sortIndicator("type")}
@@ -302,7 +302,7 @@ export function ItemTable({
           </button>
           <button
             type="button"
-            className={styles.sortable}
+            className={`${styles.sortable} ${styles.colRarity}`}
             onClick={() => handleSort("rarity")}
           >
             Rarity{sortIndicator("rarity")}
@@ -354,12 +354,15 @@ export function ItemTable({
                       />
                     )}
                   </span>
-                  <span>{TYPE_LABELS[item.type] ?? item.type}</span>
+                  <span className={styles.colType}>
+                    {TYPE_LABELS[item.type] ?? item.type}
+                  </span>
                   <span className={styles.level}>{item.level}</span>
                   <span className={styles.price}>
                     {formatPrice(item.price)}
                   </span>
                   <span
+                    className={styles.colRarity}
                     style={{
                       color: RARITY_COLORS[item.rarity] ?? "inherit",
                     }}
