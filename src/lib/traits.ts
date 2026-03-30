@@ -6,7 +6,7 @@ let traitUrls: Record<string, string> | null = null;
 export async function loadTraitUrls(): Promise<void> {
   if (traitUrls) return;
   try {
-    const res = await fetch("/data/trait-urls.json");
+    const res = await fetch("./data/trait-urls.json");
     traitUrls = (await res.json()) as Record<string, string>;
   } catch (err) {
     console.error("Failed to load trait URLs:", err);
