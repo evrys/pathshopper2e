@@ -12,7 +12,7 @@ describe("URL state serialization", () => {
     remaster: new Set(["remastered"]),
     minLevel: "",
     maxLevel: "",
-    sort: "name:asc",
+    sort: ":asc",
     charName: "",
     cart: new Map<string, number>(),
   };
@@ -112,7 +112,7 @@ describe("URL state serialization", () => {
       expect(state.remaster).toEqual(new Set(["remastered"]));
       expect(state.minLevel).toBe("");
       expect(state.maxLevel).toBe("");
-      expect(state.sort).toBe("name:asc");
+      expect(state.sort).toBe(":asc");
       expect(state.charName).toBe("");
       expect(state.cart.size).toBe(0);
     });

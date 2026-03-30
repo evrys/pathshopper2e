@@ -9,7 +9,7 @@ import { FilterModal } from "./FilterModal";
 import styles from "./ItemTable.module.css";
 import { ItemTooltipWrapper } from "./ItemTooltip";
 
-type SortField = "name" | "level" | "price" | "type" | "rarity";
+type SortField = "name" | "level" | "price" | "type" | "rarity" | "";
 type SortDir = "asc" | "desc";
 
 export interface FilterState {
@@ -172,10 +172,12 @@ export function ItemTable({
 
   const sorted = useMemo(() => {
     if (isSearching) return filtered;
+    const activeSortField = sortField || "name";
+    const activeSortDir = sortField ? sortDir : "asc";
     const arr = [...filtered];
-    const dir = sortDir === "asc" ? 1 : -1;
+    const dir = activeSortDir === "asc" ? 1 : -1;
     arr.sort((a, b) => {
-      switch (sortField) {
+      switch (activeSortField) {
         case "name":
           return dir * a.name.localeCompare(b.name);
         case "level":
@@ -198,7 +200,13 @@ export function ItemTable({
 
   function handleSort(field: SortField) {
     if (sortField === field) {
-      onFiltersChange({ sortDir: sortDir === "asc" ? "desc" : "asc" });
+      if (sortDir === "asc") {
+        // asc → desc
+        onFiltersChange({ sortDir: "desc" });
+      } else {
+        // desc → cleared (no explicit sort)
+        onFiltersChange({ sortField: "", sortDir: "asc" });
+      }
     } else {
       onFiltersChange({ sortField: field, sortDir: "asc" });
     }

@@ -27,7 +27,7 @@ const DEFAULTS: UrlState = {
   remaster: DEFAULT_REMASTER,
   minLevel: "",
   maxLevel: "",
-  sort: "name:asc",
+  sort: ":asc",
   charName: "",
   cart: new Map(),
 };
@@ -105,7 +105,7 @@ function deserialize(hash: string): UrlState {
 
   const minLevel = params.get("minlvl") ?? "";
   const maxLevel = params.get("maxlvl") ?? "";
-  const sort = params.get("sort") ?? "name:asc";
+  const sort = params.get("sort") ?? ":asc";
   const charName = params.get("char") ?? "";
 
   const cart = new Map<string, number>();

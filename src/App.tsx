@@ -79,7 +79,7 @@ function App() {
     remasterFilter: urlState.remaster,
     minLevel: urlState.minLevel,
     maxLevel: urlState.maxLevel,
-    sortField: sortField ?? "name",
+    sortField: sortField ?? "",
     sortDir: sortDirStr ?? "asc",
   };
 
@@ -121,7 +121,9 @@ function App() {
         <h1>
           Pathshopper <span className={styles.beta}>beta</span>
         </h1>
-        <p className={styles.subtitle}>Plan your equipment purchases</p>
+        <p className={styles.subtitle}>
+          Plan a shopping list for your PF2e character
+        </p>
       </header>
 
       <div className={styles.body}>
