@@ -13,13 +13,16 @@
   padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface);
-  border: none;
   border-radius: var(--radius) var(--radius) 0 0;
   width: 100%;
-  cursor: pointer;
   font: inherit;
   color: inherit;
   text-align: left;
+}
+
+button.header {
+  border: none;
+  cursor: pointer;
 }
 
 .header h2 {
