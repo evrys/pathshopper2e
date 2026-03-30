@@ -46,7 +46,10 @@
 .resultCount {
   font-size: 0.75rem;
   color: var(--color-text-muted);
-  margin-left: auto;
+  min-width: 4rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
 
 .tableScroll {
