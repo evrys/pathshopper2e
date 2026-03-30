@@ -102,6 +102,11 @@ function App() {
     [setUrlState, filters.sortField, filters.sortDir],
   );
 
+  const handleCharNameChange = useCallback(
+    (name: string) => setUrlState({ charName: name }),
+    [setUrlState],
+  );
+
   if (loading) {
     return (
       <div className={styles.loading}>
@@ -131,6 +136,8 @@ function App() {
             entries={entries}
             totalPrice={totalPrice}
             totalItems={totalItems}
+            charName={urlState.charName}
+            onCharNameChange={handleCharNameChange}
             onSetQuantity={setQuantity}
             onRemoveItem={removeItem}
           />

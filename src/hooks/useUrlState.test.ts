@@ -13,6 +13,7 @@ describe("URL state serialization", () => {
     minLevel: "",
     maxLevel: "",
     sort: "name:asc",
+    charName: "",
     cart: new Map<string, number>(),
   };
 
@@ -91,6 +92,15 @@ describe("URL state serialization", () => {
     it("omits cart when empty", () => {
       expect(serialize(defaults)).not.toContain("cart");
     });
+
+    it("serializes character name", () => {
+      const hash = serialize({ ...defaults, charName: "Valeros" });
+      expect(hash).toContain("char=Valeros");
+    });
+
+    it("omits char when empty", () => {
+      expect(serialize(defaults)).not.toContain("char");
+    });
   });
 
   describe("deserialize", () => {
@@ -103,6 +113,7 @@ describe("URL state serialization", () => {
       expect(state.minLevel).toBe("");
       expect(state.maxLevel).toBe("");
       expect(state.sort).toBe("name:asc");
+      expect(state.charName).toBe("");
       expect(state.cart.size).toBe(0);
     });
 
@@ -162,6 +173,16 @@ describe("URL state serialization", () => {
       const state = deserialize("#cart=sword-1%3A0");
       expect(state.cart.size).toBe(0);
     });
+
+    it("parses character name", () => {
+      const state = deserialize("#char=Valeros");
+      expect(state.charName).toBe("Valeros");
+    });
+
+    it("returns empty charName when absent", () => {
+      const state = deserialize("");
+      expect(state.charName).toBe("");
+    });
   });
 
   describe("roundtrip", () => {
@@ -174,6 +195,7 @@ describe("URL state serialization", () => {
         minLevel: "1",
         maxLevel: "5",
         sort: "level:desc",
+        charName: "Valeros",
         cart: new Map([
           ["potion-1", 3],
           ["elixir-2", 1],
@@ -190,6 +212,7 @@ describe("URL state serialization", () => {
       expect(parsed.minLevel).toBe(state.minLevel);
       expect(parsed.maxLevel).toBe(state.maxLevel);
       expect(parsed.sort).toBe(state.sort);
+      expect(parsed.charName).toBe(state.charName);
       expect(parsed.cart).toEqual(state.cart);
     });
   });

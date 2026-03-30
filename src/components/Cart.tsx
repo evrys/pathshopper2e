@@ -1,4 +1,3 @@
-import { useCallback, useEffect, useRef, useState } from "react";
 import type { CartEntry } from "../hooks/useCart";
 import { aonUrl } from "../lib/aon";
 import { formatPrice } from "../lib/price";
@@ -10,87 +9,79 @@ interface CartProps {
   entries: CartEntry[];
   totalPrice: Price;
   totalItems: number;
+  charName: string;
+  onCharNameChange: (name: string) => void;
   onSetQuantity: (itemId: string, quantity: number) => void;
   onRemoveItem: (itemId: string) => void;
 }
 
-function ShareModal({ onClose }: { onClose: () => void }) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [copied, setCopied] = useState(false);
+/** Build a share URL pointing to the readonly /list page with cart + charName in the hash. */
+function buildShareUrl(entries: CartEntry[], charName: string): string {
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+  const params = new URLSearchParams();
 
-  const url = window.location.href;
+  if (charName) params.set("char", charName);
 
-  // Select the URL text on mount
-  useEffect(() => {
-    inputRef.current?.select();
-  }, []);
+  if (entries.length > 0) {
+    const cartStr = entries
+      .map(({ item, quantity }) =>
+        quantity === 1 ? item.id : `${item.id}:${quantity}`,
+      )
+      .join("+");
+    params.set("cart", cartStr);
+  }
 
-  // Close on Escape
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
-
-  const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }, [url]);
-
-  return (
-    // biome-ignore lint/a11y/useKeyWithClickEvents: backdrop click to dismiss
-    // biome-ignore lint/a11y/noStaticElementInteractions: backdrop is a dismiss target
-    <div className={styles.backdrop} onClick={onClose}>
-      {/* biome-ignore lint/a11y/useKeyWithClickEvents: click stop propagation */}
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: modal container */}
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <p className={styles.modalTitle}>Share this list</p>
-        <div className={styles.urlRow}>
-          <input
-            ref={inputRef}
-            className={styles.urlInput}
-            type="text"
-            value={url}
-            readOnly
-            onFocus={(e) => e.target.select()}
-          />
-          <button type="button" className={styles.copyBtn} onClick={handleCopy}>
-            {copied ? "Copied!" : "Copy"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  // Build hash without encoding `+`
+  const parts: string[] = [];
+  for (const [key, value] of params) {
+    parts.push(
+      `${encodeURIComponent(key)}=${encodeURIComponent(value).replace(/%2B/gi, "+")}`,
+    );
+  }
+  const hash = parts.length > 0 ? `#${parts.join("&")}` : "";
+  return `${window.location.origin}${base}/list${hash}`;
 }
 
 export function Cart({
   entries,
   totalPrice,
   totalItems,
+  charName,
+  onCharNameChange,
   onSetQuantity,
   onRemoveItem,
 }: CartProps) {
-  const [showShare, setShowShare] = useState(false);
+  const title = charName ? `${charName}\u2019s Shopping List` : "Shopping List";
 
   return (
     <div className={styles.cart}>
       <div className={styles.header}>
-        <h2>Shopping List ({totalItems})</h2>
+        <h2>
+          {title} ({totalItems})
+        </h2>
         {entries.length > 0 && (
           <div className={styles.headerActions}>
-            <button
-              type="button"
+            <a
               className={styles.shareBtn}
-              onClick={() => setShowShare(true)}
+              href={buildShareUrl(entries, charName)}
+              target="_blank"
+              rel="noopener noreferrer"
             >
               Share
-            </button>
+            </a>
           </div>
         )}
+      </div>
+
+      <div className={styles.charNameRow}>
+        <input
+          className={styles.charNameInput}
+          type="text"
+          placeholder="Character name"
+          aria-label="Character name"
+          value={charName}
+          onChange={(e) => onCharNameChange(e.target.value)}
+        />
       </div>
 
       {entries.length === 0 ? (
@@ -155,8 +146,6 @@ export function Cart({
           <strong>{formatPrice(totalPrice)}</strong>
         </div>
       )}
-
-      {showShare && <ShareModal onClose={() => setShowShare(false)} />}
     </div>
   );
 }
