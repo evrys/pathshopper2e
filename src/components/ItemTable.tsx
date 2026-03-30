@@ -167,11 +167,12 @@ export function ItemTable({
     [fuzzyResults],
   );
 
-  // When searching, fuzzy results are already relevance-sorted — skip column sort
+  // When no explicit column sort is selected and the user is searching,
+  // preserve fuzzy relevance order. An explicit sort always takes priority.
   const isSearching = search.trim() !== "";
 
   const sorted = useMemo(() => {
-    if (isSearching) return filtered;
+    if (!sortField && isSearching) return filtered;
     const activeSortField = sortField || "name";
     const activeSortDir = sortField ? sortDir : "asc";
     const arr = [...filtered];
