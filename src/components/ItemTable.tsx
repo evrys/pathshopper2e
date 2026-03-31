@@ -222,6 +222,13 @@ export function ItemTable({
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Reset scroll position when the displayed results change
+  const prevResultCount = useRef(sorted.length);
+  if (sorted.length !== prevResultCount.current) {
+    prevResultCount.current = sorted.length;
+    scrollRef.current?.scrollTo(0, 0);
+  }
+
   const virtualizer = useVirtualizer({
     count: sorted.length,
     getScrollElement: () => scrollRef.current,
