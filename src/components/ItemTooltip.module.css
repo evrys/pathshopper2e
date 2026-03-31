@@ -135,13 +135,10 @@ a.trait:hover {
 }
 
 .desc a {
-  color: #6cacee;
+  color: inherit;
   text-decoration: underline;
-  text-decoration-color: rgba(108, 172, 238, 0.4);
-  text-underline-offset: 2px;
 }
 
 .desc a:hover {
-  color: #93c5fd;
-  text-decoration-color: rgba(147, 197, 253, 0.7);
+  color: #e0e0e0;
 }

@@ -246,12 +246,34 @@ describe("sanitizeHtml", () => {
     expect(sanitizeHtml('<p class="foo">text</p>')).toBe("<p>text</p>");
   });
 
-  it("resolves Foundry @UUID references", () => {
+  it("resolves Foundry @UUID references as AoN search links", () => {
     expect(
       sanitizeHtml(
         "<p>the @UUID[Compendium.pf2e.conditionitems.Item.Sickened]{Sickened 1} condition</p>",
       ),
-    ).toBe("<p>the Sickened 1 condition</p>");
+    ).toBe(
+      '<p>the <a href="https://2e.aonprd.com/Search.aspx?q=Sickened" target="_blank" rel="noopener noreferrer">Sickened 1</a> condition</p>',
+    );
+  });
+
+  it("links @UUID Item references using the item name for search", () => {
+    expect(
+      sanitizeHtml(
+        "<p>cast @UUID[Compendium.pf2e.spells-srd.Item.Heal] as a spell</p>",
+      ),
+    ).toBe(
+      '<p>cast <a href="https://2e.aonprd.com/Search.aspx?q=Heal" target="_blank" rel="noopener noreferrer">Heal</a> as a spell</p>',
+    );
+  });
+
+  it("links @UUID without Item segment using the display text", () => {
+    expect(
+      sanitizeHtml(
+        "<p>see @UUID[Compendium.pf2e.journals.something]{the guide} for details</p>",
+      ),
+    ).toBe(
+      '<p>see <a href="https://2e.aonprd.com/Search.aspx?q=the%20guide" target="_blank" rel="noopener noreferrer">the guide</a> for details</p>',
+    );
   });
 
   it("resolves Foundry @Check references", () => {

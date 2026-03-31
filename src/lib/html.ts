@@ -1,3 +1,5 @@
+import { AON_BASE } from "./aon";
+
 /**
  * Strip HTML tags, Foundry VTT enriched text references, and decode common
  * HTML entities into readable plain text.
@@ -54,7 +56,7 @@ const ALLOWED_TAGS = new Set([
  */
 export function sanitizeHtml(html: string): string {
   let openAnchors = 0;
-  return replaceFoundryRefs(html)
+  return replaceFoundryRefs(html, { asLinks: true })
     .replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*\/?>/g, (match, tag: string) => {
       const lower = tag.toLowerCase();
 
@@ -102,7 +104,19 @@ const ACTION_GLYPHS: Record<string, string> = {
 };
 
 /** Replace Foundry VTT enriched text patterns (@UUID, @Check, etc.) with plain text. */
-function replaceFoundryRefs(html: string): string {
+function replaceFoundryRefs(
+  html: string,
+  options?: { asLinks: boolean },
+): string {
+  const asLinks = options?.asLinks ?? false;
+
+  /** Wrap a label in an AoN search link when in link mode. */
+  const aonLink = (label: string, searchName: string): string => {
+    if (!asLinks) return label;
+    const href = `${AON_BASE}/Search.aspx?q=${encodeURIComponent(searchName)}`;
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+  };
+
   return (
     html
       .replace(
@@ -114,13 +128,17 @@ function replaceFoundryRefs(html: string): string {
         /@UUID\[[^\]]*\.Item\.([^\]]+)\](?:\{([^}]*)\})?/g,
         (_match, name: string, display: string | undefined) => {
           const label = display ?? name;
-          return label.startsWith("Effect: ") ? "" : label;
+          if (label.startsWith("Effect: ")) return "";
+          return aonLink(label, name);
         },
       )
       // @UUID without Item segment: use {display} or remove
       .replace(
         /@UUID\[[^\]]*\](?:\{([^}]*)\})?/g,
-        (_match, display: string | undefined) => display ?? "",
+        (_match, display: string | undefined) => {
+          if (!display) return "";
+          return aonLink(display, display);
+        },
       )
       // @Check: use {display} or compute "DC N type check"
       .replace(
