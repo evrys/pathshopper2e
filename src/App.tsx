@@ -86,7 +86,11 @@ function App() {
   const handleFiltersChange = useCallback(
     (partial: Partial<FilterState>) => {
       const update: Parameters<typeof setUrlState>[0] = {};
-      if ("search" in partial) update.search = partial.search;
+      if ("search" in partial) {
+        update.search = partial.search;
+        // Clear column ordering when the search query changes
+        update.sort = ":asc";
+      }
       if ("typeFilter" in partial) update.types = partial.typeFilter;
       if ("rarityFilter" in partial) update.rarities = partial.rarityFilter;
       if ("remasterFilter" in partial) update.remaster = partial.remasterFilter;
