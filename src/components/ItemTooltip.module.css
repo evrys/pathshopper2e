@@ -127,3 +127,15 @@
 .desc th {
   background: rgba(255, 255, 255, 0.08);
 }
+
+.desc a {
+  color: #6cacee;
+  text-decoration: underline;
+  text-decoration-color: rgba(108, 172, 238, 0.4);
+  text-underline-offset: 2px;
+}
+
+.desc a:hover {
+  color: #93c5fd;
+  text-decoration-color: rgba(147, 197, 253, 0.7);
+}

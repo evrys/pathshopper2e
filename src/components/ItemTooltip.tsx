@@ -94,10 +94,12 @@ export function ItemTooltipWrapper({
 
     const instance = tippy(el, {
       content: container,
-      delay: [300, 0],
+      delay: [300, 100],
       maxWidth: 480,
       placement: "right",
       allowHTML: true,
+      interactive: true,
+      appendTo: () => document.body,
     });
 
     return () => {

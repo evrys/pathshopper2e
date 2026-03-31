@@ -53,9 +53,28 @@ const ALLOWED_TAGS = new Set([
  * else (scripts, spans, divs, unknown attributes, etc.).
  */
 export function sanitizeHtml(html: string): string {
+  let openAnchors = 0;
   return replaceFoundryRefs(html)
     .replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*\/?>/g, (match, tag: string) => {
       const lower = tag.toLowerCase();
+
+      // Anchor tags: preserve href, open in new tab
+      if (lower === "a") {
+        const isClosing = match.startsWith("</");
+        if (isClosing) {
+          if (openAnchors > 0) {
+            openAnchors--;
+            return "</a>";
+          }
+          return "";
+        }
+        const hrefMatch = match.match(/href\s*=\s*"([^"]*)"/);
+        if (!hrefMatch) return "";
+        const href = hrefMatch[1];
+        openAnchors++;
+        return `<a href="${href}" target="_blank" rel="noopener noreferrer">`;
+      }
+
       if (ALLOWED_TAGS.has(lower)) {
         // Self-closing tags
         if (lower === "hr" || lower === "br") return `<${lower} />`;

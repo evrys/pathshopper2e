@@ -288,6 +288,28 @@ describe("sanitizeHtml", () => {
       "<p><strong>Benefit</strong> You gain a bonus.</p><p><strong>Drawback</strong> You take a penalty.</p>",
     );
   });
+
+  it("preserves anchor tags with href and adds target/rel", () => {
+    expect(
+      sanitizeHtml('<p>See <a href="https://example.com">this link</a>.</p>'),
+    ).toBe(
+      '<p>See <a href="https://example.com" target="_blank" rel="noopener noreferrer">this link</a>.</p>',
+    );
+  });
+
+  it("strips anchor tags without href", () => {
+    expect(sanitizeHtml("<p><a>no link</a></p>")).toBe("<p>no link</p>");
+  });
+
+  it("strips non-href attributes from anchor tags", () => {
+    expect(
+      sanitizeHtml(
+        '<p><a href="https://example.com" onclick="alert(1)" class="foo">link</a></p>',
+      ),
+    ).toBe(
+      '<p><a href="https://example.com" target="_blank" rel="noopener noreferrer">link</a></p>',
+    );
+  });
 });
 
 describe("inline rolls", () => {
