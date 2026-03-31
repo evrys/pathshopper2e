@@ -18,6 +18,7 @@ export interface FilterState {
   typeFilter: Set<string>;
   rarityFilter: Set<string>;
   remasterFilter: Set<string>;
+  traitFilter: Set<string>;
   minLevel: string;
   maxLevel: string;
   sortField: SortField;
@@ -90,6 +91,7 @@ export function ItemTable({
     typeFilter,
     rarityFilter,
     remasterFilter,
+    traitFilter,
     minLevel,
     maxLevel,
     sortField,
@@ -108,10 +110,20 @@ export function ItemTable({
         !remasterFilter.has(item.remaster ? "remastered" : "legacy")
       )
         return false;
+      if (traitFilter.size > 0 && !item.traits.some((t) => traitFilter.has(t)))
+        return false;
       if (item.level < minLvl || item.level > maxLvl) return false;
       return true;
     });
-  }, [items, typeFilter, rarityFilter, remasterFilter, minLevel, maxLevel]);
+  }, [
+    items,
+    typeFilter,
+    rarityFilter,
+    remasterFilter,
+    traitFilter,
+    minLevel,
+    maxLevel,
+  ]);
 
   const getName = useCallback((item: Item) => item.name, []);
   const getSecondary = useCallback(
@@ -250,9 +262,11 @@ export function ItemTable({
           )}
         </span>
         <FilterModal
+          items={items}
           typeFilter={typeFilter}
           rarityFilter={rarityFilter}
           remasterFilter={remasterFilter}
+          traitFilter={traitFilter}
           minLevel={minLevel}
           maxLevel={maxLevel}
           onFiltersChange={onFiltersChange}

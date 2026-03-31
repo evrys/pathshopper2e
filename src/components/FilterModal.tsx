@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DEFAULT_RARITIES,
   DEFAULT_REMASTER,
   TYPE_LABELS,
 } from "../lib/constants";
+import { formatTrait } from "../lib/traits";
+import type { Item } from "../types";
 import styles from "./FilterModal.module.css";
 import { MultiSelect } from "./MultiSelect";
 
@@ -25,24 +27,29 @@ const REMASTER_OPTIONS = [
 ];
 
 interface FilterModalProps {
+  items: Item[];
   typeFilter: Set<string>;
   rarityFilter: Set<string>;
   remasterFilter: Set<string>;
+  traitFilter: Set<string>;
   minLevel: string;
   maxLevel: string;
   onFiltersChange: (filters: {
     typeFilter?: Set<string>;
     rarityFilter?: Set<string>;
     remasterFilter?: Set<string>;
+    traitFilter?: Set<string>;
     minLevel?: string;
     maxLevel?: string;
   }) => void;
 }
 
 export function FilterModal({
+  items,
   typeFilter,
   rarityFilter,
   remasterFilter,
+  traitFilter,
   minLevel,
   maxLevel,
   onFiltersChange,
@@ -50,10 +57,23 @@ export function FilterModal({
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
+  const traitOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const item of items) {
+      for (const t of item.traits) {
+        counts.set(t, (counts.get(t) ?? 0) + 1);
+      }
+    }
+    return [...counts.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([value]) => ({ value, label: formatTrait(value) }));
+  }, [items]);
+
   const activeCount =
     (typeFilter.size > 0 ? 1 : 0) +
     (rarityFilter.size > 0 ? 1 : 0) +
     (remasterFilter.size > 0 ? 1 : 0) +
+    (traitFilter.size > 0 ? 1 : 0) +
     (minLevel ? 1 : 0) +
     (maxLevel ? 1 : 0);
 
@@ -72,6 +92,7 @@ export function FilterModal({
       typeFilter: new Set<string>(),
       rarityFilter: new Set<string>(),
       remasterFilter: new Set<string>(),
+      traitFilter: new Set<string>(),
       minLevel: "",
       maxLevel: "",
     });
@@ -82,6 +103,7 @@ export function FilterModal({
       typeFilter: new Set<string>(),
       rarityFilter: new Set(DEFAULT_RARITIES),
       remasterFilter: new Set(DEFAULT_REMASTER),
+      traitFilter: new Set<string>(),
       minLevel: "",
       maxLevel: "",
     });
@@ -150,6 +172,16 @@ export function FilterModal({
                   options={REMASTER_OPTIONS}
                   selected={remasterFilter}
                   onChange={(next) => onFiltersChange({ remasterFilter: next })}
+                />
+              </div>
+
+              <div className={styles.filterGroup}>
+                <span className={styles.groupLabel}>Traits</span>
+                <MultiSelect
+                  placeholder="All Traits"
+                  options={traitOptions}
+                  selected={traitFilter}
+                  onChange={(next) => onFiltersChange({ traitFilter: next })}
                 />
               </div>
 

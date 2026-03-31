@@ -11,6 +11,7 @@ export interface UrlState {
   types: Set<string>;
   rarities: Set<string>;
   remaster: Set<string>;
+  traits: Set<string>;
   minLevel: string;
   maxLevel: string;
   sort: string; // "field:dir", e.g. "name:asc"
@@ -24,6 +25,7 @@ const DEFAULTS: UrlState = {
   types: new Set(),
   rarities: DEFAULT_RARITIES,
   remaster: DEFAULT_REMASTER,
+  traits: new Set(),
   minLevel: "",
   maxLevel: "",
   sort: ":asc",
@@ -50,6 +52,8 @@ function serialize(state: UrlState): string {
     params.set("rarity", [...state.rarities].sort().join("+"));
   if (!setsEqual(state.remaster, DEFAULT_REMASTER))
     params.set("remaster", [...state.remaster].sort().join("+"));
+  if (state.traits.size > 0)
+    params.set("traits", [...state.traits].sort().join("+"));
   if (state.minLevel) params.set("minlvl", state.minLevel);
   if (state.maxLevel) params.set("maxlvl", state.maxLevel);
   if (state.sort !== DEFAULTS.sort) params.set("sort", state.sort);
@@ -102,6 +106,9 @@ function deserialize(hash: string): UrlState {
         ? new Set<string>()
         : new Set(remasterStr.split("+"));
 
+  const traitsStr = params.get("traits");
+  const traits = traitsStr ? new Set(traitsStr.split("+")) : new Set<string>();
+
   const minLevel = params.get("minlvl") ?? "";
   const maxLevel = params.get("maxlvl") ?? "";
   const sort = params.get("sort") ?? ":asc";
@@ -114,6 +121,7 @@ function deserialize(hash: string): UrlState {
     types,
     rarities,
     remaster,
+    traits,
     minLevel,
     maxLevel,
     sort,

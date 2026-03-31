@@ -10,6 +10,7 @@ describe("URL state serialization", () => {
     types: new Set<string>(),
     rarities: new Set(["common", "uncommon"]),
     remaster: new Set(["remastered"]),
+    traits: new Set<string>(),
     minLevel: "",
     maxLevel: "",
     sort: ":asc",
@@ -58,6 +59,18 @@ describe("URL state serialization", () => {
 
     it("omits remaster when it matches defaults", () => {
       expect(serialize(defaults)).not.toContain("remaster");
+    });
+
+    it("serializes trait filter", () => {
+      const hash = serialize({
+        ...defaults,
+        traits: new Set(["healing", "vitality"]),
+      });
+      expect(hash).toContain("traits=healing+vitality");
+    });
+
+    it("omits traits when empty", () => {
+      expect(serialize(defaults)).not.toContain("traits");
     });
 
     it("serializes level range", () => {
@@ -110,6 +123,7 @@ describe("URL state serialization", () => {
       expect(state.types.size).toBe(0);
       expect(state.rarities).toEqual(new Set(["common", "uncommon"]));
       expect(state.remaster).toEqual(new Set(["remastered"]));
+      expect(state.traits.size).toBe(0);
       expect(state.minLevel).toBe("");
       expect(state.maxLevel).toBe("");
       expect(state.sort).toBe(":asc");
@@ -152,6 +166,16 @@ describe("URL state serialization", () => {
       expect(state.remaster.size).toBe(0);
     });
 
+    it("parses trait filter", () => {
+      const state = deserialize("#traits=healing+vitality");
+      expect(state.traits).toEqual(new Set(["healing", "vitality"]));
+    });
+
+    it("returns empty traits when absent", () => {
+      const state = deserialize("");
+      expect(state.traits.size).toBe(0);
+    });
+
     it("parses level range", () => {
       const state = deserialize("#minlvl=3&maxlvl=10");
       expect(state.minLevel).toBe("3");
@@ -192,6 +216,7 @@ describe("URL state serialization", () => {
         types: new Set(["consumable"]),
         rarities: new Set(["common"]),
         remaster: new Set(["legacy"]),
+        traits: new Set(["healing", "vitality"]),
         minLevel: "1",
         maxLevel: "5",
         sort: "level:desc",
@@ -209,6 +234,7 @@ describe("URL state serialization", () => {
       expect(parsed.types).toEqual(state.types);
       expect(parsed.rarities).toEqual(state.rarities);
       expect(parsed.remaster).toEqual(state.remaster);
+      expect(parsed.traits).toEqual(state.traits);
       expect(parsed.minLevel).toBe(state.minLevel);
       expect(parsed.maxLevel).toBe(state.maxLevel);
       expect(parsed.sort).toBe(state.sort);
