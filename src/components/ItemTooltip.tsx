@@ -6,7 +6,7 @@ import "tippy.js/dist/tippy.css";
 import { formatUsage } from "../lib/format";
 import { sanitizeHtml } from "../lib/html";
 import { formatPrice } from "../lib/price";
-import { formatTrait } from "../lib/traits";
+import { formatTrait, traitUrl } from "../lib/traits";
 import type { Item } from "../types";
 import styles from "./ItemTooltip.module.css";
 
@@ -52,11 +52,25 @@ function TooltipContent({ item }: { item: Item }) {
         </div>
         {item.traits.length > 0 && (
           <div className={styles.traits}>
-            {item.traits.map((t) => (
-              <span key={t} className={styles.trait}>
-                {formatTrait(t)}
-              </span>
-            ))}
+            {item.traits.map((t) => {
+              const label = formatTrait(t);
+              const href = traitUrl(t);
+              return href ? (
+                <a
+                  key={t}
+                  className={styles.trait}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {label}
+                </a>
+              ) : (
+                <span key={t} className={styles.trait}>
+                  {label}
+                </span>
+              );
+            })}
           </div>
         )}
         {description && (

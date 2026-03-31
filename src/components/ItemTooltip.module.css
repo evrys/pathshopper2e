@@ -67,6 +67,12 @@
   padding: 0.05rem 0.4rem;
   font-size: 0.75rem;
   color: #b0b3ba;
+  text-decoration: none;
+}
+
+a.trait:hover {
+  background: #3a3f4a;
+  color: #d0d3da;
 }
 
 .divider {
