@@ -3,6 +3,8 @@
   "ignoreExportsUsedInFile": true,
   "ignore": [
     // Standalone maintenance/data-pipeline scripts run manually via CLI
-    "scripts/**"
+    "scripts/**",
+    // Global type declarations
+    "src/env.d.ts"
   ]
 }

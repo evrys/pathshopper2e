@@ -6,6 +6,7 @@ import { parseCartString } from "../lib/url";
 import type { Item } from "../types";
 import { ItemTooltipWrapper } from "./ItemTooltip";
 import styles from "./SharedList.module.css";
+import { VersionTag } from "./VersionTag";
 
 interface ListEntry {
   item: Item;
@@ -24,6 +25,30 @@ function parseShareHash(hash: string): {
   const cart = parseCartString(params.get("cart") ?? "");
 
   return { cart, charName };
+}
+
+/** Build a URL to the editor with the current cart + character name pre-filled. */
+function buildEditUrl(cart: Map<string, number>, charName: string): string {
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+  const params = new URLSearchParams();
+
+  if (charName) params.set("char", charName);
+
+  if (cart.size > 0) {
+    const cartStr = [...cart]
+      .map(([id, qty]) => (qty === 1 ? id : `${id}:${qty}`))
+      .join("+");
+    params.set("cart", cartStr);
+  }
+
+  const parts: string[] = [];
+  for (const [key, value] of params) {
+    parts.push(
+      `${encodeURIComponent(key)}=${encodeURIComponent(value).replace(/%2B/gi, "+")}`,
+    );
+  }
+  const hash = parts.length > 0 ? `#${parts.join("&")}` : "";
+  return `${window.location.origin}${base}/${hash}`;
 }
 
 export function SharedList() {
@@ -110,10 +135,13 @@ export function SharedList() {
       )}
 
       <footer className={styles.footer}>
+        <a href={buildEditUrl(cart, charName)}>Edit this list</a>
+        {" · "}
         <a href={`${import.meta.env.BASE_URL}`}>
-          Create your own list on Pathshopper
+          Create a new list on Pathshopper
         </a>
       </footer>
+      <VersionTag />
     </div>
   );
 }

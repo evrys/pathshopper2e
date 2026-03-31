@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import styles from "./App.module.css";
 import { Cart } from "./components/Cart";
 import { ItemTable, type FilterState } from "./components/ItemTable";
+import { VersionTag } from "./components/VersionTag";
 import { useCart, type CartEntry } from "./hooks/useCart";
 import { useItems } from "./hooks/useItems";
 import { useUrlState } from "./hooks/useUrlState";
@@ -151,6 +152,7 @@ function App() {
           />
         </aside>
       </div>
+      <VersionTag />
     </div>
   );
 }
