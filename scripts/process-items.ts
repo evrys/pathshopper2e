@@ -248,6 +248,25 @@ function convertAonMarkdown(markdown: string, itemName: string): string {
   return html.replace(/\s+/g, " ").trim();
 }
 
+// ── ID shortening ───────────────────────────────────────────────────
+
+const CATEGORY_PREFIX: Record<string, string> = {
+  equipment: "e",
+  weapon: "w",
+  armor: "a",
+  shield: "s",
+};
+
+/** Shorten an AoN id like "equipment-1405-1291" → "e1405.1291". */
+function shortenId(aonId: string): string {
+  const dashIdx = aonId.indexOf("-");
+  if (dashIdx === -1) return aonId;
+  const category = aonId.slice(0, dashIdx);
+  const rest = aonId.slice(dashIdx + 1);
+  const prefix = CATEGORY_PREFIX[category] ?? `${category}-`;
+  return `${prefix}${rest.replace(/-/g, ".")}`;
+}
+
 // ── Main ────────────────────────────────────────────────────────────
 
 function main() {
@@ -264,7 +283,7 @@ function main() {
       .filter((t) => !RARITY_TRAITS.has(t));
 
     const item: JsonItem = {
-      id: raw.id,
+      id: shortenId(raw.id),
       name: raw.name,
       type: mapType(raw),
       level: raw.level ?? 0,

@@ -4,7 +4,7 @@ import { aonUrl } from "./aon";
 
 function makeItem(overrides: Partial<Item> = {}): Item {
   return {
-    id: "weapon-386",
+    id: "w386",
     name: "Longsword",
     type: "weapon",
     level: 0,

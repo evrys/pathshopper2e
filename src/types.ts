@@ -10,7 +10,7 @@ export type JsonItem = Omit<Item, "plainDescription">;
 
 /** A Pathfinder 2e equipment item */
 export interface Item {
-  /** Unique identifier from Archives of Nethys (e.g. "equipment-1082") */
+  /** Unique identifier derived from Archives of Nethys (e.g. "e1082", "w386") */
   id: string;
   /** Display name */
   name: string;
