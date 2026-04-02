@@ -117,9 +117,10 @@ const RARITY_TRAITS = new Set(["common", "uncommon", "rare", "unique"]);
 
 /** Configure marked to rewrite relative AoN links to absolute URLs. */
 const renderer = new marked.Renderer();
-renderer.link = ({ href, text }) => {
+renderer.link = function ({ href, tokens, text }) {
   const fullUrl = href.startsWith("/") ? `https://2e.aonprd.com${href}` : href;
-  return `<a href="${fullUrl}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+  const rendered = tokens ? this.parser.parseInline(tokens) : text;
+  return `<a href="${fullUrl}" target="_blank" rel="noopener noreferrer">${rendered}</a>`;
 };
 marked.use({ renderer, async: false });
 
@@ -166,13 +167,66 @@ function stripAonXml(md: string): string {
   return text;
 }
 
+/**
+ * Extract the plain text name from a `<title>` block, which may contain
+ * markdown links like `[Name](/url)`.
+ */
+function titleName(titleBlock: string): string {
+  const inner = titleBlock.replace(/<\/?title[^>]*>/g, "").trim();
+  const linkMatch = inner.match(/\[([^\]]+)\]\([^)]+\)/);
+  return (linkMatch ? linkMatch[1] : inner).replace(/\s+/g, " ");
+}
+
+/**
+ * Given the markdown body (after the header `---`), extract only the section
+ * that belongs to `itemName`.
+ *
+ * AoN multi-variant items share a common intro followed by `<title>` blocks,
+ * one per variant.  Each variant's block is followed by metadata (traits,
+ * source, price, bulk) then a `---` separator, then the variant-specific
+ * description.  We keep the shared intro + only the matching variant's
+ * description.
+ */
+function extractVariantBody(body: string, itemName: string): string {
+  // Split into alternating [text, title, text, title, text, ...]
+  const sections = body.split(/(<title[^>]*>[\s\S]*?<\/title>)/);
+
+  // If there are fewer than 2 title blocks, there's nothing to filter
+  const titleCount = sections.filter((_, i) => i % 2 === 1).length;
+  if (titleCount < 2) return body;
+
+  const intro = sections[0];
+  const nameNorm = itemName.replace(/\s+/g, " ").trim();
+
+  // Walk the title/text pairs (title at odd indices, text at even)
+  for (let i = 1; i < sections.length; i += 2) {
+    const name = titleName(sections[i]);
+    if (name !== nameNorm) continue;
+
+    // The text section that follows this title
+    const variantMeta = sections[i + 1] ?? "";
+
+    // The variant description comes after the last "---" in its text block
+    const descParts = variantMeta.split(/\r?\n---\r?\n/);
+    const variantDesc =
+      descParts.length > 1 ? descParts.slice(1).join("\n---\n") : "";
+
+    // Keep the title block as a heading to separate intro from variant desc
+    return `${intro}\n${sections[i]}\n${variantDesc}`;
+  }
+
+  // No matching title found — return everything (parent / base item)
+  return body;
+}
+
 /** Convert AoN custom markdown into HTML for display. */
-function convertAonMarkdown(markdown: string): string {
+function convertAonMarkdown(markdown: string, itemName: string): string {
   // The description body comes after the first "---" separator
   const parts = markdown.split(/\r?\n---\r?\n/);
   const body = parts.length > 1 ? parts.slice(1).join("\n---\n") : markdown;
 
-  const cleaned = stripAonXml(body);
+  const filtered = extractVariantBody(body, itemName);
+  const cleaned = stripAonXml(filtered);
   const html = marked.parse(cleaned) as string;
 
   // Clean up whitespace
@@ -207,7 +261,7 @@ function main() {
       usage: raw.usage ?? "",
       source: raw.primary_source ?? "",
       remaster: !raw.remaster_id || raw.remaster_id.length === 0,
-      description: convertAonMarkdown(raw.markdown ?? ""),
+      description: convertAonMarkdown(raw.markdown ?? "", raw.name),
       aonUrl: raw.url,
     };
 
