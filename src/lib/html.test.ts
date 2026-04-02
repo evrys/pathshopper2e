@@ -101,3 +101,47 @@ describe("sanitizeHtml", () => {
     );
   });
 });
+
+describe("dataset integration", () => {
+  it("no item description contains unprocessed AoN markup", async () => {
+    const items = (await import("../../data/items.json")).default as Array<{
+      name: string;
+      description: string;
+    }>;
+
+    /** Patterns that indicate unprocessed AoN custom XML or broken rendering. */
+    const BAD_PATTERNS: [RegExp, string][] = [
+      [/<actions\b/, "unprocessed <actions>"],
+      [/<title\b/, "unprocessed <title>"],
+      [/<traits\b/, "unprocessed <traits>"],
+      [/<trait\b/, "unprocessed <trait>"],
+      [/<column\b/, "unprocessed <column>"],
+      [/<row\b/, "unprocessed <row>"],
+      [/<document\b/, "unprocessed <document>"],
+      [/<additional-info\b/, "unprocessed <additional-info>"],
+      [/<summary\b/, "unprocessed <summary>"],
+      [/target="<em>/, "italic leaking into HTML attribute"],
+    ];
+
+    const failures: string[] = [];
+    for (const item of items) {
+      if (!item.description) continue;
+      const sanitized = sanitizeHtml(item.description);
+      for (const [pattern, label] of BAD_PATTERNS) {
+        if (pattern.test(sanitized)) {
+          failures.push(`${item.name}: ${label}`);
+          break;
+        }
+      }
+    }
+
+    if (failures.length > 0) {
+      const sample = failures.slice(0, 20).join("\n");
+      const suffix =
+        failures.length > 20 ? `\n... and ${failures.length - 20} more` : "";
+      throw new Error(
+        `${failures.length} items have formatting issues:\n${sample}${suffix}`,
+      );
+    }
+  });
+});
