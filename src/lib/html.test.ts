@@ -121,6 +121,8 @@ describe("dataset integration", () => {
       [/<additional-info\b/, "unprocessed <additional-info>"],
       [/<summary\b/, "unprocessed <summary>"],
       [/target="<em>/, "italic leaking into HTML attribute"],
+      [/\[_?[^\]]+_?\]\([^)]+\)/, "unprocessed markdown link"],
+      [/(?<!=)\*\*[^*]+\*\*/, "unprocessed markdown bold"],
     ];
 
     const failures: string[] = [];

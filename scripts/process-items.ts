@@ -140,9 +140,9 @@ function stripAonXml(md: string): string {
   // Fix unmatched italic underscores in link text: [_text](/url) → [_text_](/url)
   text = text.replace(/\[_([^_\]]+)\]\(/g, "[_$1_](");
 
-  // Convert markdown inside HTML table cells so marked doesn't skip it
+  // Convert markdown inside HTML elements so marked doesn't skip it
   text = text.replace(
-    /<(td|th)>([\s\S]*?)<\/\1>/g,
+    /<(td|th|li)\b[^>]*>([\s\S]*?)<\/\1>/g,
     (_match, tag: string, inner: string) => {
       const rendered = marked.parseInline(inner) as string;
       return `<${tag}>${rendered}</${tag}>`;
@@ -242,7 +242,20 @@ function convertAonMarkdown(markdown: string, itemName: string): string {
 
   const filtered = extractVariantBody(body, itemName);
   const cleaned = stripAonXml(filtered);
-  const html = marked.parse(cleaned) as string;
+  let html = marked.parse(cleaned) as string;
+
+  // Some markdown survives when adjacent to HTML blocks; convert it inline
+  html = html.replace(
+    /\[_?([^\]]+?)_?\]\(([^)]+)\)/g,
+    (_m, text: string, href: string) => {
+      const fullUrl = href.startsWith("/")
+        ? `https://2e.aonprd.com${href}`
+        : href;
+      const inner = marked.parseInline(text) as string;
+      return `<a href="${fullUrl}" target="_blank" rel="noopener noreferrer">${inner}</a>`;
+    },
+  );
+  html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
 
   // Clean up whitespace
   return html.replace(/\s+/g, " ").trim();
