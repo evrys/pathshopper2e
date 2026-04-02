@@ -140,6 +140,15 @@ function stripAonXml(md: string): string {
   // Fix unmatched italic underscores in link text: [_text](/url) → [_text_](/url)
   text = text.replace(/\[_([^_\]]+)\]\(/g, "[_$1_](");
 
+  // Remove "Critical Specialization Effects" and "Specific Magic Weapons"
+  // sections (everything from their <title> to the next <title> or end).
+  // We provide our own crit spec via buildCritSpec(), and re-append
+  // Specific Magic Weapons at the end via extractSpecificMagicWeapons().
+  text = text.replace(
+    /<title[^>]*>(?:Critical Specialization Effects|Specific Magic Weapons)<\/title>[\s\S]*?(?=<title|$)/g,
+    "",
+  );
+
   // Convert markdown inside HTML elements so marked doesn't skip it
   text = text.replace(
     /<(td|th|li)\b[^>]*>([\s\S]*?)<\/\1>/g,
@@ -342,6 +351,71 @@ function buildTraitDescriptions(
   return entries.length > 0 ? `<hr />${entries.join("")}` : "";
 }
 
+// ── Critical specialization effects ─────────────────────────────────
+
+/**
+ * Critical specialization effect descriptions by weapon group.
+ * Source: https://2e.aonprd.com/WeaponGroups.aspx (Player Core pg. 283)
+ */
+const CRIT_SPEC: Record<string, string> = {
+  Axe: "Choose one creature adjacent to the initial target and within reach. If its AC is lower than your attack roll result for the critical hit, you deal damage to that creature equal to the result of the weapon damage die you rolled (including extra dice for its _striking_ rune, if any). This amount isn't doubled, and no bonuses or other additional dice apply to this damage.",
+  Bomb: "Increase the radius of the bomb's splash damage (if any) to 10 feet.",
+  Bow: "If the target of the critical hit is adjacent to a surface, it gets stuck to that surface by the missile. The target is immobilized and must spend an Interact action to attempt a DC 10 Athletics check to pull the missile free; it can't move from its space until it succeeds. The creature doesn't become stuck if it is incorporeal, is liquid, or could otherwise escape without effort.",
+  Brawling:
+    "The target must succeed at a Fortitude save against your class DC or be slowed 1 until the end of your next turn.",
+  Club: "You knock the target away from you up to 10 feet (you choose the distance). This is forced movement.",
+  Crossbow:
+    "The target takes 1d8 persistent bleed damage. You gain an item bonus to this bleed damage equal to the weapon's item bonus to attack rolls.",
+  Dart: "The target takes 1d6 persistent bleed damage. You gain an item bonus to this bleed damage equal to the weapon's item bonus to attack rolls.",
+  Firearm:
+    "The target must succeed at a Fortitude save against your class DC or be stunned 1.",
+  Flail:
+    "The target is knocked prone unless they succeed at a Reflex save against your class DC.",
+  Hammer:
+    "The target is knocked prone unless they succeed at a Fortitude save against your class DC.",
+  Knife:
+    "The target takes 1d6 persistent bleed damage. You gain an item bonus to this bleed damage equal to the weapon's item bonus to attack rolls.",
+  Pick: "The weapon viciously pierces the target, who takes 2 additional damage per weapon damage die.",
+  Polearm:
+    "The target is moved 5 feet in a direction of your choice. This is forced movement.",
+  Shield: "You knock the target back from you 5 feet. This is forced movement.",
+  Sling:
+    "The target must succeed at a Fortitude save against your class DC or be stunned 1.",
+  Spear:
+    "The weapon pierces the target, weakening its attacks. The target is clumsy 1 until the start of your next turn.",
+  Sword:
+    "The target is made off-balance by your attack, becoming off-guard until the start of your next turn.",
+};
+
+/** Extract the weapon group name from raw AoN markdown (e.g. "Sword"). */
+function extractWeaponGroup(markdown: string): string | undefined {
+  const match = markdown.match(/\*\*Group\*\*\s*\[([^\]]+)\]/);
+  return match ? match[1] : undefined;
+}
+
+/** Build an HTML section for the weapon's critical specialization effect. */
+function buildCritSpec(group: string): string {
+  const desc = CRIT_SPEC[group];
+  if (!desc) return "";
+  const html = (marked.parseInline(desc) as string).replace(/\s+/g, " ");
+  return `<hr /><p><strong>Critical Specialization</strong> (${group}) ${html}</p>`;
+}
+
+/**
+ * Extract the "Specific Magic Weapons" list from raw AoN markdown and
+ * convert it to an HTML section. Returns empty string if not present.
+ */
+function extractSpecificMagicWeapons(markdown: string): string {
+  const match = markdown.match(
+    /<title[^>]*>Specific Magic Weapons<\/title>\s*([\s\S]*?)(?=<title|$)/,
+  );
+  if (!match) return "";
+  const body = match[1].trim();
+  if (!body) return "";
+  const html = marked.parse(body) as string;
+  return `<hr /><p><strong>Specific Magic Weapons</strong></p>${html.replace(/\s+/g, " ").trim()}`;
+}
+
 // ── Main ────────────────────────────────────────────────────────────
 
 function main() {
@@ -350,10 +424,37 @@ function main() {
 
   const traitDescs = loadTraitDescriptions();
 
+  // ── Merge combination-weapon melee/ranged pairs ───────────────────
+  // AoN lists combination weapons (e.g. Axe Musket) as two entries:
+  //   weapon-213          → "Axe Musket (Ranged)"
+  //   weapon-213--melee   → "Axe Musket (Melee)"
+  // We merge them into a single item, combining traits from both modes.
+  const rawById = new Map(rawItems.map((r) => [r.id, r]));
+  const meleeIds = new Set<string>();
+
+  for (const raw of rawItems) {
+    if (!raw.id.endsWith("--melee")) continue;
+    const baseId = raw.id.replace(/--melee$/, "");
+    const base = rawById.get(baseId);
+    if (!base) continue;
+
+    meleeIds.add(raw.id);
+
+    // Merge melee traits into the base and drop the "(Ranged)" suffix
+    const meleeTraits = raw.trait_raw ?? [];
+    const baseTraits = base.trait_raw ?? [];
+    const combined = [...new Set([...baseTraits, ...meleeTraits])];
+    base.trait_raw = combined;
+    base.name = base.name.replace(/ \(Ranged\)$/, "");
+  }
+
+  const filteredRaw = rawItems.filter((r) => !meleeIds.has(r.id));
+  console.log(`Merged ${meleeIds.size} combination-weapon melee entries.`);
+
   // Extract and convert each item
   const items: JsonItem[] = [];
 
-  for (const raw of rawItems) {
+  for (const raw of filteredRaw) {
     const price = parsePrice(raw.price);
     const traits = (raw.trait_raw ?? [])
       .map(normalizeTrait)
@@ -361,9 +462,14 @@ function main() {
 
     let description = convertAonMarkdown(raw.markdown ?? "", raw.name);
 
-    // Append trait descriptions for weapons
+    // Append trait descriptions and crit spec for weapons
     if (raw.category === "weapon") {
       description += buildTraitDescriptions(traits, traitDescs);
+      const group = extractWeaponGroup(raw.markdown ?? "");
+      if (group) {
+        description += buildCritSpec(group);
+      }
+      description += extractSpecificMagicWeapons(raw.markdown ?? "");
     }
 
     const item: JsonItem = {
