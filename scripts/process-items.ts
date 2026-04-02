@@ -11,8 +11,8 @@
  * Usage: pnpm process-data
  */
 
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { marked } from "marked";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import type { JsonItem, Price } from "../src/types.ts";
 
 const RAW_INPUT = "data/raw-items.json";

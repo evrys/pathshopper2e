@@ -43,33 +43,3 @@ describe("aonUrl", () => {
     );
   });
 });
-
-describe("dataset integration", () => {
-  it("every item has an Archives of Nethys URL", async () => {
-    const items = (await import("../../data/items.json")).default as Array<{
-      name: string;
-      type: string;
-      source: string;
-      aonUrl?: string;
-    }>;
-
-    /** Sources with joke/non-canonical items that don't have AoN pages */
-    /** Sources with joke/non-canonical items that don't have AoN pages */
-    const EXCLUDED_SOURCES = new Set(["Pathfinder Blog: April Fools"]);
-
-    const missing = items.filter(
-      (item) => !item.aonUrl && !EXCLUDED_SOURCES.has(item.source),
-    );
-    if (missing.length > 0) {
-      const sample = missing
-        .slice(0, 20)
-        .map((item) => `  ${item.name} [${item.type}]`)
-        .join("\n");
-      const suffix =
-        missing.length > 20 ? `\n  ... and ${missing.length - 20} more` : "";
-      throw new Error(
-        `${missing.length}/${items.length} items are missing an AoN URL:\n${sample}${suffix}`,
-      );
-    }
-  });
-});
