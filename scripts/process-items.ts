@@ -137,6 +137,18 @@ const ACTION_SYMBOLS: Record<string, string> = {
 function stripAonXml(md: string): string {
   let text = md;
 
+  // Fix unmatched italic underscores in link text: [_text](/url) → [_text_](/url)
+  text = text.replace(/\[_([^_\]]+)\]\(/g, "[_$1_](");
+
+  // Convert markdown inside HTML table cells so marked doesn't skip it
+  text = text.replace(
+    /<(td|th)>([\s\S]*?)<\/\1>/g,
+    (_match, tag: string, inner: string) => {
+      const rendered = marked.parseInline(inner) as string;
+      return `<${tag}>${rendered}</${tag}>`;
+    },
+  );
+
   // Convert <title> blocks to markdown headings
   text = text.replace(
     /<title[^>]*>([\s\S]*?)<\/title>/g,
