@@ -18,6 +18,7 @@ const ALLOWED_TAGS = new Set([
   "p",
   "strong",
   "em",
+  "code",
   "hr",
   "br",
   "ul",
@@ -29,8 +30,10 @@ const ALLOWED_TAGS = new Set([
   "tr",
   "th",
   "td",
+  "h1",
   "h2",
   "h3",
+  "h4",
 ]);
 
 /**

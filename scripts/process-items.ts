@@ -12,6 +12,7 @@
  */
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { marked } from "marked";
 import type { JsonItem, Price } from "../src/types.ts";
 
 const RAW_INPUT = "data/raw-items.json";
@@ -114,91 +115,68 @@ const RARITY_TRAITS = new Set(["common", "uncommon", "rare", "unique"]);
 
 // ── AoN markdown → HTML conversion ─────────────────────────────────
 
-/** Convert AoN custom markdown into sanitized HTML for display. */
-function convertAonMarkdown(markdown: string): string {
-  // The description body comes after the first "---" separator
-  const parts = markdown.split(/\r?\n---\r?\n/);
-  // Take everything after the first separator (the header/meta is before it)
-  const body = parts.length > 1 ? parts.slice(1).join("\n---\n") : markdown;
+/** Configure marked to rewrite relative AoN links to absolute URLs. */
+const renderer = new marked.Renderer();
+renderer.link = ({ href, text }) => {
+  const fullUrl = href.startsWith("/") ? `https://2e.aonprd.com${href}` : href;
+  return `<a href="${fullUrl}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+};
+marked.use({ renderer, async: false });
 
-  return aonToHtml(body);
-}
+/** Action symbol map for AoN <actions> tags. */
+const ACTION_SYMBOLS: Record<string, string> = {
+  "Single Action": "◆",
+  "Two Actions": "◆◆",
+  "Three Actions": "◆◆◆",
+  "Free Action": "◇",
+  Reaction: "↺",
+};
 
-/** Convert AoN-flavored markdown to HTML. */
-function aonToHtml(text: string): string {
-  let html = text;
+/** Strip AoN custom XML from markdown, leaving clean markdown for `marked`. */
+function stripAonXml(md: string): string {
+  let text = md;
 
-  // Remove <title> blocks (sub-variant headers within the body)
-  html = html.replace(
+  // Convert <title> blocks to markdown headings
+  text = text.replace(
     /<title[^>]*>([\s\S]*?)<\/title>/g,
     (_match, inner: string) => {
-      // Extract the text content, convert to an h2/h3
-      const linkMatch = inner.match(/\[([^\]]+)\]\([^)]+\)/);
-      const titleText = linkMatch ? linkMatch[1] : inner.trim();
-      return titleText ? `<h3>${titleText}</h3>` : "";
+      const content = inner.trim();
+      // Extract link text or use raw content
+      const linkMatch = content.match(/\[([^\]]+)\]\([^)]+\)/);
+      const heading = linkMatch ? linkMatch[1] : content;
+      return heading ? `### ${heading}\n\n` : "";
     },
   );
 
-  // Remove layout XML tags: <column>, <row>, <additional-info>, <summary>, <document>
-  html = html.replace(
+  // Remove <traits> blocks (already in structured data)
+  text = text.replace(/<traits>[\s\S]*?<\/traits>/g, "");
+
+  // Remove layout XML tags
+  text = text.replace(
     /<\/?(column|row|additional-info|summary|document)\b[^>]*\/?>/g,
     "",
   );
 
-  // Convert <traits> blocks — remove them from the description body
-  // (traits are already in the structured data)
-  html = html.replace(/<traits>[\s\S]*?<\/traits>/g, "");
-
   // Convert <actions> to text symbols
-  html = html.replace(
+  text = text.replace(
     /<actions\s+string="([^"]*)"[^>]*\/>/g,
-    (_m, s: string) => {
-      const map: Record<string, string> = {
-        "Single Action": "◆",
-        "Two Actions": "◆◆",
-        "Three Actions": "◆◆◆",
-        "Free Action": "◇",
-        Reaction: "↺",
-      };
-      return map[s] ?? s;
-    },
+    (_m, s: string) => ACTION_SYMBOLS[s] ?? s,
   );
 
-  // Convert markdown links [text](url) to HTML anchors
-  html = html.replace(
-    /\[([^\]]+)\]\(([^)]+)\)/g,
-    (_m, linkText: string, url: string) => {
-      const fullUrl = url.startsWith("/") ? `https://2e.aonprd.com${url}` : url;
-      return `<a href="${fullUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
-    },
-  );
+  return text;
+}
 
-  // Convert **bold** to <strong>
-  html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+/** Convert AoN custom markdown into HTML for display. */
+function convertAonMarkdown(markdown: string): string {
+  // The description body comes after the first "---" separator
+  const parts = markdown.split(/\r?\n---\r?\n/);
+  const body = parts.length > 1 ? parts.slice(1).join("\n---\n") : markdown;
 
-  // Convert _italic_ (but not __double underscores__)
-  html = html.replace(/(?<!\w)_([^_]+)_(?!\w)/g, "<em>$1</em>");
-
-  // Convert markdown horizontal rules
-  html = html.replace(/^---$/gm, "<hr />");
-
-  // Convert \n\n to paragraph breaks
-  html = html.replace(/\r?\n\r?\n/g, "</p><p>");
-
-  // Convert remaining \n to <br />
-  html = html.replace(/\r?\n/g, "<br />");
-
-  // Wrap in <p> tags
-  html = `<p>${html}</p>`;
-
-  // Clean up empty paragraphs
-  html = html.replace(/<p>\s*<\/p>/g, "");
-  html = html.replace(/<p>\s*<br\s*\/?>\s*<\/p>/g, "");
+  const cleaned = stripAonXml(body);
+  const html = marked.parse(cleaned) as string;
 
   // Clean up whitespace
-  html = html.replace(/\s+/g, " ").trim();
-
-  return html;
+  return html.replace(/\s+/g, " ").trim();
 }
 
 // ── Main ────────────────────────────────────────────────────────────
