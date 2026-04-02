@@ -280,11 +280,75 @@ function shortenId(aonId: string): string {
   return `${prefix}${rest.replace(/-/g, ".")}`;
 }
 
+// ── Trait descriptions ──────────────────────────────────────────────
+
+const TRAIT_DESCRIPTIONS_PATH = "public/data/trait-descriptions.json";
+
+/** Load the trait slug → HTML description map. */
+function loadTraitDescriptions(): Record<string, string> {
+  try {
+    return JSON.parse(readFileSync(TRAIT_DESCRIPTIONS_PATH, "utf-8")) as Record<
+      string,
+      string
+    >;
+  } catch {
+    console.warn("Could not load trait descriptions; skipping.");
+    return {};
+  }
+}
+
+/**
+ * Look up a trait description by its normalized slug.
+ *
+ * Tries the exact key, then common normalizations:
+ *   - strip `-ft.` / `-feet` suffixes  (`thrown-20-ft.` → `thrown-20`)
+ *   - strip `1` prefix from die sizes  (`fatal-1d10`   → `fatal-d10`)
+ */
+function traitDescription(
+  slug: string,
+  descs: Record<string, string>,
+): string | undefined {
+  if (descs[slug]) return descs[slug];
+
+  // Strip measurement suffixes
+  const stripped = slug.replace(/-ft\.?$/, "").replace(/-feet$/, "");
+  if (descs[stripped]) return descs[stripped];
+
+  // Normalize "1d" → "d" in die sizes (e.g. fatal-1d10 → fatal-d10)
+  const normDice = stripped.replace(/\b1(d\d+)/, "$1");
+  if (descs[normDice]) return descs[normDice];
+
+  return undefined;
+}
+
+/** Format a trait slug like "deadly-d10" into "Deadly D10". */
+function formatTraitLabel(trait: string): string {
+  return trait.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** Build an HTML section listing trait descriptions for the given traits. */
+function buildTraitDescriptions(
+  traits: string[],
+  descs: Record<string, string>,
+): string {
+  const entries: string[] = [];
+  for (const trait of traits) {
+    const desc = traitDescription(trait, descs);
+    if (!desc) continue;
+    // Trait descriptions may contain raw markdown italic; convert inline
+    const html = (marked.parseInline(desc) as string).replace(/\s+/g, " ");
+    entries.push(`<p><strong>${formatTraitLabel(trait)}</strong> ${html}</p>`);
+  }
+  return entries.length > 0 ? `<hr />${entries.join("")}` : "";
+}
+
 // ── Main ────────────────────────────────────────────────────────────
 
 function main() {
   const rawItems = JSON.parse(readFileSync(RAW_INPUT, "utf-8")) as AonItem[];
   console.log(`Read ${rawItems.length} raw items from ${RAW_INPUT}.`);
+
+  const traitDescs = loadTraitDescriptions();
 
   // Extract and convert each item
   const items: JsonItem[] = [];
@@ -294,6 +358,13 @@ function main() {
     const traits = (raw.trait_raw ?? [])
       .map(normalizeTrait)
       .filter((t) => !RARITY_TRAITS.has(t));
+
+    let description = convertAonMarkdown(raw.markdown ?? "", raw.name);
+
+    // Append trait descriptions for weapons
+    if (raw.category === "weapon") {
+      description += buildTraitDescriptions(traits, traitDescs);
+    }
 
     const item: JsonItem = {
       id: shortenId(raw.id),
@@ -308,7 +379,7 @@ function main() {
       usage: raw.usage ?? "",
       source: raw.primary_source ?? "",
       remaster: !raw.remaster_id || raw.remaster_id.length === 0,
-      description: convertAonMarkdown(raw.markdown ?? "", raw.name),
+      description,
       aonUrl: raw.url,
     };
 
