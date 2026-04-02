@@ -4,19 +4,20 @@ import { aonUrl } from "./aon";
 
 function makeItem(overrides: Partial<Item> = {}): Item {
   return {
-    id: "test-id",
+    id: "weapon-386",
     name: "Longsword",
     type: "weapon",
     level: 0,
     price: { gp: 1 },
-    category: "martial",
+    category: "Base Weapons",
     traits: [],
     rarity: "common",
     bulk: 1,
-    usage: "held-in-one-hand",
-    source: "Pathfinder Player Core",
+    usage: "held in 1 hand",
+    source: "Player Core",
     remaster: true,
     description: "",
+    plainDescription: "",
     ...overrides,
   };
 }

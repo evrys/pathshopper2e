@@ -11,7 +11,4 @@ export const TYPE_LABELS: Record<string, string> = {
   shield: "Shield",
   equipment: "Equipment",
   consumable: "Consumable",
-  treasure: "Treasure",
-  backpack: "Container",
-  kit: "Kit",
 };

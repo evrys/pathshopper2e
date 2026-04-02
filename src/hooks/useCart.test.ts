@@ -1,22 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { cartReducer, type CartState } from "./useCart";
 import type { Item } from "../types";
+import { cartReducer, type CartState } from "./useCart";
 
 function makeItem(overrides: Partial<Item> = {}): Item {
   return {
-    id: "sword-1",
+    id: "weapon-386",
     name: "Longsword",
     type: "weapon",
     level: 0,
     price: { gp: 1 },
-    category: "martial",
+    category: "Base Weapons",
     traits: [],
     rarity: "common",
     bulk: 1,
-    usage: "held-in-one-hand",
-    source: "Pathfinder Player Core",
+    usage: "held in 1 hand",
+    source: "Player Core",
     remaster: true,
     description: "",
+    plainDescription: "",
     ...overrides,
   };
 }
@@ -29,14 +30,14 @@ describe("cartReducer", () => {
       const item = makeItem();
       const state = cartReducer(emptyState, { type: "add", item });
       expect(state.entries.size).toBe(1);
-      expect(state.entries.get("sword-1")?.quantity).toBe(1);
+      expect(state.entries.get("weapon-386")?.quantity).toBe(1);
     });
 
     it("increments quantity for existing item", () => {
       const item = makeItem();
       let state = cartReducer(emptyState, { type: "add", item });
       state = cartReducer(state, { type: "add", item });
-      expect(state.entries.get("sword-1")?.quantity).toBe(2);
+      expect(state.entries.get("weapon-386")?.quantity).toBe(2);
     });
 
     it("tracks different items separately", () => {
@@ -52,7 +53,7 @@ describe("cartReducer", () => {
     it("removes an item entirely", () => {
       const item = makeItem();
       let state = cartReducer(emptyState, { type: "add", item });
-      state = cartReducer(state, { type: "remove", itemId: "sword-1" });
+      state = cartReducer(state, { type: "remove", itemId: "weapon-386" });
       expect(state.entries.size).toBe(0);
     });
 
@@ -71,10 +72,10 @@ describe("cartReducer", () => {
       let state = cartReducer(emptyState, { type: "add", item });
       state = cartReducer(state, {
         type: "set-quantity",
-        itemId: "sword-1",
+        itemId: "weapon-386",
         quantity: 5,
       });
-      expect(state.entries.get("sword-1")?.quantity).toBe(5);
+      expect(state.entries.get("weapon-386")?.quantity).toBe(5);
     });
 
     it("removes item when quantity is 0", () => {
@@ -82,7 +83,7 @@ describe("cartReducer", () => {
       let state = cartReducer(emptyState, { type: "add", item });
       state = cartReducer(state, {
         type: "set-quantity",
-        itemId: "sword-1",
+        itemId: "weapon-386",
         quantity: 0,
       });
       expect(state.entries.size).toBe(0);
@@ -93,7 +94,7 @@ describe("cartReducer", () => {
       let state = cartReducer(emptyState, { type: "add", item });
       state = cartReducer(state, {
         type: "set-quantity",
-        itemId: "sword-1",
+        itemId: "weapon-386",
         quantity: -1,
       });
       expect(state.entries.size).toBe(0);
