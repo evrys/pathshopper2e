@@ -223,8 +223,11 @@ function extractVariantBody(body: string, itemName: string): string {
     const variantDesc =
       descParts.length > 1 ? descParts.slice(1).join("\n---\n") : "";
 
-    // Keep the title block as a heading to separate intro from variant desc
-    return `${intro}\n${sections[i]}\n${variantDesc}`;
+    // Keep the title block as a heading only if there is variant-specific text
+    if (variantDesc.trim()) {
+      return `${intro}\n${sections[i]}\n${variantDesc}`;
+    }
+    return intro;
   }
 
   // No matching title found — return everything (parent / base item)
