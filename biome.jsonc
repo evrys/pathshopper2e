@@ -10,7 +10,8 @@
     "ignoreUnknown": false,
     "includes": [
       "**"
-    ]
+    ],
+    "maxSize": 10485760
   },
   "formatter": {
     "enabled": true,
