@@ -12,6 +12,7 @@ dist
 dist-ssr
 *.local
 data/raw-items.json
+.vite
 
 # Editor directories and files
 .idea
