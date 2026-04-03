@@ -1,99 +1,39 @@
-name: Deploy Preview
+name: Deploy PR Preview
 
 on:
-  push:
-    branches-ignore: [main]
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
 
 permissions:
   contents: write
   pull-requests: write
 
-concurrency:
-  group: preview-${{ github.ref_name }}
-  cancel-in-progress: true
+concurrency: preview-${{ github.ref }}
 
 jobs:
-  deploy-preview:
+  preview:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
+        if: github.event.action != 'closed'
 
       - uses: actions/setup-node@v4
+        if: github.event.action != 'closed'
         with:
           node-version: 22
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+        if: github.event.action != 'closed'
 
-      - name: Sanitize branch name
-        id: branch
-        run: |
-          BRANCH="${{ github.ref_name }}"
-          # Replace non-alphanumeric chars with hyphens, lowercase
-          SAFE_BRANCH=$(echo "$BRANCH" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
-          echo "name=$SAFE_BRANCH" >> "$GITHUB_OUTPUT"
-
-      - name: Build preview
+      - name: Build
+        if: github.event.action != 'closed'
         run: pnpm build
         env:
-          VITE_BASE_PATH: /pathshopper2e/preview/${{ steps.branch.outputs.name }}/
+          VITE_BASE_PATH: /pathshopper2e/pr-preview/pr-${{ github.event.number }}/
 
-      - name: Deploy preview
-        uses: peaceiris/actions-gh-pages@v4
+      - uses: rossjrw/pr-preview-action@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          destination_dir: preview/${{ steps.branch.outputs.name }}
-          keep_files: true
-
-      - name: Find PR for this branch
-        id: find-pr
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const pulls = await github.rest.pulls.list({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              head: `${context.repo.owner}:${context.ref.replace('refs/heads/', '')}`,
-              state: 'open',
-            });
-            if (pulls.data.length > 0) {
-              core.setOutput('number', pulls.data[0].number);
-            }
-
-      - name: Comment preview URL on PR
-        if: steps.find-pr.outputs.number
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const previewUrl = `https://evrys.github.io/pathshopper2e/preview/${{ steps.branch.outputs.name }}/`;
-            const body = `🔍 **Preview deployed:** ${previewUrl}`;
-            const prNumber = ${{ steps.find-pr.outputs.number || 0 }};
-
-            // Check if we already commented
-            const comments = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-            });
-            const existing = comments.data.find(c =>
-              c.user.login === 'github-actions[bot]' && c.body.includes('Preview deployed:')
-            );
-
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existing.id,
-                body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body,
-              });
-            }
+          source-dir: ./dist/
