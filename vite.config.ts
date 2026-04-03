@@ -10,5 +10,6 @@ export default defineConfig({
   plugins: [react()],
   define: {
     __COMMIT_HASH__: JSON.stringify(commitHash),
+    __PR_NUMBER__: JSON.stringify(process.env.VITE_PR_NUMBER ?? ""),
   },
 });
