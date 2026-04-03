@@ -2,7 +2,7 @@
 
 A shopping list builder for Pathfinder 2e. Browse the full equipment catalog, filter by type/rarity/level, and build a priced shopping cart you can share via URL.
 
-Item data is sourced from the [Foundry VTT PF2e system](https://github.com/foundryvtt/pf2e) (Apache-2.0), with links to [Archives of Nethys](https://2e.aonprd.com).
+Item data is sourced from [Archives of Nethys](https://2e.aonprd.com) (the official PF2e SRD).
 
 ## Quick start
 
@@ -25,5 +25,6 @@ Visit http://localhost:5900.
 | `pnpm format` | Auto-fix formatting |
 | `pnpm test` | Run tests once |
 | `pnpm test:watch` | Run tests in watch mode |
-| `pnpm fetch-data` | Re-fetch item data from Foundry VTT |
+| `pnpm fetch-data` | Re-fetch item data from Archives of Nethys |
+| `pnpm process-data` | Process raw items into the final dataset |
 
