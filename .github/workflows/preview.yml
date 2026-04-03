@@ -33,6 +33,7 @@ jobs:
         run: pnpm build
         env:
           VITE_BASE_PATH: /pathshopper2e/pr-preview/pr-${{ github.event.number }}/
+          VITE_PR_NUMBER: ${{ github.event.number }}
 
       - uses: rossjrw/pr-preview-action@v1
         with:

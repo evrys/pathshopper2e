@@ -139,7 +139,19 @@ function App() {
     <div className={styles.app}>
       <header className={styles.header}>
         <h1>
-          Pathshopper <span className={styles.beta}>dev preview</span>
+          Pathshopper{" "}
+          {__PR_NUMBER__ ? (
+            <a
+              href={`https://github.com/evrys/pathshopper2e/pull/${__PR_NUMBER__}`}
+              className={styles.badge}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              dev preview
+            </a>
+          ) : (
+            <span className={styles.badge}>beta</span>
+          )}
         </h1>
         <p className={styles.subtitle}>
           Plan a shopping list for your PF2e character
