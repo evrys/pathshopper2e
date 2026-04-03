@@ -63,7 +63,7 @@ function serialize(state: UrlState): string {
     const cartStr = [...state.cart]
       .map(([id, qty]) => (qty === 1 ? id : `${id}*${qty}`))
       .join("+");
-    params.set("cart", cartStr);
+    params.set("items", cartStr);
   }
 
   // Build the hash ourselves to avoid URLSearchParams encoding `+` as `%2B`
@@ -114,7 +114,7 @@ function deserialize(hash: string): UrlState {
   const sort = params.get("sort") ?? ":asc";
   const charName = params.get("name") ?? params.get("char") ?? "";
 
-  const cart = parseCartString(params.get("cart") ?? "");
+  const cart = parseCartString(params.get("items") ?? params.get("cart") ?? "");
 
   return {
     search,

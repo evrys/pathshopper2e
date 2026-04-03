@@ -94,7 +94,7 @@ describe("URL state serialization", () => {
         ["potion-1", 1],
       ]);
       const hash = serialize({ ...defaults, cart });
-      expect(hash).toContain("cart=");
+      expect(hash).toContain("items=");
       // qty 1 omits the *1 suffix
       expect(hash).toContain("potion-1");
       expect(hash).not.toContain("potion-1*1");
@@ -102,8 +102,8 @@ describe("URL state serialization", () => {
       expect(hash).toContain("sword-1*2");
     });
 
-    it("omits cart when empty", () => {
-      expect(serialize(defaults)).not.toContain("cart");
+    it("omits items when empty", () => {
+      expect(serialize(defaults)).not.toContain("items");
     });
 
     it("serializes list name", () => {
@@ -187,20 +187,32 @@ describe("URL state serialization", () => {
       expect(state.sort).toBe("price:desc");
     });
 
-    it("parses cart with mixed quantities", () => {
+    it("parses items with mixed quantities", () => {
+      const state = deserialize("#items=sword-1*2+potion-1");
+      expect(state.cart.get("sword-1")).toBe(2);
+      expect(state.cart.get("potion-1")).toBe(1);
+    });
+
+    it("parses items with legacy : quantity separator", () => {
+      const state = deserialize("#items=sword-1%3A2+potion-1");
+      expect(state.cart.get("sword-1")).toBe(2);
+      expect(state.cart.get("potion-1")).toBe(1);
+    });
+
+    it("parses items from legacy cart param", () => {
       const state = deserialize("#cart=sword-1*2+potion-1");
       expect(state.cart.get("sword-1")).toBe(2);
       expect(state.cart.get("potion-1")).toBe(1);
     });
 
-    it("parses cart with legacy : quantity separator", () => {
+    it("parses legacy cart with legacy : quantity separator", () => {
       const state = deserialize("#cart=sword-1%3A2+potion-1");
       expect(state.cart.get("sword-1")).toBe(2);
       expect(state.cart.get("potion-1")).toBe(1);
     });
 
-    it("ignores invalid cart entries", () => {
-      const state = deserialize("#cart=sword-1*0");
+    it("ignores invalid item entries", () => {
+      const state = deserialize("#items=sword-1*0");
       expect(state.cart.size).toBe(0);
     });
 

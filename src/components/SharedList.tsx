@@ -22,7 +22,7 @@ function parseShareHash(hash: string): {
   const params = new URLSearchParams(str.replace(/\+/g, "%2B"));
 
   const charName = params.get("name") ?? params.get("char") ?? "";
-  const cart = parseCartString(params.get("cart") ?? "");
+  const cart = parseCartString(params.get("items") ?? params.get("cart") ?? "");
 
   return { cart, charName };
 }
@@ -38,7 +38,7 @@ function buildEditUrl(cart: Map<string, number>, charName: string): string {
     const cartStr = [...cart]
       .map(([id, qty]) => (qty === 1 ? id : `${id}*${qty}`))
       .join("+");
-    params.set("cart", cartStr);
+    params.set("items", cartStr);
   }
 
   const parts: string[] = [];

@@ -30,7 +30,7 @@ function buildShareUrl(entries: CartEntry[], charName: string): string {
         quantity === 1 ? item.id : `${item.id}*${quantity}`,
       )
       .join("+");
-    params.set("cart", cartStr);
+    params.set("items", cartStr);
   }
 
   // Build hash without encoding `+` or `:`
