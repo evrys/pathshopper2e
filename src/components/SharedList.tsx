@@ -36,7 +36,7 @@ function buildEditUrl(cart: Map<string, number>, charName: string): string {
 
   if (cart.size > 0) {
     const cartStr = [...cart]
-      .map(([id, qty]) => (qty === 1 ? id : `${id}:${qty}`))
+      .map(([id, qty]) => (qty === 1 ? id : `${id}*${qty}`))
       .join("+");
     params.set("cart", cartStr);
   }

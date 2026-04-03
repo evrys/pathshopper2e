@@ -61,7 +61,7 @@ function serialize(state: UrlState): string {
 
   if (state.cart.size > 0) {
     const cartStr = [...state.cart]
-      .map(([id, qty]) => (qty === 1 ? id : `${id}:${qty}`))
+      .map(([id, qty]) => (qty === 1 ? id : `${id}*${qty}`))
       .join("+");
     params.set("cart", cartStr);
   }

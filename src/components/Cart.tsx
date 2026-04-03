@@ -27,13 +27,13 @@ function buildShareUrl(entries: CartEntry[], charName: string): string {
   if (entries.length > 0) {
     const cartStr = entries
       .map(({ item, quantity }) =>
-        quantity === 1 ? item.id : `${item.id}:${quantity}`,
+        quantity === 1 ? item.id : `${item.id}*${quantity}`,
       )
       .join("+");
     params.set("cart", cartStr);
   }
 
-  // Build hash without encoding `+`
+  // Build hash without encoding `+` or `:`
   const parts: string[] = [];
   for (const [key, value] of params) {
     parts.push(
