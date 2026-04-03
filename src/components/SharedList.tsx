@@ -13,7 +13,7 @@ interface ListEntry {
   quantity: number;
 }
 
-/** Parse the URL hash into a cart map and character name. */
+/** Parse the URL hash into a cart map and list name. */
 function parseShareHash(hash: string): {
   cart: Map<string, number>;
   charName: string;
@@ -21,18 +21,18 @@ function parseShareHash(hash: string): {
   const str = hash.startsWith("#") ? hash.slice(1) : hash;
   const params = new URLSearchParams(str.replace(/\+/g, "%2B"));
 
-  const charName = params.get("char") ?? "";
+  const charName = params.get("name") ?? params.get("char") ?? "";
   const cart = parseCartString(params.get("cart") ?? "");
 
   return { cart, charName };
 }
 
-/** Build a URL to the editor with the current cart + character name pre-filled. */
+/** Build a URL to the editor with the current cart + list name pre-filled. */
 function buildEditUrl(cart: Map<string, number>, charName: string): string {
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
   const params = new URLSearchParams();
 
-  if (charName) params.set("char", charName);
+  if (charName) params.set("name", charName);
 
   if (cart.size > 0) {
     const cartStr = [...cart]
@@ -78,7 +78,7 @@ export function SharedList() {
   );
   const totalItems = entries.reduce((sum, e) => sum + e.quantity, 0);
 
-  const title = charName ? `${charName}\u2019s Shopping List` : "Shopping List";
+  const title = charName ? charName : "Shopping List";
 
   if (loading) {
     return (

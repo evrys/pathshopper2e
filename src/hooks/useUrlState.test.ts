@@ -95,24 +95,24 @@ describe("URL state serialization", () => {
       ]);
       const hash = serialize({ ...defaults, cart });
       expect(hash).toContain("cart=");
-      // qty 1 omits the :1 suffix
+      // qty 1 omits the *1 suffix
       expect(hash).toContain("potion-1");
-      expect(hash).not.toContain("potion-1%3A1");
-      // qty 2 includes the :2 suffix
-      expect(hash).toContain("sword-1%3A2");
+      expect(hash).not.toContain("potion-1*1");
+      // qty 2 includes the *2 suffix (no encoding needed)
+      expect(hash).toContain("sword-1*2");
     });
 
     it("omits cart when empty", () => {
       expect(serialize(defaults)).not.toContain("cart");
     });
 
-    it("serializes character name", () => {
+    it("serializes list name", () => {
       const hash = serialize({ ...defaults, charName: "Valeros" });
-      expect(hash).toContain("char=Valeros");
+      expect(hash).toContain("name=Valeros");
     });
 
-    it("omits char when empty", () => {
-      expect(serialize(defaults)).not.toContain("char");
+    it("omits name when empty", () => {
+      expect(serialize(defaults)).not.toContain("name=");
     });
   });
 
@@ -188,17 +188,28 @@ describe("URL state serialization", () => {
     });
 
     it("parses cart with mixed quantities", () => {
+      const state = deserialize("#cart=sword-1*2+potion-1");
+      expect(state.cart.get("sword-1")).toBe(2);
+      expect(state.cart.get("potion-1")).toBe(1);
+    });
+
+    it("parses cart with legacy : quantity separator", () => {
       const state = deserialize("#cart=sword-1%3A2+potion-1");
       expect(state.cart.get("sword-1")).toBe(2);
       expect(state.cart.get("potion-1")).toBe(1);
     });
 
     it("ignores invalid cart entries", () => {
-      const state = deserialize("#cart=sword-1%3A0");
+      const state = deserialize("#cart=sword-1*0");
       expect(state.cart.size).toBe(0);
     });
 
-    it("parses character name", () => {
+    it("parses list name", () => {
+      const state = deserialize("#name=Valeros");
+      expect(state.charName).toBe("Valeros");
+    });
+
+    it("parses list name from legacy char param", () => {
       const state = deserialize("#char=Valeros");
       expect(state.charName).toBe("Valeros");
     });

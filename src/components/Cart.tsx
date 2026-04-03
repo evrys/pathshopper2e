@@ -17,12 +17,12 @@ interface CartProps {
   onRemoveItem: (itemId: string) => void;
 }
 
-/** Build a share URL pointing to the readonly list view with cart + charName in the hash. */
+/** Build a share URL pointing to the readonly list view with cart + list name in the hash. */
 function buildShareUrl(entries: CartEntry[], charName: string): string {
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
   const params = new URLSearchParams();
 
-  if (charName) params.set("char", charName);
+  if (charName) params.set("name", charName);
 
   if (entries.length > 0) {
     const cartStr = entries
@@ -56,7 +56,7 @@ export function Cart({
   const isMobile = useMediaQuery("(max-width: 640px)");
   const [mobileCollapsed, setMobileCollapsed] = useState(true);
   const expanded = !isMobile || !mobileCollapsed;
-  const title = charName ? `${charName}\u2019s Shopping List` : "Shopping List";
+  const title = charName ? charName : "Shopping List";
 
   const headerContent = (
     <>
@@ -110,8 +110,8 @@ export function Cart({
             <input
               className={styles.charNameInput}
               type="text"
-              placeholder="Character name"
-              aria-label="Character name"
+              placeholder="List name"
+              aria-label="List name"
               value={charName}
               onChange={(e) => onCharNameChange(e.target.value)}
             />
@@ -119,7 +119,7 @@ export function Cart({
 
           {entries.length === 0 ? (
             <p className={styles.empty}>
-              Add items from the table to start building your loadout.
+              Add items from the table to start building your list.
             </p>
           ) : (
             <ul className={styles.items}>

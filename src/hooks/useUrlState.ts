@@ -57,7 +57,7 @@ function serialize(state: UrlState): string {
   if (state.minLevel) params.set("minlvl", state.minLevel);
   if (state.maxLevel) params.set("maxlvl", state.maxLevel);
   if (state.sort !== DEFAULTS.sort) params.set("sort", state.sort);
-  if (state.charName) params.set("char", state.charName);
+  if (state.charName) params.set("name", state.charName);
 
   if (state.cart.size > 0) {
     const cartStr = [...state.cart]
@@ -112,7 +112,7 @@ function deserialize(hash: string): UrlState {
   const minLevel = params.get("minlvl") ?? "";
   const maxLevel = params.get("maxlvl") ?? "";
   const sort = params.get("sort") ?? ":asc";
-  const charName = params.get("char") ?? "";
+  const charName = params.get("name") ?? params.get("char") ?? "";
 
   const cart = parseCartString(params.get("cart") ?? "");
 
