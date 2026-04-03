@@ -6,22 +6,17 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
-  group: pages
+  group: pages-deploy
   cancel-in-progress: true
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
 
@@ -34,11 +29,24 @@ jobs:
 
       - run: pnpm build
 
-      - uses: actions/configure-pages@v5
+      # Prepare deploy directory: new build + preserved preview dirs
+      - name: Prepare deploy
+        run: |
+          git fetch origin gh-pages:gh-pages || true
+          mkdir -p deploy
+          cp -r dist/* deploy/
+          # Preserve existing preview directories from gh-pages branch
+          if git show gh-pages:preview 2>/dev/null; then
+            git worktree add gh-pages-tree gh-pages
+            if [ -d gh-pages-tree/preview ]; then
+              cp -r gh-pages-tree/preview deploy/preview
+            fi
+            git worktree remove gh-pages-tree --force
+          fi
 
-      - uses: actions/upload-pages-artifact@v3
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: dist
-
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./deploy
+          force_orphan: true

@@ -6,7 +6,7 @@ const commitHash = execSync("git rev-parse --short HEAD").toString().trim();
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: "/pathshopper2e/",
+  base: process.env.VITE_BASE_PATH ?? "/pathshopper2e/",
   plugins: [react()],
   define: {
     __COMMIT_HASH__: JSON.stringify(commitHash),

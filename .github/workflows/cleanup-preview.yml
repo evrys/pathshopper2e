@@ -1,0 +1,37 @@
+name: Cleanup Preview
+
+on: delete
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup-preview:
+    if: github.event.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          fetch-depth: 1
+
+      - name: Sanitize branch name
+        id: branch
+        run: |
+          BRANCH="${{ github.event.ref }}"
+          SAFE_BRANCH=$(echo "$BRANCH" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
+          echo "name=$SAFE_BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Remove preview directory
+        run: |
+          PREVIEW_DIR="preview/${{ steps.branch.outputs.name }}"
+          if [ -d "$PREVIEW_DIR" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git rm -rf "$PREVIEW_DIR"
+            git commit -m "Clean up preview for branch ${{ github.event.ref }}"
+            git push origin gh-pages
+            echo "Removed $PREVIEW_DIR"
+          else
+            echo "No preview directory found at $PREVIEW_DIR"
+          fi

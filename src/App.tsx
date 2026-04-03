@@ -109,6 +109,19 @@ function App() {
     [setUrlState, filters.sortField, filters.sortDir],
   );
 
+  const handleLoadList = useCallback(
+    (_name: string, loadedItems: Map<string, number>) => {
+      const itemMap = new Map(items.map((it) => [it.id, it]));
+      const map = new Map<string, CartEntry>();
+      for (const [id, qty] of loadedItems) {
+        const item = itemMap.get(id);
+        if (item) map.set(id, { item, quantity: qty });
+      }
+      if (map.size > 0) replaceCart(map);
+    },
+    [items, replaceCart],
+  );
+
   const handleCharNameChange = useCallback(
     (name: string) => setUrlState({ charName: name }),
     [setUrlState],
@@ -151,6 +164,7 @@ function App() {
             onCharNameChange={handleCharNameChange}
             onSetQuantity={setQuantity}
             onRemoveItem={removeItem}
+            onLoadList={handleLoadList}
           />
         </aside>
       </div>
