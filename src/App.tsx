@@ -139,7 +139,7 @@ function App() {
     <div className={styles.app}>
       <header className={styles.header}>
         <h1>
-          Pathshopper <span className={styles.beta}>beta</span>
+          Pathshopper <span className={styles.beta}>dev preview</span>
         </h1>
         <p className={styles.subtitle}>
           Plan a shopping list for your PF2e character
