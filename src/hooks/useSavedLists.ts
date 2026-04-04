@@ -108,6 +108,9 @@ function writeActiveId(id: string): void {
 export function useSavedLists() {
   const queryClient = useQueryClient();
 
+  // Seed initial data synchronously so the first render has lists immediately.
+  const [initialState] = useState(readFromStorage);
+
   // Read all lists from localStorage via TanStack Query.
   // Automatically re-fetches on window focus, giving cross-tab sync.
   const { data: lists = [] } = useQuery({
@@ -120,6 +123,7 @@ export function useSavedLists() {
       writeList(defaultList);
       return [defaultList];
     },
+    initialData: initialState.lists,
     // localStorage reads are sync, so treat them as always fresh
     // but still refetch on window focus
     staleTime: Number.POSITIVE_INFINITY,
@@ -127,10 +131,9 @@ export function useSavedLists() {
   });
 
   // Active list id is per-tab state (not synced across tabs).
-  const [activeListId, setActiveListId] = useState(() => {
-    const initial = readFromStorage();
-    return initial.activeListId;
-  });
+  const [activeListId, setActiveListId] = useState(
+    () => initialState.activeListId,
+  );
 
   // If the active list no longer exists (e.g. deleted in another tab),
   // fall back to the first available list.
@@ -145,9 +148,9 @@ export function useSavedLists() {
 
   const activeList = lists.find((l) => l.id === resolvedActiveId);
 
-  /** Invalidate the TanStack Query cache so the lists query re-reads localStorage. */
-  const invalidateLists = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: LISTS_QUERY_KEY });
+  /** Immediately re-read lists from localStorage into the query cache. */
+  const refreshLists = useCallback(() => {
+    queryClient.setQueryData(LISTS_QUERY_KEY, readAllLists());
   }, [queryClient]);
 
   // Track which savedAt values came from this tab's own saves,
@@ -167,9 +170,9 @@ export function useSavedLists() {
       };
       writeList(updated);
       ownSavedAtRef.current.add(savedAt);
-      invalidateLists();
+      refreshLists();
     },
-    [lists, resolvedActiveId, invalidateLists],
+    [lists, resolvedActiveId, refreshLists],
   );
 
   /** Rename the currently active list. */
@@ -181,9 +184,9 @@ export function useSavedLists() {
       const updated = { ...list, name, savedAt };
       writeList(updated);
       ownSavedAtRef.current.add(savedAt);
-      invalidateLists();
+      refreshLists();
     },
-    [lists, resolvedActiveId, invalidateLists],
+    [lists, resolvedActiveId, refreshLists],
   );
 
   /** Switch to a different list by id. */
@@ -204,10 +207,10 @@ export function useSavedLists() {
       writeList(newList);
       writeActiveId(newList.id);
       setActiveListId(newList.id);
-      invalidateLists();
+      refreshLists();
       return newList;
     },
-    [invalidateLists],
+    [refreshLists],
   );
 
   /** Delete a list by id. If it's the active list, switch to the first remaining. */
@@ -226,9 +229,9 @@ export function useSavedLists() {
           setActiveListId(remaining[0].id);
         }
       }
-      invalidateLists();
+      refreshLists();
     },
-    [lists, resolvedActiveId, invalidateLists],
+    [lists, resolvedActiveId, refreshLists],
   );
 
   // Detect when the cart should be reloaded from the saved list.

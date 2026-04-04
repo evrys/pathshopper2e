@@ -1,0 +1,897 @@
+// @vitest-environment jsdom
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { act, renderHook, waitFor } from "@testing-library/react";
+import type { ReactNode } from "react";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { type SavedList, useSavedLists } from "./useSavedLists";
+
+const LIST_PREFIX = "pathshopper2e:list:";
+const ACTIVE_KEY = "pathshopper2e:active-list-id";
+
+function storeList(list: SavedList): void {
+  localStorage.setItem(`${LIST_PREFIX}${list.id}`, JSON.stringify(list));
+}
+
+function getStoredList(id: string): SavedList | null {
+  const raw = localStorage.getItem(`${LIST_PREFIX}${id}`);
+  return raw ? (JSON.parse(raw) as SavedList) : null;
+}
+
+function getStoredActiveId(): string | null {
+  return localStorage.getItem(ACTIVE_KEY);
+}
+
+function makeList(overrides: Partial<SavedList> = {}): SavedList {
+  return {
+    id: "list-1",
+    name: "Test List",
+    items: {},
+    savedAt: "2025-01-01T00:00:00.000Z",
+    ...overrides,
+  };
+}
+
+let queryClient: QueryClient;
+
+function Wrapper({ children }: { children: ReactNode }) {
+  return (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+}
+
+beforeEach(() => {
+  localStorage.clear();
+  queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+    },
+  });
+});
+
+afterEach(() => {
+  queryClient.clear();
+});
+
+describe("useSavedLists hook", () => {
+  describe("initialization", () => {
+    it("creates a default list when storage is empty", async () => {
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(1);
+      });
+
+      expect(result.current.lists[0].name).toBe("My shopping list");
+      expect(result.current.activeList).toBeDefined();
+      expect(result.current.activeListId).toBe(result.current.lists[0].id);
+    });
+
+    it("persists the default list to localStorage", async () => {
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(1);
+      });
+
+      const stored = getStoredList(result.current.lists[0].id);
+      expect(stored).not.toBeNull();
+      expect(stored?.name).toBe("My shopping list");
+    });
+
+    it("loads existing lists from localStorage", async () => {
+      const list = makeList();
+      storeList(list);
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(1);
+      });
+
+      expect(result.current.lists[0].name).toBe("Test List");
+      expect(result.current.activeListId).toBe("list-1");
+      expect(result.current.activeList?.id).toBe("list-1");
+    });
+
+    it("loads multiple lists sorted by savedAt descending", async () => {
+      storeList(
+        makeList({
+          id: "old",
+          name: "Old",
+          savedAt: "2025-01-01T00:00:00.000Z",
+        }),
+      );
+      storeList(
+        makeList({
+          id: "new",
+          name: "New",
+          savedAt: "2025-06-01T00:00:00.000Z",
+        }),
+      );
+      localStorage.setItem(ACTIVE_KEY, "old");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(2);
+      });
+
+      expect(result.current.lists[0].name).toBe("New");
+      expect(result.current.lists[1].name).toBe("Old");
+      expect(result.current.activeListId).toBe("old");
+    });
+
+    it("falls back to first list if active id is invalid", async () => {
+      storeList(
+        makeList({ id: "list-1", savedAt: "2025-06-01T00:00:00.000Z" }),
+      );
+      localStorage.setItem(ACTIVE_KEY, "nonexistent");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(1);
+      });
+
+      expect(result.current.activeListId).toBe("list-1");
+    });
+
+    it("does not set activeListChanged on first render", async () => {
+      storeList(makeList({ id: "list-1" }));
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList).toBeDefined();
+      });
+
+      expect(result.current.activeListChanged).toBe(false);
+    });
+  });
+
+  describe("createList", () => {
+    it("creates a new list and switches to it", async () => {
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(1);
+      });
+
+      let createdId = "";
+      act(() => {
+        const newList = result.current.createList("Weapons");
+        createdId = newList.id;
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(2);
+      });
+
+      expect(result.current.activeListId).toBe(createdId);
+      expect(result.current.activeList?.name).toBe("Weapons");
+      // Persisted to localStorage
+      expect(getStoredList(createdId)?.name).toBe("Weapons");
+      expect(getStoredActiveId()).toBe(createdId);
+    });
+
+    it("uses default name when given empty string", async () => {
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(1);
+      });
+
+      act(() => {
+        result.current.createList("  ");
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(2);
+      });
+
+      expect(result.current.activeList?.name).toBe("My shopping list");
+    });
+
+    it("trims whitespace from name", async () => {
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(1);
+      });
+
+      act(() => {
+        result.current.createList("  Armor  ");
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList?.name).toBe("Armor");
+      });
+    });
+
+    it("returns the created list object", async () => {
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(1);
+      });
+
+      let created: SavedList | undefined;
+      act(() => {
+        created = result.current.createList("New");
+      });
+
+      expect(created).toBeDefined();
+      expect(created?.name).toBe("New");
+      expect(created?.items).toEqual({});
+      expect(created?.id).toBeTruthy();
+    });
+  });
+
+  describe("saveActiveList", () => {
+    it("saves items to the active list", async () => {
+      const list = makeList();
+      storeList(list);
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList).toBeDefined();
+      });
+
+      act(() => {
+        result.current.saveActiveList(
+          new Map([
+            ["sword-1", 2],
+            ["potion-1", 5],
+          ]),
+        );
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList?.items).toEqual({
+          "sword-1": 2,
+          "potion-1": 5,
+        });
+      });
+
+      // Verify localStorage was updated
+      const stored = getStoredList("list-1");
+      expect(stored?.items).toEqual({ "sword-1": 2, "potion-1": 5 });
+    });
+
+    it("updates savedAt timestamp on save", async () => {
+      const list = makeList({ savedAt: "2020-01-01T00:00:00.000Z" });
+      storeList(list);
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList).toBeDefined();
+      });
+
+      act(() => {
+        result.current.saveActiveList(new Map([["item-1", 1]]));
+      });
+
+      await waitFor(() => {
+        const savedAt = result.current.activeList?.savedAt ?? "";
+        expect(savedAt > "2020-01-01T00:00:00.000Z").toBe(true);
+      });
+    });
+
+    it("does not trigger activeListChanged for own saves", async () => {
+      const list = makeList();
+      storeList(list);
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeListChanged).toBe(false);
+      });
+
+      act(() => {
+        result.current.saveActiveList(new Map([["sword-1", 1]]));
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList?.items).toEqual({ "sword-1": 1 });
+      });
+      expect(result.current.activeListChanged).toBe(false);
+    });
+
+    it("replaces previous items entirely", async () => {
+      const list = makeList({ items: { "old-item": 3 } });
+      storeList(list);
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList?.items).toEqual({ "old-item": 3 });
+      });
+
+      act(() => {
+        result.current.saveActiveList(new Map([["new-item", 1]]));
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList?.items).toEqual({ "new-item": 1 });
+      });
+
+      // Old item should be gone
+      expect(result.current.activeList?.items).not.toHaveProperty("old-item");
+    });
+
+    it("can save an empty cart", async () => {
+      const list = makeList({ items: { "sword-1": 2 } });
+      storeList(list);
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList?.items).toEqual({ "sword-1": 2 });
+      });
+
+      act(() => {
+        result.current.saveActiveList(new Map());
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList?.items).toEqual({});
+      });
+    });
+  });
+
+  describe("renameActiveList", () => {
+    it("renames the active list", async () => {
+      const list = makeList();
+      storeList(list);
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList).toBeDefined();
+      });
+
+      act(() => {
+        result.current.renameActiveList("My Weapons");
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList?.name).toBe("My Weapons");
+      });
+
+      expect(getStoredList("list-1")?.name).toBe("My Weapons");
+    });
+
+    it("preserves list items after rename", async () => {
+      const list = makeList({ items: { "sword-1": 3 } });
+      storeList(list);
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList).toBeDefined();
+      });
+
+      act(() => {
+        result.current.renameActiveList("Renamed");
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList?.name).toBe("Renamed");
+      });
+
+      expect(result.current.activeList?.items).toEqual({ "sword-1": 3 });
+    });
+
+    it("does not trigger activeListChanged for own renames", async () => {
+      const list = makeList();
+      storeList(list);
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeListChanged).toBe(false);
+      });
+
+      act(() => {
+        result.current.renameActiveList("New Name");
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList?.name).toBe("New Name");
+      });
+      expect(result.current.activeListChanged).toBe(false);
+    });
+  });
+
+  describe("switchToList", () => {
+    it("switches to another list", async () => {
+      storeList(
+        makeList({
+          id: "list-1",
+          name: "First",
+          savedAt: "2025-02-01T00:00:00.000Z",
+        }),
+      );
+      storeList(
+        makeList({
+          id: "list-2",
+          name: "Second",
+          savedAt: "2025-01-01T00:00:00.000Z",
+        }),
+      );
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(2);
+      });
+
+      act(() => {
+        result.current.switchToList("list-2");
+      });
+
+      expect(result.current.activeListId).toBe("list-2");
+      expect(result.current.activeList?.name).toBe("Second");
+      expect(getStoredActiveId()).toBe("list-2");
+    });
+
+    it("sets activeListChanged on switch", async () => {
+      storeList(
+        makeList({
+          id: "list-1",
+          name: "First",
+          savedAt: "2025-02-01T00:00:00.000Z",
+        }),
+      );
+      storeList(
+        makeList({
+          id: "list-2",
+          name: "Second",
+          savedAt: "2025-01-01T00:00:00.000Z",
+        }),
+      );
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeListChanged).toBe(false);
+      });
+
+      act(() => {
+        result.current.switchToList("list-2");
+      });
+
+      expect(result.current.activeListChanged).toBe(true);
+    });
+  });
+
+  describe("deleteList", () => {
+    it("deletes a non-active list", async () => {
+      storeList(
+        makeList({
+          id: "list-1",
+          name: "Active",
+          savedAt: "2025-02-01T00:00:00.000Z",
+        }),
+      );
+      storeList(
+        makeList({
+          id: "list-2",
+          name: "Other",
+          savedAt: "2025-01-01T00:00:00.000Z",
+        }),
+      );
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(2);
+      });
+
+      act(() => {
+        result.current.deleteList("list-2");
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(1);
+      });
+
+      expect(result.current.activeListId).toBe("list-1");
+      expect(getStoredList("list-2")).toBeNull();
+    });
+
+    it("switches to first remaining list when active list is deleted", async () => {
+      storeList(
+        makeList({
+          id: "list-1",
+          name: "First",
+          savedAt: "2025-02-01T00:00:00.000Z",
+        }),
+      );
+      storeList(
+        makeList({
+          id: "list-2",
+          name: "Second",
+          savedAt: "2025-01-01T00:00:00.000Z",
+        }),
+      );
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(2);
+      });
+
+      act(() => {
+        result.current.deleteList("list-1");
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(1);
+      });
+
+      expect(result.current.activeListId).toBe("list-2");
+      expect(getStoredActiveId()).toBe("list-2");
+    });
+
+    it("creates a new default list when the last list is deleted", async () => {
+      storeList(makeList({ id: "list-1" }));
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(1);
+      });
+
+      act(() => {
+        result.current.deleteList("list-1");
+      });
+
+      await waitFor(() => {
+        // A new default list should have been created
+        expect(result.current.lists).toHaveLength(1);
+        expect(result.current.lists[0].id).not.toBe("list-1");
+      });
+
+      expect(result.current.activeList?.name).toBe("My shopping list");
+      expect(result.current.activeList?.items).toEqual({});
+    });
+
+    it("removes list from localStorage", async () => {
+      storeList(
+        makeList({
+          id: "list-1",
+          savedAt: "2025-02-01T00:00:00.000Z",
+        }),
+      );
+      storeList(
+        makeList({
+          id: "list-2",
+          savedAt: "2025-01-01T00:00:00.000Z",
+        }),
+      );
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(2);
+      });
+
+      act(() => {
+        result.current.deleteList("list-2");
+      });
+
+      expect(getStoredList("list-2")).toBeNull();
+    });
+  });
+
+  describe("cross-tab sync via refetch", () => {
+    it("detects external changes after query refetch", async () => {
+      const list = makeList({ id: "list-1", items: { "sword-1": 1 } });
+      storeList(list);
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList?.items).toEqual({ "sword-1": 1 });
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeListChanged).toBe(false);
+      });
+
+      // Simulate another tab writing to localStorage
+      storeList({
+        ...list,
+        items: { "sword-1": 1, "potion-1": 3 },
+        savedAt: "2099-01-01T00:00:00.000Z",
+      });
+
+      // Trigger a refetch (simulates tab focus)
+      await act(async () => {
+        await queryClient.invalidateQueries({ queryKey: ["saved-lists"] });
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList?.items).toEqual({
+          "sword-1": 1,
+          "potion-1": 3,
+        });
+      });
+
+      // External change should trigger activeListChanged
+      expect(result.current.activeListChanged).toBe(true);
+    });
+
+    it("picks up lists created in another tab after refetch", async () => {
+      storeList(makeList({ id: "list-1" }));
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(1);
+      });
+
+      // Another tab creates a new list
+      storeList(
+        makeList({
+          id: "list-2",
+          name: "From Other Tab",
+          savedAt: "2099-01-01T00:00:00.000Z",
+        }),
+      );
+
+      await act(async () => {
+        await queryClient.invalidateQueries({ queryKey: ["saved-lists"] });
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(2);
+      });
+
+      expect(
+        result.current.lists.some((l) => l.name === "From Other Tab"),
+      ).toBe(true);
+      // Active list should remain unchanged
+      expect(result.current.activeListId).toBe("list-1");
+    });
+
+    it("falls back gracefully when active list is deleted externally", async () => {
+      storeList(
+        makeList({
+          id: "list-1",
+          name: "Will Be Deleted",
+          savedAt: "2025-02-01T00:00:00.000Z",
+        }),
+      );
+      storeList(
+        makeList({
+          id: "list-2",
+          name: "Survivor",
+          savedAt: "2025-01-01T00:00:00.000Z",
+        }),
+      );
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeListId).toBe("list-1");
+      });
+
+      // Another tab deletes list-1
+      localStorage.removeItem(`${LIST_PREFIX}list-1`);
+
+      await act(async () => {
+        await queryClient.invalidateQueries({ queryKey: ["saved-lists"] });
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(1);
+      });
+
+      // Should fall back to the surviving list
+      expect(result.current.activeListId).toBe("list-2");
+      expect(result.current.activeList?.name).toBe("Survivor");
+    });
+  });
+
+  describe("compound operations", () => {
+    it("create then save then switch back", async () => {
+      storeList(
+        makeList({
+          id: "list-1",
+          name: "Original",
+          items: { "sword-1": 1 },
+        }),
+      );
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeListId).toBe("list-1");
+      });
+
+      // Create a new list
+      let createdId = "";
+      act(() => {
+        const newList = result.current.createList("Potions");
+        createdId = newList.id;
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeListId).toBe(createdId);
+      });
+
+      // Save some items to it
+      act(() => {
+        result.current.saveActiveList(new Map([["potion-1", 5]]));
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList?.items).toEqual({ "potion-1": 5 });
+      });
+
+      // Switch back to original
+      act(() => {
+        result.current.switchToList("list-1");
+      });
+
+      expect(result.current.activeListId).toBe("list-1");
+      expect(result.current.activeList?.items).toEqual({ "sword-1": 1 });
+
+      // The new list should still exist with its items
+      const potionsList = result.current.lists.find((l) => l.id === createdId);
+      expect(potionsList?.items).toEqual({ "potion-1": 5 });
+    });
+
+    it("rename then save preserves both changes", async () => {
+      storeList(makeList({ id: "list-1", name: "Old Name" }));
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList).toBeDefined();
+      });
+
+      act(() => {
+        result.current.renameActiveList("New Name");
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList?.name).toBe("New Name");
+      });
+
+      act(() => {
+        result.current.saveActiveList(new Map([["item-1", 2]]));
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList?.items).toEqual({ "item-1": 2 });
+      });
+
+      // Both name and items should be persisted
+      const stored = getStoredList("list-1");
+      expect(stored?.name).toBe("New Name");
+      expect(stored?.items).toEqual({ "item-1": 2 });
+    });
+
+    it("create multiple lists in sequence", async () => {
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(1);
+      });
+
+      act(() => {
+        result.current.createList("First");
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(2);
+      });
+
+      act(() => {
+        result.current.createList("Second");
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(3);
+      });
+
+      act(() => {
+        result.current.createList("Third");
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(4);
+      });
+
+      expect(result.current.activeList?.name).toBe("Third");
+      expect(result.current.lists.map((l) => l.name)).toContain("First");
+      expect(result.current.lists.map((l) => l.name)).toContain("Second");
+    });
+  });
+});
