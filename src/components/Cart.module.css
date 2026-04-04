@@ -261,11 +261,6 @@ button.header {
   color: var(--color-primary);
 }
 
-.settingsActive {
-  opacity: 1;
-  color: var(--color-primary);
-}
-
 .originalPrice {
   text-decoration: line-through;
   opacity: 0.6;

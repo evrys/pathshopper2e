@@ -443,7 +443,7 @@ export function Cart({
                   <div className={styles.controls}>
                     <button
                       type="button"
-                      className={`${styles.settingsBtn}${entry.discount || entry.notes ? ` ${styles.settingsActive}` : ""}`}
+                      className={styles.settingsBtn}
                       onClick={() => setDiscountEntry(entry)}
                       title="Item settings"
                     >
