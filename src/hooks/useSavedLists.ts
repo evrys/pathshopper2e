@@ -104,11 +104,22 @@ function writeActiveId(id: string): void {
 export function useSavedLists() {
   const [state, setState] = useState<SavedListsState>(readFromStorage);
 
-  // Keep in sync across tabs
+  // Refresh list data when other tabs write to localStorage,
+  // but preserve this tab's own active list selection.
   useEffect(() => {
     function onStorage(e: StorageEvent) {
-      if (e.key === ACTIVE_KEY || e.key?.startsWith(LIST_PREFIX)) {
-        setState(readFromStorage());
+      if (e.key?.startsWith(LIST_PREFIX)) {
+        setState((prev) => {
+          const lists = readAllLists();
+          // If the active list was deleted in another tab, fall back
+          const stillExists = lists.some((l) => l.id === prev.activeListId);
+          return {
+            lists,
+            activeListId: stillExists
+              ? prev.activeListId
+              : (lists[0]?.id ?? prev.activeListId),
+          };
+        });
       }
     }
     window.addEventListener("storage", onStorage);
