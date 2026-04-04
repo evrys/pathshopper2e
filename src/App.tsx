@@ -7,6 +7,7 @@ import { useCart, type CartEntry } from "./hooks/useCart";
 import { useItems } from "./hooks/useItems";
 import { useSavedLists, type SavedList } from "./hooks/useSavedLists";
 import { useUrlState } from "./hooks/useUrlState";
+import { parseCsvItems } from "./lib/csv";
 import { parseCartString } from "./lib/url";
 
 /** Build cart entries from a plain id→quantity map + loaded items. */
@@ -258,6 +259,36 @@ function App() {
     [renameActiveList],
   );
 
+  const handleImportCsv = useCallback(
+    (csv: string, commit: boolean): number => {
+      const parsed = parseCsvItems(csv);
+      if (parsed.length === 0) return 0;
+
+      // Match CSV names to items (case-insensitive)
+      const itemsByName = new Map(
+        items.map((it) => [it.name.toLowerCase(), it]),
+      );
+      const newEntries = new Map<string, CartEntry>();
+      for (const { name, quantity } of parsed) {
+        const item = itemsByName.get(name.toLowerCase());
+        if (item) {
+          const existing = newEntries.get(item.id);
+          newEntries.set(item.id, {
+            item: item as CartEntry["item"],
+            quantity: (existing?.quantity ?? 0) + quantity,
+          });
+        }
+      }
+      if (newEntries.size === 0) return 0;
+
+      if (commit) {
+        replaceCart(newEntries);
+      }
+      return newEntries.size;
+    },
+    [items, replaceCart],
+  );
+
   if (loading) {
     return (
       <div className={styles.loading}>
@@ -311,6 +342,7 @@ function App() {
             onLoadList={handleLoadList}
             onNewList={handleNewList}
             onDeleteList={deleteList}
+            onImportCsv={handleImportCsv}
           />
         </aside>
       </div>

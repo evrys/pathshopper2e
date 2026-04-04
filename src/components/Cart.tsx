@@ -3,6 +3,7 @@ import type { CartEntry } from "../hooks/useCart";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import type { SavedList } from "../hooks/useSavedLists";
 import { aonUrl } from "../lib/aon";
+import { entriesToCsv } from "../lib/csv";
 import { formatPrice } from "../lib/price";
 import type { Price } from "../types";
 import styles from "./Cart.module.css";
@@ -21,6 +22,8 @@ interface CartProps {
   onLoadList: (list: SavedList) => void;
   onNewList: (name: string, copyItems?: boolean) => void;
   onDeleteList: (id: string) => void;
+  /** Import CSV. If commit is false, returns matched item count without modifying cart. */
+  onImportCsv: (csv: string, commit: boolean) => number;
 }
 
 /** Build a share URL pointing to the readonly list view with cart + list name in the hash. */
@@ -67,6 +70,7 @@ export function Cart({
   onLoadList,
   onNewList,
   onDeleteList,
+  onImportCsv,
 }: CartProps) {
   const isMobile = useMediaQuery("(max-width: 640px)");
   const [mobileCollapsed, setMobileCollapsed] = useState(true);
@@ -77,6 +81,7 @@ export function Cart({
   const [renameValue, setRenameValue] = useState("");
   const menuRef = useRef<HTMLDivElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
+  const csvInputRef = useRef<HTMLInputElement>(null);
   const expanded = !isMobile || !mobileCollapsed;
   const title = listName || "My shopping list";
 
@@ -111,6 +116,41 @@ export function Cart({
   function handleLoad(list: SavedList) {
     onLoadList(list);
     setListsOpen(false);
+  }
+
+  function handleExportCsv() {
+    const csv = entriesToCsv(entries);
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${listName || "shopping-list"}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function handleImportCsvFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== "string") return;
+      const csv = reader.result;
+      const count = onImportCsv(csv, false);
+      if (count === 0) {
+        alert("No matching items found in the CSV file.");
+        return;
+      }
+      const ok = window.confirm(
+        `Replace your current list with ${count} item${count !== 1 ? "s" : ""} from the CSV?`,
+      );
+      if (ok) {
+        onImportCsv(csv, true);
+      }
+    };
+    reader.readAsText(file);
+    // Reset so the same file can be re-imported
+    e.target.value = "";
   }
 
   const headerContent = (
@@ -200,6 +240,27 @@ export function Cart({
               >
                 New list
               </button>
+              <hr className={styles.menuDivider} />
+              <button
+                type="button"
+                className={styles.menuItem}
+                onClick={() => {
+                  setMenuOpen(false);
+                  handleExportCsv();
+                }}
+              >
+                Export CSV
+              </button>
+              <button
+                type="button"
+                className={styles.menuItem}
+                onClick={() => {
+                  setMenuOpen(false);
+                  csvInputRef.current?.click();
+                }}
+              >
+                Import CSV
+              </button>
             </div>
           )}
         </div>
@@ -220,6 +281,13 @@ export function Cart({
 
   return (
     <div className={styles.cart}>
+      <input
+        ref={csvInputRef}
+        type="file"
+        accept=".csv,text/csv"
+        style={{ display: "none" }}
+        onChange={handleImportCsvFile}
+      />
       {isMobile ? (
         <button
           type="button"
