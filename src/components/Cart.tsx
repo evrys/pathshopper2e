@@ -5,6 +5,7 @@ import type { SavedList } from "../hooks/useSavedLists";
 import { aonUrl } from "../lib/aon";
 import { entriesToCsv } from "../lib/csv";
 import { formatPrice } from "../lib/price";
+import { buildHashString, serializeCart } from "../lib/url";
 import type { Price } from "../types";
 import styles from "./Cart.module.css";
 import { ItemTooltipWrapper } from "./ItemTooltip";
@@ -39,23 +40,13 @@ function buildShareUrl(
   params.set("lid", listId);
 
   if (entries.length > 0) {
-    const cartStr = entries
-      .map(({ item, quantity }) =>
-        quantity === 1 ? item.id : `${item.id}*${quantity}`,
-      )
-      .join("+");
-    params.set("items", cartStr);
+    const cart = new Map(
+      entries.map(({ item, quantity }) => [item.id, quantity]),
+    );
+    params.set("items", serializeCart(cart));
   }
 
-  // Build hash without encoding `+` or `:`
-  const parts: string[] = [];
-  for (const [key, value] of params) {
-    parts.push(
-      `${encodeURIComponent(key)}=${encodeURIComponent(value).replace(/%2B/gi, "+")}`,
-    );
-  }
-  const hash = parts.length > 0 ? `#${parts.join("&")}` : "";
-  return `${window.location.origin}${base}/?view=list${hash}`;
+  return `${window.location.origin}${base}/?view=list${buildHashString(params)}`;
 }
 
 export function Cart({

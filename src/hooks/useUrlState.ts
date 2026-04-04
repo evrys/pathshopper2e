@@ -1,5 +1,6 @@
 import { useCallback, useRef, useSyncExternalStore } from "react";
 import { DEFAULT_RARITIES, DEFAULT_REMASTER } from "../lib/constants";
+import { buildHashString, parseHashParams } from "../lib/url";
 
 /**
  * App state that gets persisted in the URL hash.
@@ -55,22 +56,12 @@ function serialize(state: UrlState): string {
   if (state.maxLevel) params.set("maxlvl", state.maxLevel);
   if (state.sort !== DEFAULTS.sort) params.set("sort", state.sort);
 
-  // Build the hash ourselves to avoid URLSearchParams encoding `+` as `%2B`
-  const parts: string[] = [];
-  for (const [key, value] of params) {
-    parts.push(
-      `${encodeURIComponent(key)}=${encodeURIComponent(value).replace(/%2B/gi, "+")}`,
-    );
-  }
-  const str = parts.join("&");
-  return str ? `#${str}` : "";
+  return buildHashString(params);
 }
 
 /** Parse URL hash string back into state. */
 function deserialize(hash: string): UrlState {
-  const str = hash.startsWith("#") ? hash.slice(1) : hash;
-  // Replace unencoded `+` with `%2B` before URLSearchParams parses them as spaces
-  const params = new URLSearchParams(str.replace(/\+/g, "%2B"));
+  const params = parseHashParams(hash);
 
   const search = params.get("q") ?? "";
 

@@ -7,7 +7,7 @@ import {
 } from "../hooks/useSavedLists";
 import { aonUrl } from "../lib/aon";
 import { formatPrice, sumPrices } from "../lib/price";
-import { parseCartString } from "../lib/url";
+import { parseHashParams, parseShareParams } from "../lib/url";
 import type { Item } from "../types";
 import { ItemTooltipWrapper } from "./ItemTooltip";
 import styles from "./SharedList.module.css";
@@ -18,26 +18,10 @@ interface ListEntry {
   quantity: number;
 }
 
-/** Parse the URL hash into a cart map, list name, and optional list ID. */
-function parseShareHash(hash: string): {
-  cart: Map<string, number>;
-  charName: string;
-  listId: string;
-} {
-  const str = hash.startsWith("#") ? hash.slice(1) : hash;
-  const params = new URLSearchParams(str.replace(/\+/g, "%2B"));
-
-  const charName = params.get("name") ?? params.get("char") ?? "";
-  const cart = parseCartString(params.get("items") ?? params.get("cart") ?? "");
-  const listId = params.get("lid") ?? "";
-
-  return { cart, charName, listId };
-}
-
 export function SharedList() {
   const { items, loading } = useItems();
   const { cart, charName, listId } = useMemo(
-    () => parseShareHash(window.location.hash),
+    () => parseShareParams(parseHashParams(window.location.hash)),
     [],
   );
 

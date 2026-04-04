@@ -276,7 +276,7 @@ export function useSavedLists() {
     lists,
     activeList,
     activeListId: resolvedActiveId,
-    activeListChanged: activeListChanged,
+    activeListChanged,
     saveActiveList,
     renameActiveList,
     switchToList,

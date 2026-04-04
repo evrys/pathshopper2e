@@ -8,7 +8,7 @@ import { useItems } from "./hooks/useItems";
 import { useSavedLists, type SavedList } from "./hooks/useSavedLists";
 import { useUrlState } from "./hooks/useUrlState";
 import { parseCsvItems } from "./lib/csv";
-import { parseCartString } from "./lib/url";
+import { parseHashParams, parseShareParams, type ShareParams } from "./lib/url";
 
 /** Build cart entries from a plain id→quantity map + loaded items. */
 function buildCartEntries(
@@ -31,15 +31,10 @@ function buildCartEntries(
  * Parse shared-link params from the initial URL hash.
  * Returns list ID and/or cart items, then strips those params from the hash.
  */
-function consumeSharedHash(): {
-  listId: string;
-  cart: Map<string, number>;
-  charName: string;
-} | null {
+function consumeSharedHash(): ShareParams | null {
   const hash = window.location.hash;
   if (!hash) return null;
-  const str = hash.startsWith("#") ? hash.slice(1) : hash;
-  const params = new URLSearchParams(str.replace(/\+/g, "%2B"));
+  const params = parseHashParams(hash);
 
   const listId = params.get("lid") ?? "";
   const itemsStr = params.get("items") ?? params.get("cart") ?? "";
@@ -47,8 +42,7 @@ function consumeSharedHash(): {
   // Nothing share-related in the hash
   if (!listId && !itemsStr) return null;
 
-  const cart = parseCartString(itemsStr);
-  const charName = params.get("name") ?? params.get("char") ?? "";
+  const shared = parseShareParams(params);
 
   // Strip share-related params from the hash, keep filter/search params
   params.delete("lid");
@@ -67,7 +61,7 @@ function consumeSharedHash(): {
   );
   window.dispatchEvent(new HashChangeEvent("hashchange"));
 
-  return { listId, cart, charName };
+  return shared;
 }
 
 function App() {
@@ -252,13 +246,6 @@ function App() {
     [createList, cartState, saveActiveList],
   );
 
-  const handleListNameChange = useCallback(
-    (name: string) => {
-      renameActiveList(name);
-    },
-    [renameActiveList],
-  );
-
   const handleImportCsv = useCallback(
     (csv: string, commit: boolean): number => {
       const parsed = parseCsvItems(csv);
@@ -336,7 +323,7 @@ function App() {
             listName={activeList?.name ?? "My shopping list"}
             lists={lists}
             activeListId={activeListId}
-            onListNameChange={handleListNameChange}
+            onListNameChange={renameActiveList}
             onSetQuantity={setQuantity}
             onRemoveItem={removeItem}
             onLoadList={handleLoadList}
