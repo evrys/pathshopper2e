@@ -336,3 +336,13 @@
   color: var(--color-text);
   border-color: var(--color-text-muted);
 }
+
+@media (max-width: 640px) {
+  .overlay {
+    padding-top: 5vh;
+  }
+
+  .deleteBtn {
+    opacity: 0.5;
+  }
+}

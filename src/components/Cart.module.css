@@ -273,9 +273,31 @@ button.header {
 @media (max-width: 640px) {
   .cart {
     position: static;
+    overflow: visible;
+  }
+
+  .header {
+    position: relative;
+  }
+
+  .menuDropdown {
+    top: auto;
+    bottom: calc(100% + 4px);
+    animation-name: menuFadeInUp;
   }
 
   .items {
     max-height: 40vh;
+  }
+}
+
+@keyframes menuFadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
