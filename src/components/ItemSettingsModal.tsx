@@ -77,7 +77,7 @@ export function ItemSettingsModal({
     init?.denom ?? "gp",
   );
   const [notes, setNotes] = useState(currentNotes ?? "");
-  const notesRef = useRef<HTMLTextAreaElement>(null);
+  const notesRef = useRef<HTMLInputElement>(null);
 
   // Custom item fields
   const priceInit = priceToDenom(price);
@@ -245,14 +245,14 @@ export function ItemSettingsModal({
           )}
           <div className={styles.field}>
             <label htmlFor="item-notes">Notes</label>
-            <textarea
+            <input
               ref={notesRef}
               id="item-notes"
-              className={styles.notesInput}
+              className={styles.textInput}
+              type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="e.g. why this is a cool item for your character"
-              rows={3}
             />
           </div>
           <div className={styles.actions}>
