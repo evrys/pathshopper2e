@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { formatPrice, fromCopper, toCopper } from "../lib/price";
 import type { Discount, Price } from "../types";
-import styles from "./DiscountModal.module.css";
+import styles from "./ItemSettingsModal.module.css";
 
 type Denomination = "gp" | "sp" | "cp" | "%";
 
@@ -31,28 +31,32 @@ function initFromDiscount(d: Discount): {
   return { amount: String(amount), denom };
 }
 
-interface DiscountModalProps {
+interface ItemSettingsModalProps {
   itemName: string;
   price: Price;
   /** Current discount, if any. */
   currentDiscount?: Discount;
+  /** Current notes, if any. */
+  currentNotes?: string;
   /** Called with the new discount, or undefined to clear. */
-  onApply: (discount: Discount | undefined) => void;
+  onApply: (discount: Discount | undefined, notes: string) => void;
   onClose: () => void;
 }
 
-export function DiscountModal({
+export function ItemSettingsModal({
   itemName,
   price,
   currentDiscount,
+  currentNotes,
   onApply,
   onClose,
-}: DiscountModalProps) {
+}: ItemSettingsModalProps) {
   const init = currentDiscount ? initFromDiscount(currentDiscount) : null;
   const [amount, setAmount] = useState(init?.amount ?? "");
   const [denomination, setDenomination] = useState<Denomination>(
     init?.denom ?? "gp",
   );
+  const [notes, setNotes] = useState(currentNotes ?? "");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -86,13 +90,15 @@ export function DiscountModal({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!isValid) return;
+    let discount: Discount | undefined;
     if (discountCp === 0) {
-      onApply(undefined);
+      discount = undefined;
     } else if (isPercent) {
-      onApply({ type: "percent", percent: parsed });
+      discount = { type: "percent", percent: parsed };
     } else {
-      onApply({ type: "flat", cp: discountCp });
+      discount = { type: "flat", cp: discountCp };
     }
+    onApply(discount, notes.trim());
     onClose();
   }
 
@@ -101,7 +107,7 @@ export function DiscountModal({
       className={styles.overlay}
       role="dialog"
       aria-modal="true"
-      aria-label="Set discount"
+      aria-label="Item settings"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -154,6 +160,17 @@ export function DiscountModal({
               </span>
             </p>
           )}
+          <div className={styles.field}>
+            <label htmlFor="item-notes">Notes</label>
+            <textarea
+              id="item-notes"
+              className={styles.notesInput}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="e.g. Buy from Trader Joe in Absalom"
+              rows={3}
+            />
+          </div>
           <div className={styles.actions}>
             <button
               type="button"

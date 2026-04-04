@@ -18,11 +18,12 @@ interface ListEntry {
   item: Item;
   quantity: number;
   discount?: Discount;
+  notes?: string;
 }
 
 export function SharedList() {
   const { items, loading } = useItems();
-  const { cart, charName, listId, customItems, discounts } = useMemo(
+  const { cart, charName, listId, customItems, discounts, notes } = useMemo(
     () => parseShareParams(parseHashParams(window.location.hash)),
     [],
   );
@@ -38,11 +39,12 @@ export function SharedList() {
       const item = itemMap.get(id);
       if (item) {
         const discount = discounts.get(id);
-        result.push({ item, quantity: qty, discount });
+        const note = notes.get(id);
+        result.push({ item, quantity: qty, discount, notes: note });
       }
     }
     return result;
-  }, [items, loading, cart, customItems, discounts]);
+  }, [items, loading, cart, customItems, discounts, notes]);
 
   const totalPrice = useMemo(
     () =>
@@ -62,7 +64,7 @@ export function SharedList() {
   /** Save the shared list to localStorage and navigate to the editor. */
   const handleEdit = useCallback(() => {
     const id = listId || generateListId();
-    const savedData = shareDataToSavedData(cart, discounts, customItems);
+    const savedData = shareDataToSavedData(cart, discounts, customItems, notes);
     const list: SavedList = {
       id,
       name: charName || "Shared List",
@@ -73,7 +75,7 @@ export function SharedList() {
 
     const base = import.meta.env.BASE_URL.replace(/\/$/, "");
     window.location.href = `${window.location.origin}${base}/#lid=${encodeURIComponent(id)}`;
-  }, [cart, charName, listId, discounts, customItems]);
+  }, [cart, charName, listId, discounts, customItems, notes]);
 
   if (loading) {
     return (
@@ -97,7 +99,7 @@ export function SharedList() {
       ) : (
         <>
           <ul className={styles.items}>
-            {entries.map(({ item, quantity, discount }) => (
+            {entries.map(({ item, quantity, discount, notes: itemNotes }) => (
               <li key={item.id} className={styles.item}>
                 <div className={styles.itemInfo}>
                   {item.id.startsWith("custom-") ? (
@@ -128,6 +130,9 @@ export function SharedList() {
                     )}
                     {quantity > 1 && " each"}
                   </span>
+                  {itemNotes && (
+                    <span className={styles.itemNotes}>{itemNotes}</span>
+                  )}
                 </div>
                 {quantity > 1 && (
                   <span className={styles.qty}>&times;{quantity}</span>

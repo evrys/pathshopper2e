@@ -26,6 +26,8 @@ export interface SavedList {
   items: Record<string, number>;
   /** Per-item discounts, keyed by item id. */
   discounts?: Record<string, Discount>;
+  /** Per-item notes, keyed by item id. */
+  notes?: Record<string, string>;
   /** Custom items (user-created, not from the game database). */
   customItems?: SavedCustomItem[];
   /** ISO timestamp of last save. */
@@ -134,6 +136,7 @@ export function saveListToStorage(list: SavedList): void {
 export interface SavedListData {
   items: Record<string, number>;
   discounts: Record<string, Discount> | undefined;
+  notes: Record<string, string> | undefined;
   customItems: SavedCustomItem[] | undefined;
 }
 
@@ -149,14 +152,20 @@ export function cartEntriesToSavedData(
 ): SavedListData {
   const items: Record<string, number> = {};
   const discounts: Record<string, Discount> = {};
+  const notes: Record<string, string> = {};
   const customItems: SavedCustomItem[] = [];
   let hasDiscounts = false;
+  let hasNotes = false;
 
   for (const [id, entry] of entries) {
     items[id] = entry.quantity;
     if (entry.discount) {
       discounts[id] = entry.discount;
       hasDiscounts = true;
+    }
+    if (entry.notes) {
+      notes[id] = entry.notes;
+      hasNotes = true;
     }
     if (id.startsWith("custom-")) {
       customItems.push({
@@ -170,6 +179,7 @@ export function cartEntriesToSavedData(
   return {
     items,
     discounts: hasDiscounts ? discounts : undefined,
+    notes: hasNotes ? notes : undefined,
     customItems: customItems.length > 0 ? customItems : undefined,
   };
 }
@@ -182,9 +192,12 @@ export function shareDataToSavedData(
   cart: ReadonlyMap<string, number>,
   discounts: ReadonlyMap<string, Discount>,
   customItems: Item[],
+  notesMap?: ReadonlyMap<string, string>,
 ): SavedListData {
   const discountRecord =
     discounts.size > 0 ? Object.fromEntries(discounts) : undefined;
+  const notesRecord =
+    notesMap && notesMap.size > 0 ? Object.fromEntries(notesMap) : undefined;
   const savedCustom: SavedCustomItem[] | undefined =
     customItems.length > 0
       ? customItems.map((ci) => ({ id: ci.id, name: ci.name, price: ci.price }))
@@ -192,6 +205,7 @@ export function shareDataToSavedData(
   return {
     items: Object.fromEntries(cart),
     discounts: discountRecord,
+    notes: notesRecord,
     customItems: savedCustom,
   };
 }
@@ -234,6 +248,9 @@ export function savedListToCartEntries(
   const discounts: Map<string, Discount> = savedList.discounts
     ? new Map(Object.entries(savedList.discounts))
     : new Map();
+  const notesMap: Map<string, string> = savedList.notes
+    ? new Map(Object.entries(savedList.notes))
+    : new Map();
 
   const itemMap = new Map(items.map((it) => [it.id, it]));
   for (const ci of customItems) {
@@ -245,10 +262,12 @@ export function savedListToCartEntries(
     const item = itemMap.get(id);
     if (item) {
       const discount = discounts.get(id);
+      const notes = notesMap.get(id);
       map.set(id, {
         item: item as CartEntry["item"],
         quantity: qty,
         ...(discount ? { discount } : {}),
+        ...(notes ? { notes } : {}),
       });
     }
   }

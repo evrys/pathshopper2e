@@ -111,6 +111,8 @@ export interface ShareParams {
   customItems: Item[];
   /** Per-item discounts, keyed by item id. */
   discounts: Map<string, Discount>;
+  /** Per-item notes, keyed by item id. */
+  notes: Map<string, string>;
 }
 
 /**
@@ -125,7 +127,8 @@ export function parseShareParams(params: URLSearchParams): ShareParams {
   );
   const listId = params.get("lid") ?? "";
   const customItems = parseCustomItems(params.get("custom") ?? "");
-  return { listId, cart, charName, customItems, discounts };
+  const notes = parseNotes(params.get("notes") ?? "");
+  return { listId, cart, charName, customItems, discounts, notes };
 }
 
 /**
@@ -239,6 +242,55 @@ export function buildCustomIdMap(
     if (e.item.id.startsWith("custom-")) {
       map.set(e.item.id, `custom-${idx++}`);
     }
+  }
+  return map;
+}
+
+// ── Notes encoding for share URLs ────────────────────────────────────
+
+/**
+ * Serialize per-item notes for embedding in a share URL.
+ *
+ * Format: entries separated by `|`. Each entry is `id:text` where `text`
+ * has `|` and `:` escaped so the delimiters are unambiguous.
+ */
+export function serializeNotes(
+  notes: ReadonlyMap<string, string>,
+  idMap?: ReadonlyMap<string, string>,
+): string {
+  const parts: string[] = [];
+  for (const [id, text] of notes) {
+    if (!text) continue;
+    const mappedId = idMap?.get(id) ?? id;
+    // Escape : and | within the text so they don't break parsing
+    const escaped = text
+      .replace(/\\/g, "\\\\")
+      .replace(/:/g, "\\c")
+      .replace(/\|/g, "\\p");
+    parts.push(`${mappedId}:${escaped}`);
+  }
+  return parts.join("|");
+}
+
+/**
+ * Parse per-item notes from a share URL param.
+ *
+ * Reverses the encoding from `serializeNotes`.
+ */
+export function parseNotes(str: string): Map<string, string> {
+  const map = new Map<string, string>();
+  if (!str) return map;
+  for (const entry of str.split("|")) {
+    const colonIdx = entry.indexOf(":");
+    if (colonIdx === -1) continue;
+    const id = entry.slice(0, colonIdx);
+    const escaped = entry.slice(colonIdx + 1);
+    // Unescape in reverse order
+    const text = escaped
+      .replace(/\\p/g, "|")
+      .replace(/\\c/g, ":")
+      .replace(/\\\\/g, "\\");
+    if (id && text) map.set(id, text);
   }
   return map;
 }

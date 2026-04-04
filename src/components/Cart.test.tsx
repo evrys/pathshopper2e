@@ -64,6 +64,7 @@ const defaultProps = {
   onSetQuantity: vi.fn(),
   onRemoveItem: vi.fn(),
   onSetDiscount: vi.fn(),
+  onSetNotes: vi.fn(),
   onAddItem: vi.fn(),
   onLoadList: vi.fn(),
   onNewList: vi.fn(),
@@ -199,9 +200,9 @@ describe("Cart", () => {
     expect(el.tagName).toBe("SPAN");
   });
 
-  it("shows discount button for each entry", () => {
+  it("shows settings button for each entry", () => {
     const entries = [makeEntry()];
     render(<Cart {...defaultProps} entries={entries} />);
-    expect(screen.getByTitle("Set discount")).toBeDefined();
+    expect(screen.getByTitle("Item settings")).toBeDefined();
   });
 });

@@ -86,6 +86,13 @@
   color: var(--color-text-muted);
 }
 
+.itemNotes {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  opacity: 0.7;
+  font-style: italic;
+}
+
 .qty {
   font-size: 0.9375rem;
   font-weight: 600;

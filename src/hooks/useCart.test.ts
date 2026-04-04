@@ -227,4 +227,69 @@ describe("cartReducer", () => {
       });
     });
   });
+
+  describe("set-notes", () => {
+    it("sets notes on an item", () => {
+      const item = makeItem();
+      let state = cartReducer(emptyState, { type: "add", item });
+      state = cartReducer(state, {
+        type: "set-notes",
+        itemId: "w386",
+        notes: "Buy from Trader Joe",
+      });
+      expect(state.entries.get("w386")?.notes).toBe("Buy from Trader Joe");
+    });
+
+    it("clears notes when set to empty string", () => {
+      const item = makeItem();
+      let state = cartReducer(emptyState, { type: "add", item });
+      state = cartReducer(state, {
+        type: "set-notes",
+        itemId: "w386",
+        notes: "some note",
+      });
+      expect(state.entries.get("w386")?.notes).toBe("some note");
+      state = cartReducer(state, {
+        type: "set-notes",
+        itemId: "w386",
+        notes: "",
+      });
+      expect(state.entries.get("w386")?.notes).toBeUndefined();
+    });
+
+    it("does nothing for unknown item", () => {
+      const state = cartReducer(emptyState, {
+        type: "set-notes",
+        itemId: "nonexistent",
+        notes: "hello",
+      });
+      expect(state.entries.size).toBe(0);
+    });
+
+    it("preserves quantity and discount when setting notes", () => {
+      const item = makeItem();
+      let state = cartReducer(emptyState, { type: "add", item });
+      state = cartReducer(state, {
+        type: "set-quantity",
+        itemId: "w386",
+        quantity: 3,
+      });
+      state = cartReducer(state, {
+        type: "set-discount",
+        itemId: "w386",
+        discount: { type: "flat", cp: 100 },
+      });
+      state = cartReducer(state, {
+        type: "set-notes",
+        itemId: "w386",
+        notes: "For the boss fight",
+      });
+      expect(state.entries.get("w386")?.quantity).toBe(3);
+      expect(state.entries.get("w386")?.discount).toEqual({
+        type: "flat",
+        cp: 100,
+      });
+      expect(state.entries.get("w386")?.notes).toBe("For the boss fight");
+    });
+  });
 });

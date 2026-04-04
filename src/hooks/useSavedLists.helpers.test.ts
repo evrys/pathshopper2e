@@ -103,7 +103,31 @@ describe("cartEntriesToSavedData", () => {
     const result = cartEntriesToSavedData(new Map());
     expect(result.items).toEqual({});
     expect(result.discounts).toBeUndefined();
+    expect(result.notes).toBeUndefined();
     expect(result.customItems).toBeUndefined();
+  });
+
+  it("includes notes when present", () => {
+    const entries = new Map<string, CartEntry>([
+      [
+        "w1",
+        {
+          item: makeItem(),
+          quantity: 1,
+          notes: "Buy from the smith",
+        },
+      ],
+    ]);
+    const result = cartEntriesToSavedData(entries);
+    expect(result.notes).toEqual({ w1: "Buy from the smith" });
+  });
+
+  it("omits notes when none are present", () => {
+    const entries = new Map<string, CartEntry>([
+      ["w1", { item: makeItem(), quantity: 1 }],
+    ]);
+    const result = cartEntriesToSavedData(entries);
+    expect(result.notes).toBeUndefined();
   });
 });
 
@@ -133,7 +157,15 @@ describe("shareDataToSavedData", () => {
   it("omits discounts when map is empty", () => {
     const result = shareDataToSavedData(new Map([["w1", 1]]), new Map(), []);
     expect(result.discounts).toBeUndefined();
+    expect(result.notes).toBeUndefined();
     expect(result.customItems).toBeUndefined();
+  });
+
+  it("includes notes when provided", () => {
+    const cart = new Map([["w1", 1]]);
+    const notes = new Map([["w1", "Important item"]]);
+    const result = shareDataToSavedData(cart, new Map(), [], notes);
+    expect(result.notes).toEqual({ w1: "Important item" });
   });
 });
 
@@ -245,5 +277,28 @@ describe("savedListToCartEntries", () => {
       percent: 25,
     });
     expect(result?.get("custom-0")?.item.name).toBe("Potion");
+  });
+
+  it("includes notes from saved list", () => {
+    const list: SavedList = {
+      id: "test",
+      name: "Test",
+      items: { w1: 1 },
+      notes: { w1: "For the boss fight" },
+      savedAt: "",
+    };
+    const result = savedListToCartEntries(list, itemDb);
+    expect(result?.get("w1")?.notes).toBe("For the boss fight");
+  });
+
+  it("does not set notes when not present in saved list", () => {
+    const list: SavedList = {
+      id: "test",
+      name: "Test",
+      items: { w1: 1 },
+      savedAt: "",
+    };
+    const result = savedListToCartEntries(list, itemDb);
+    expect(result?.get("w1")?.notes).toBeUndefined();
   });
 });

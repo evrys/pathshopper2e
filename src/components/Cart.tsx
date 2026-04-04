@@ -10,11 +10,12 @@ import {
   buildHashString,
   serializeCart,
   serializeCustomItems,
+  serializeNotes,
 } from "../lib/url";
 import type { Discount, Price } from "../types";
 import { AddCustomItemModal } from "./AddCustomItemModal";
 import styles from "./Cart.module.css";
-import { DiscountModal } from "./DiscountModal";
+import { ItemSettingsModal } from "./ItemSettingsModal";
 import { ItemTooltipWrapper } from "./ItemTooltip";
 import { SavedListsModal } from "./SavedListsModal";
 
@@ -28,6 +29,7 @@ interface CartProps {
   onSetQuantity: (itemId: string, quantity: number) => void;
   onRemoveItem: (itemId: string) => void;
   onSetDiscount: (itemId: string, discount: Discount | undefined) => void;
+  onSetNotes: (itemId: string, notes: string) => void;
   onAddItem: (item: CartEntry["item"]) => void;
   onLoadList: (list: SavedList) => void;
   onNewList: (name: string, copyItems?: boolean) => void;
@@ -68,6 +70,14 @@ function buildShareUrl(
       }
     }
 
+    // Collect per-item notes keyed by share-URL id
+    const notesMap = new Map<string, string>();
+    for (const { item, notes } of entries) {
+      if (notes) {
+        notesMap.set(idMap.get(item.id) ?? item.id, notes);
+      }
+    }
+
     params.set("items", serializeCart(cart, discountMap));
 
     const customEntries = entries.filter((e) =>
@@ -75,6 +85,10 @@ function buildShareUrl(
     );
     if (customEntries.length > 0) {
       params.set("custom", serializeCustomItems(customEntries));
+    }
+
+    if (notesMap.size > 0) {
+      params.set("notes", serializeNotes(notesMap, idMap));
     }
   }
 
@@ -91,6 +105,7 @@ export function Cart({
   onSetQuantity,
   onRemoveItem,
   onSetDiscount,
+  onSetNotes,
   onAddItem,
   onLoadList,
   onNewList,
@@ -363,13 +378,15 @@ export function Cart({
           )}
 
           {discountEntry && (
-            <DiscountModal
+            <ItemSettingsModal
               itemName={discountEntry.item.name}
               price={discountEntry.item.price}
               currentDiscount={discountEntry.discount}
-              onApply={(discount) =>
-                onSetDiscount(discountEntry.item.id, discount)
-              }
+              currentNotes={discountEntry.notes}
+              onApply={(discount, notes) => {
+                onSetDiscount(discountEntry.item.id, discount);
+                onSetNotes(discountEntry.item.id, notes);
+              }}
               onClose={() => setDiscountEntry(null)}
             />
           )}
@@ -410,15 +427,18 @@ export function Cart({
                       )}
                       {entry.quantity > 1 && " each"}
                     </span>
+                    {entry.notes && (
+                      <span className={styles.itemNotes}>{entry.notes}</span>
+                    )}
                   </div>
                   <div className={styles.controls}>
                     <button
                       type="button"
-                      className={`${styles.discountBtn}${entry.discount ? ` ${styles.discountActive}` : ""}`}
+                      className={`${styles.settingsBtn}${entry.discount || entry.notes ? ` ${styles.settingsActive}` : ""}`}
                       onClick={() => setDiscountEntry(entry)}
-                      title="Set discount"
+                      title="Item settings"
                     >
-                      %
+                      ⚙
                     </button>
                     <button
                       type="button"

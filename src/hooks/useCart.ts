@@ -7,6 +7,8 @@ export interface CartEntry {
   quantity: number;
   /** Discount applied to each unit's price. */
   discount?: Discount;
+  /** Free-form notes about this item (e.g. where to buy, why you need it). */
+  notes?: string;
 }
 
 export interface CartState {
@@ -18,6 +20,7 @@ export type CartAction =
   | { type: "remove"; itemId: string }
   | { type: "set-quantity"; itemId: string; quantity: number }
   | { type: "set-discount"; itemId: string; discount: Discount | undefined }
+  | { type: "set-notes"; itemId: string; notes: string }
   | { type: "clear" }
   | { type: "replace"; entries: Map<string, CartEntry> };
 
@@ -57,6 +60,14 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
       }
       break;
     }
+    case "set-notes": {
+      const entry = next.get(action.itemId);
+      if (entry) {
+        const notes = action.notes || undefined; // clear empty strings
+        next.set(action.itemId, { ...entry, notes });
+      }
+      break;
+    }
     case "clear":
       return { entries: new Map() };
     case "replace":
@@ -87,6 +98,11 @@ export function useCart() {
   const setDiscount = useCallback(
     (itemId: string, discount: Discount | undefined) =>
       dispatch({ type: "set-discount", itemId, discount }),
+    [],
+  );
+  const setNotes = useCallback(
+    (itemId: string, notes: string) =>
+      dispatch({ type: "set-notes", itemId, notes }),
     [],
   );
   const clearCart = useCallback(() => dispatch({ type: "clear" }), []);
@@ -122,6 +138,7 @@ export function useCart() {
     removeItem,
     setQuantity,
     setDiscount,
+    setNotes,
     clearCart,
     replaceCart,
   };

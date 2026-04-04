@@ -1,17 +1,17 @@
 import type { CartEntry } from "../hooks/useCart";
+import type { Discount } from "../types";
 import { aonUrl } from "./aon";
 import { formatPrice } from "./price";
-import type { Discount } from "../types";
 
 /**
  * Export cart entries as a CSV string.
- * Columns: Name, Quantity, Level, Price, Type, Discount, URL
+ * Columns: Name, Quantity, Level, Price, Type, Discount, Notes, URL
  */
 export function entriesToCsv(entries: CartEntry[]): string {
   const rows = [
-    ["Name", "Quantity", "Level", "Price", "Type", "Discount", "URL"],
+    ["Name", "Quantity", "Level", "Price", "Type", "Discount", "Notes", "URL"],
   ];
-  for (const { item, quantity, discount } of entries) {
+  for (const { item, quantity, discount, notes } of entries) {
     const isCustom = item.id.startsWith("custom-");
     rows.push([
       item.name,
@@ -20,6 +20,7 @@ export function entriesToCsv(entries: CartEntry[]): string {
       formatPrice(item.price),
       isCustom ? "custom" : item.type,
       formatDiscount(discount),
+      notes ?? "",
       isCustom ? "" : aonUrl(item),
     ]);
   }
@@ -93,6 +94,8 @@ export interface CsvItem {
   discount?: Discount;
   /** Price string from CSV (e.g. "5 gp"). Present for custom items. */
   price?: string;
+  /** Notes text from CSV, if any. */
+  notes?: string;
   /** True when the CSV "Type" column is "custom". */
   isCustom: boolean;
 }
@@ -113,6 +116,7 @@ export function parseCsvItems(csv: string): CsvItem[] {
   const discountIdx = header.indexOf("discount");
   const typeIdx = header.indexOf("type");
   const priceIdx = header.indexOf("price");
+  const notesIdx = header.indexOf("notes");
 
   const result: CsvItem[] = [];
   for (let i = 1; i < lines.length; i++) {
@@ -124,12 +128,14 @@ export function parseCsvItems(csv: string): CsvItem[] {
       discountIdx >= 0 ? parseDiscount(row[discountIdx] ?? "") : undefined;
     const typeStr = typeIdx >= 0 ? row[typeIdx]?.trim().toLowerCase() : "";
     const priceStr = priceIdx >= 0 ? row[priceIdx]?.trim() : undefined;
+    const notesStr = notesIdx >= 0 ? row[notesIdx]?.trim() : undefined;
     const isCustom = typeStr === "custom";
     result.push({
       name,
       quantity: Math.max(1, qty),
       ...(discount ? { discount } : {}),
       ...(priceStr ? { price: priceStr } : {}),
+      ...(notesStr ? { notes: notesStr } : {}),
       isCustom,
     });
   }

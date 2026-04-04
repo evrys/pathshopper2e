@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CartEntry } from "../hooks/useCart";
 import type { Item } from "../types";
-import { entriesToCsv, parseDiscount, parseCsvItems } from "./csv";
+import { entriesToCsv, parseCsvItems, parseDiscount } from "./csv";
 
 function makeItem(
   overrides: Partial<Item> & { id: string; name: string },
@@ -49,12 +49,12 @@ describe("entriesToCsv", () => {
     ];
     const csv = entriesToCsv(entries);
     const lines = csv.split("\n");
-    expect(lines[0]).toBe("Name,Quantity,Level,Price,Type,Discount,URL");
+    expect(lines[0]).toBe("Name,Quantity,Level,Price,Type,Discount,Notes,URL");
     expect(lines[1]).toBe(
-      "Longsword,2,1,1 gp,weapon,,https://2e.aonprd.com/Search.aspx?q=Longsword",
+      "Longsword,2,1,1 gp,weapon,,,https://2e.aonprd.com/Search.aspx?q=Longsword",
     );
     expect(lines[2]).toBe(
-      "Shield,1,0,2 gp,armor,,https://2e.aonprd.com/Search.aspx?q=Shield",
+      "Shield,1,0,2 gp,armor,,,https://2e.aonprd.com/Search.aspx?q=Shield",
     );
   });
 
@@ -71,7 +71,7 @@ describe("entriesToCsv", () => {
 
   it("returns only header for empty list", () => {
     const csv = entriesToCsv([]);
-    expect(csv).toBe("Name,Quantity,Level,Price,Type,Discount,URL");
+    expect(csv).toBe("Name,Quantity,Level,Price,Type,Discount,Notes,URL");
   });
 });
 
@@ -244,7 +244,7 @@ describe("entriesToCsv export details", () => {
     ];
     const csv = entriesToCsv(entries);
     const lines = csv.split("\n");
-    expect(lines[1]).toBe("Magic Wand,1,,50 gp,custom,,");
+    expect(lines[1]).toBe("Magic Wand,1,,50 gp,custom,,,");
   });
 
   it("exports discounts in the Discount column", () => {
@@ -392,5 +392,88 @@ describe("complex roundtrip", () => {
       isCustom: true,
       price: "5 sp",
     });
+  });
+});
+
+describe("notes in CSV", () => {
+  it("exports notes in the Notes column", () => {
+    const entries: CartEntry[] = [
+      {
+        item: makeItem({
+          id: "a1",
+          name: "Longsword",
+          level: 1,
+          price: { gp: 1 },
+          type: "weapon",
+        }),
+        quantity: 1,
+        notes: "Buy from the smith",
+      },
+    ];
+    const csv = entriesToCsv(entries);
+    const lines = csv.split("\n");
+    expect(lines[1]).toContain(",Buy from the smith,");
+  });
+
+  it("parses notes column on import", () => {
+    const csv = "Name,Quantity,Notes\nLongsword,1,For the boss fight";
+    const result = parseCsvItems(csv);
+    expect(result).toEqual([
+      {
+        name: "Longsword",
+        quantity: 1,
+        notes: "For the boss fight",
+        isCustom: false,
+      },
+    ]);
+  });
+
+  it("roundtrips notes through export → import", () => {
+    const entries: CartEntry[] = [
+      {
+        item: makeItem({
+          id: "a1",
+          name: "Longsword",
+          level: 1,
+          price: { gp: 1 },
+          type: "weapon",
+        }),
+        quantity: 2,
+        notes: "Buy at market",
+      },
+      {
+        item: makeItem({
+          id: "a2",
+          name: "Shield",
+          level: 0,
+          price: { gp: 2 },
+          type: "armor",
+        }),
+        quantity: 1,
+      },
+    ];
+    const csv = entriesToCsv(entries);
+    const parsed = parseCsvItems(csv);
+    expect(parsed[0].notes).toBe("Buy at market");
+    expect(parsed[1].notes).toBeUndefined();
+  });
+
+  it("escapes notes containing commas", () => {
+    const entries: CartEntry[] = [
+      {
+        item: makeItem({
+          id: "a1",
+          name: "Longsword",
+          level: 1,
+          price: { gp: 1 },
+          type: "weapon",
+        }),
+        quantity: 1,
+        notes: "Buy here, or there",
+      },
+    ];
+    const csv = entriesToCsv(entries);
+    const parsed = parseCsvItems(csv);
+    expect(parsed[0].notes).toBe("Buy here, or there");
   });
 });

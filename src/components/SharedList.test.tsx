@@ -172,4 +172,31 @@ describe("SharedList", () => {
       { id: "custom-0", name: "Wand", price: { gp: 50 } },
     ]);
   });
+
+  it("saves notes when editing a shared list", () => {
+    window.location.hash = "#items=w1&notes=w1%3ABuy%20from%20smith";
+    render(<SharedList />);
+
+    const editBtn = screen.getByText("Edit this list");
+    try {
+      fireEvent.click(editBtn);
+    } catch {
+      // "Not implemented: navigation" — expected in jsdom
+    }
+
+    const keys = Object.keys(localStorage).filter((k) =>
+      k.startsWith("pathshopper2e:list:"),
+    );
+    expect(keys).toHaveLength(1);
+    const saved = JSON.parse(
+      localStorage.getItem(keys[0]) ?? "{}",
+    ) as SavedList;
+    expect(saved.notes).toEqual({ w1: "Buy from smith" });
+  });
+
+  it("displays notes on the shared list", () => {
+    window.location.hash = "#items=w1&notes=w1%3AMy%20note";
+    render(<SharedList />);
+    expect(screen.getByText("My note")).toBeDefined();
+  });
 });

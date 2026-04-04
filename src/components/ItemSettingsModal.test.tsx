@@ -1,16 +1,16 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DiscountModal } from "./DiscountModal";
+import { ItemSettingsModal } from "./ItemSettingsModal";
 
 afterEach(cleanup);
 
 const BASE_PRICE = { gp: 10 };
 
-describe("DiscountModal", () => {
+describe("ItemSettingsModal", () => {
   it("renders the modal with item name", () => {
     render(
-      <DiscountModal
+      <ItemSettingsModal
         itemName="Longsword"
         price={BASE_PRICE}
         onApply={() => {}}
@@ -19,13 +19,14 @@ describe("DiscountModal", () => {
     );
     expect(screen.getByText("Longsword")).toBeDefined();
     expect(screen.getByLabelText("Discount per item")).toBeDefined();
+    expect(screen.getByLabelText("Notes")).toBeDefined();
   });
 
   it("applies a flat gp discount", () => {
     const onApply = vi.fn();
     const onClose = vi.fn();
     render(
-      <DiscountModal
+      <ItemSettingsModal
         itemName="Longsword"
         price={BASE_PRICE}
         onApply={onApply}
@@ -38,14 +39,14 @@ describe("DiscountModal", () => {
     });
     fireEvent.click(screen.getByText("Apply"));
 
-    expect(onApply).toHaveBeenCalledWith({ type: "flat", cp: 200 });
+    expect(onApply).toHaveBeenCalledWith({ type: "flat", cp: 200 }, "");
     expect(onClose).toHaveBeenCalledOnce();
   });
 
   it("applies a flat sp discount", () => {
     const onApply = vi.fn();
     render(
-      <DiscountModal
+      <ItemSettingsModal
         itemName="Longsword"
         price={BASE_PRICE}
         onApply={onApply}
@@ -61,13 +62,13 @@ describe("DiscountModal", () => {
     });
     fireEvent.click(screen.getByText("Apply"));
 
-    expect(onApply).toHaveBeenCalledWith({ type: "flat", cp: 50 });
+    expect(onApply).toHaveBeenCalledWith({ type: "flat", cp: 50 }, "");
   });
 
   it("applies a percentage discount", () => {
     const onApply = vi.fn();
     render(
-      <DiscountModal
+      <ItemSettingsModal
         itemName="Longsword"
         price={BASE_PRICE}
         onApply={onApply}
@@ -83,13 +84,13 @@ describe("DiscountModal", () => {
     });
     fireEvent.click(screen.getByText("Apply"));
 
-    expect(onApply).toHaveBeenCalledWith({ type: "percent", percent: 25 });
+    expect(onApply).toHaveBeenCalledWith({ type: "percent", percent: 25 }, "");
   });
 
   it("clears discount when amount is 0", () => {
     const onApply = vi.fn();
     render(
-      <DiscountModal
+      <ItemSettingsModal
         itemName="Longsword"
         price={BASE_PRICE}
         currentDiscount={{ type: "flat", cp: 200 }}
@@ -103,12 +104,12 @@ describe("DiscountModal", () => {
     });
     fireEvent.click(screen.getByText("Apply"));
 
-    expect(onApply).toHaveBeenCalledWith(undefined);
+    expect(onApply).toHaveBeenCalledWith(undefined, "");
   });
 
   it("disables Apply when discount exceeds price", () => {
     render(
-      <DiscountModal
+      <ItemSettingsModal
         itemName="Longsword"
         price={BASE_PRICE}
         onApply={() => {}}
@@ -126,7 +127,7 @@ describe("DiscountModal", () => {
 
   it("disables Apply when percent exceeds 100", () => {
     render(
-      <DiscountModal
+      <ItemSettingsModal
         itemName="Longsword"
         price={BASE_PRICE}
         onApply={() => {}}
@@ -147,7 +148,7 @@ describe("DiscountModal", () => {
 
   it("shows a preview of the discounted price", () => {
     render(
-      <DiscountModal
+      <ItemSettingsModal
         itemName="Longsword"
         price={BASE_PRICE}
         onApply={() => {}}
@@ -165,7 +166,7 @@ describe("DiscountModal", () => {
 
   it("initializes from an existing flat discount", () => {
     render(
-      <DiscountModal
+      <ItemSettingsModal
         itemName="Longsword"
         price={BASE_PRICE}
         currentDiscount={{ type: "flat", cp: 200 }}
@@ -186,7 +187,7 @@ describe("DiscountModal", () => {
 
   it("initializes from an existing percent discount", () => {
     render(
-      <DiscountModal
+      <ItemSettingsModal
         itemName="Longsword"
         price={BASE_PRICE}
         currentDiscount={{ type: "percent", percent: 15 }}
@@ -208,7 +209,7 @@ describe("DiscountModal", () => {
   it("calls onClose when Cancel is clicked", () => {
     const onClose = vi.fn();
     render(
-      <DiscountModal
+      <ItemSettingsModal
         itemName="Longsword"
         price={BASE_PRICE}
         onApply={() => {}}
@@ -223,7 +224,7 @@ describe("DiscountModal", () => {
   it("calls onClose when clicking the overlay background", () => {
     const onClose = vi.fn();
     render(
-      <DiscountModal
+      <ItemSettingsModal
         itemName="Longsword"
         price={BASE_PRICE}
         onApply={() => {}}
@@ -234,5 +235,88 @@ describe("DiscountModal", () => {
     const overlay = screen.getByRole("dialog");
     fireEvent.mouseDown(overlay);
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  // --- Notes-specific tests ---
+
+  it("submits notes along with discount", () => {
+    const onApply = vi.fn();
+    render(
+      <ItemSettingsModal
+        itemName="Longsword"
+        price={BASE_PRICE}
+        onApply={onApply}
+        onClose={() => {}}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Discount per item"), {
+      target: { value: "1" },
+    });
+    fireEvent.change(screen.getByLabelText("Notes"), {
+      target: { value: "Buy from Trader Joe" },
+    });
+    fireEvent.click(screen.getByText("Apply"));
+
+    expect(onApply).toHaveBeenCalledWith(
+      { type: "flat", cp: 100 },
+      "Buy from Trader Joe",
+    );
+  });
+
+  it("submits notes without a discount", () => {
+    const onApply = vi.fn();
+    render(
+      <ItemSettingsModal
+        itemName="Longsword"
+        price={BASE_PRICE}
+        onApply={onApply}
+        onClose={() => {}}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Notes"), {
+      target: { value: "Need this for the dungeon" },
+    });
+    fireEvent.click(screen.getByText("Apply"));
+
+    expect(onApply).toHaveBeenCalledWith(
+      undefined,
+      "Need this for the dungeon",
+    );
+  });
+
+  it("initializes with existing notes", () => {
+    render(
+      <ItemSettingsModal
+        itemName="Longsword"
+        price={BASE_PRICE}
+        currentNotes="Existing note"
+        onApply={() => {}}
+        onClose={() => {}}
+      />,
+    );
+
+    const textarea = screen.getByLabelText("Notes") as HTMLTextAreaElement;
+    expect(textarea.value).toBe("Existing note");
+  });
+
+  it("trims whitespace from notes on submit", () => {
+    const onApply = vi.fn();
+    render(
+      <ItemSettingsModal
+        itemName="Longsword"
+        price={BASE_PRICE}
+        onApply={onApply}
+        onClose={() => {}}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Notes"), {
+      target: { value: "  padded  " },
+    });
+    fireEvent.click(screen.getByText("Apply"));
+
+    expect(onApply).toHaveBeenCalledWith(undefined, "padded");
   });
 });

@@ -14,8 +14,8 @@ import {
 } from "./hooks/useSavedLists";
 import { useUrlState } from "./hooks/useUrlState";
 import { parseCsvItems } from "./lib/csv";
-import { parseHashParams, parseShareParams, type ShareParams } from "./lib/url";
 import { parseBudget } from "./lib/price";
+import { parseHashParams, parseShareParams, type ShareParams } from "./lib/url";
 import type { Item } from "./types";
 
 /**
@@ -42,6 +42,7 @@ function consumeSharedHash(): ShareParams | null {
   params.delete("name");
   params.delete("char");
   params.delete("custom");
+  params.delete("notes");
 
   // Rebuild hash with remaining params
   const remaining = params.toString();
@@ -71,6 +72,7 @@ function App() {
     removeItem,
     setQuantity,
     setDiscount,
+    setNotes,
     clearCart,
     replaceCart,
   } = useCart();
@@ -117,6 +119,7 @@ function App() {
           shared.cart,
           shared.discounts,
           shared.customItems,
+          shared.notes,
         );
         // Build a temporary SavedList to reuse the standard conversion
         const tempList: SavedList = {
@@ -242,7 +245,14 @@ function App() {
       );
       let customCounter = 0;
       const newEntries = new Map<string, CartEntry>();
-      for (const { name, quantity, discount, isCustom, price } of parsed) {
+      for (const {
+        name,
+        quantity,
+        discount,
+        isCustom,
+        price,
+        notes,
+      } of parsed) {
         let item: Item | undefined;
         if (isCustom) {
           const parsedPrice = price ? parseBudget(price) : null;
@@ -271,6 +281,7 @@ function App() {
             item: item as CartEntry["item"],
             quantity: (existing?.quantity ?? 0) + quantity,
             ...(discount ? { discount } : {}),
+            ...(notes ? { notes } : {}),
           });
         }
       }
@@ -335,6 +346,7 @@ function App() {
             onSetQuantity={setQuantity}
             onRemoveItem={removeItem}
             onSetDiscount={setDiscount}
+            onSetNotes={setNotes}
             onAddItem={addItem}
             onLoadList={handleLoadList}
             onNewList={handleNewList}

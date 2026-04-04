@@ -6,9 +6,11 @@ import {
   parseCartString,
   parseCustomItems,
   parseHashParams,
+  parseNotes,
   parseShareParams,
   serializeCart,
   serializeCustomItems,
+  serializeNotes,
 } from "./url";
 
 /** Helper: extract just the cart map from parseCartString. */
@@ -446,5 +448,66 @@ describe("parseShareParams with discounts", () => {
     const parsed = parseCartString(serialized);
     expect(parsed.cart).toEqual(cart);
     expect(parsed.discounts).toEqual(discounts);
+  });
+});
+
+describe("serializeNotes / parseNotes", () => {
+  it("returns empty string for empty map", () => {
+    expect(serializeNotes(new Map())).toBe("");
+  });
+
+  it("returns empty map for empty string", () => {
+    expect(parseNotes("")).toEqual(new Map());
+  });
+
+  it("roundtrips a single note", () => {
+    const notes = new Map([["w1", "Buy from the smith"]]);
+    const serialized = serializeNotes(notes);
+    expect(parseNotes(serialized)).toEqual(notes);
+  });
+
+  it("roundtrips multiple notes", () => {
+    const notes = new Map([
+      ["w1", "Buy from the smith"],
+      ["a2", "Available at the market"],
+    ]);
+    const serialized = serializeNotes(notes);
+    expect(parseNotes(serialized)).toEqual(notes);
+  });
+
+  it("handles colons in note text", () => {
+    const notes = new Map([["w1", "Note: important"]]);
+    const serialized = serializeNotes(notes);
+    expect(parseNotes(serialized)).toEqual(notes);
+  });
+
+  it("handles pipes in note text", () => {
+    const notes = new Map([["w1", "option A | option B"]]);
+    const serialized = serializeNotes(notes);
+    expect(parseNotes(serialized)).toEqual(notes);
+  });
+
+  it("handles backslashes in note text", () => {
+    const notes = new Map([["w1", "path\\to\\file"]]);
+    const serialized = serializeNotes(notes);
+    expect(parseNotes(serialized)).toEqual(notes);
+  });
+
+  it("skips empty notes", () => {
+    const notes = new Map([
+      ["w1", "hello"],
+      ["w2", ""],
+    ]);
+    const serialized = serializeNotes(notes);
+    expect(parseNotes(serialized)).toEqual(new Map([["w1", "hello"]]));
+  });
+
+  it("applies id mapping when serializing", () => {
+    const notes = new Map([["custom-abc-123", "My custom note"]]);
+    const idMap = new Map([["custom-abc-123", "custom-0"]]);
+    const serialized = serializeNotes(notes, idMap);
+    expect(parseNotes(serialized)).toEqual(
+      new Map([["custom-0", "My custom note"]]),
+    );
   });
 });

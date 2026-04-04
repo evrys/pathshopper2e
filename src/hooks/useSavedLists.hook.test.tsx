@@ -20,6 +20,7 @@ function makeSavedData(
   items: Map<string, number>,
   discounts?: Map<string, Discount>,
   customItems?: SavedCustomItem[],
+  notes?: Map<string, string>,
 ): SavedListData {
   return {
     items: Object.fromEntries(items),
@@ -27,6 +28,7 @@ function makeSavedData(
       discounts && discounts.size > 0
         ? Object.fromEntries(discounts)
         : undefined,
+    notes: notes && notes.size > 0 ? Object.fromEntries(notes) : undefined,
     customItems:
       customItems && customItems.length > 0 ? customItems : undefined,
   };
