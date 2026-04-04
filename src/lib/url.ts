@@ -1,3 +1,5 @@
+import type { Item, Price } from "../types";
+
 /**
  * Parse a URL hash string into URLSearchParams.
  *
@@ -62,6 +64,8 @@ export interface ShareParams {
   listId: string;
   cart: Map<string, number>;
   charName: string;
+  /** Custom item definitions embedded in the share URL, if any. */
+  customItems: Item[];
 }
 
 /**
@@ -73,7 +77,8 @@ export function parseShareParams(params: URLSearchParams): ShareParams {
   const charName = params.get("name") ?? params.get("char") ?? "";
   const cart = parseCartString(params.get("items") ?? params.get("cart") ?? "");
   const listId = params.get("lid") ?? "";
-  return { listId, cart, charName };
+  const customItems = parseCustomItems(params.get("custom") ?? "");
+  return { listId, cart, charName, customItems };
 }
 
 /**
@@ -84,4 +89,92 @@ export function serializeCart(cart: Map<string, number>): string {
   return [...cart]
     .map(([id, qty]) => (qty === 1 ? id : `${id}*${qty}`))
     .join("+");
+}
+
+// ── Custom-item encoding for share URLs ──────────────────────────────
+
+/**
+ * Compact price → string: "50gp", "10sp", "3cp", or "" for free.
+ * Only one denomination is stored (custom items use a single denomination).
+ */
+function serializePrice(price: Price): string {
+  if (price.gp) return `${price.gp}gp`;
+  if (price.sp) return `${price.sp}sp`;
+  if (price.cp) return `${price.cp}cp`;
+  return "";
+}
+
+/** Parse a compact price string like "50gp" back into a Price. */
+function parsePrice(s: string): Price {
+  if (!s) return {};
+  const m = s.match(/^(\d+)(gp|sp|cp)$/);
+  if (!m) return {};
+  return { [m[2]]: Number(m[1]) };
+}
+
+/**
+ * Serialize custom cart entries for embedding in a share URL.
+ *
+ * Format: entries separated by `,`. Each entry is `name~price` where price
+ * is a compact string like "50gp". The `~` separator is safe inside
+ * `encodeURIComponent`. Quantity is tracked in the normal `items` param.
+ */
+export function serializeCustomItems(entries: { item: Item }[]): string {
+  return entries
+    .map((e) => {
+      const p = serializePrice(e.item.price);
+      return p ? `${e.item.name}~${p}` : e.item.name;
+    })
+    .join(",");
+}
+
+/**
+ * Parse custom item definitions from a share URL param back into Item
+ * objects, keyed by their generated custom id.
+ *
+ * Each custom item gets a stable id derived from its index so that the
+ * corresponding quantities in the `items` cart param can reference it.
+ */
+export function parseCustomItems(str: string): Item[] {
+  if (!str) return [];
+  return str.split(",").map((entry, i) => {
+    const tildeIdx = entry.lastIndexOf("~");
+    const name = tildeIdx === -1 ? entry : entry.slice(0, tildeIdx);
+    const priceStr = tildeIdx === -1 ? "" : entry.slice(tildeIdx + 1);
+    return {
+      id: `custom-${i}`,
+      name,
+      type: "equipment",
+      level: 0,
+      price: parsePrice(priceStr),
+      category: "Custom",
+      traits: [],
+      rarity: "common",
+      bulk: 0,
+      usage: "",
+      source: "Custom",
+      remaster: false,
+      description: "",
+      plainDescription: "",
+    };
+  });
+}
+
+/**
+ * Build a mapping from a list of cart entries' custom item ids to stable
+ * share-URL custom ids (`custom-0`, `custom-1`, …). This lets us
+ * re-key the cart quantities so they reference the ids produced by
+ * `parseCustomItems` on the receiving end.
+ */
+export function buildCustomIdMap(
+  entries: { item: Item; quantity: number }[],
+): Map<string, string> {
+  const map = new Map<string, string>();
+  let idx = 0;
+  for (const e of entries) {
+    if (e.item.id.startsWith("custom-")) {
+      map.set(e.item.id, `custom-${idx++}`);
+    }
+  }
+  return map;
 }

@@ -20,7 +20,7 @@ interface ListEntry {
 
 export function SharedList() {
   const { items, loading } = useItems();
-  const { cart, charName, listId } = useMemo(
+  const { cart, charName, listId, customItems } = useMemo(
     () => parseShareParams(parseHashParams(window.location.hash)),
     [],
   );
@@ -28,13 +28,16 @@ export function SharedList() {
   const entries = useMemo(() => {
     if (loading || cart.size === 0) return [];
     const itemMap = new Map(items.map((it) => [it.id, it]));
+    for (const ci of customItems) {
+      itemMap.set(ci.id, ci);
+    }
     const result: ListEntry[] = [];
     for (const [id, qty] of cart) {
       const item = itemMap.get(id);
       if (item) result.push({ item, quantity: qty });
     }
     return result;
-  }, [items, loading, cart]);
+  }, [items, loading, cart, customItems]);
 
   const totalPrice = useMemo(
     () =>
@@ -87,18 +90,24 @@ export function SharedList() {
             {entries.map(({ item, quantity }) => (
               <li key={item.id} className={styles.item}>
                 <div className={styles.itemInfo}>
-                  <ItemTooltipWrapper item={item}>
-                    <a
-                      className={styles.itemName}
-                      href={aonUrl(item)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {item.name}
-                    </a>
-                  </ItemTooltipWrapper>
+                  {item.id.startsWith("custom-") ? (
+                    <span className={styles.itemName}>{item.name}</span>
+                  ) : (
+                    <ItemTooltipWrapper item={item}>
+                      <a
+                        className={styles.itemName}
+                        href={aonUrl(item)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {item.name}
+                      </a>
+                    </ItemTooltipWrapper>
+                  )}
                   <span className={styles.itemMeta}>
-                    Level {item.level} &middot; {formatPrice(item.price)}
+                    {item.id.startsWith("custom-")
+                      ? formatPrice(item.price)
+                      : `Level ${item.level} · ${formatPrice(item.price)}`}
                     {quantity > 1 && " each"}
                   </span>
                 </div>

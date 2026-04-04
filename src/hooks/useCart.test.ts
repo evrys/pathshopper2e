@@ -111,4 +111,44 @@ describe("cartReducer", () => {
       expect(state.entries.size).toBe(0);
     });
   });
+
+  describe("custom items", () => {
+    it("adds a custom item with custom- prefix id", () => {
+      const custom = makeItem({
+        id: "custom-1-1234567890",
+        name: "Magic Sword",
+        price: { gp: 50 },
+        category: "Custom",
+        source: "Custom",
+      });
+      const state = cartReducer(emptyState, { type: "add", item: custom });
+      expect(state.entries.size).toBe(1);
+      expect(state.entries.get("custom-1-1234567890")?.item.name).toBe(
+        "Magic Sword",
+      );
+      expect(state.entries.get("custom-1-1234567890")?.quantity).toBe(1);
+    });
+
+    it("tracks custom items separately from regular items", () => {
+      const regular = makeItem();
+      const custom = makeItem({
+        id: "custom-1-1234567890",
+        name: "Custom Potion",
+        price: { gp: 10 },
+      });
+      let state = cartReducer(emptyState, { type: "add", item: regular });
+      state = cartReducer(state, { type: "add", item: custom });
+      expect(state.entries.size).toBe(2);
+    });
+
+    it("increments quantity for the same custom item", () => {
+      const custom = makeItem({
+        id: "custom-1-1234567890",
+        name: "Magic Sword",
+      });
+      let state = cartReducer(emptyState, { type: "add", item: custom });
+      state = cartReducer(state, { type: "add", item: custom });
+      expect(state.entries.get("custom-1-1234567890")?.quantity).toBe(2);
+    });
+  });
 });

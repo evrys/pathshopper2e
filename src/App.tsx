@@ -10,13 +10,18 @@ import { useUrlState } from "./hooks/useUrlState";
 import { parseCsvItems } from "./lib/csv";
 import { parseHashParams, parseShareParams, type ShareParams } from "./lib/url";
 
-/** Build cart entries from a plain id→quantity map + loaded items. */
+/** Build cart entries from a plain id→quantity map + loaded items.
+ *  Optionally accepts custom items parsed from a share URL. */
 function buildCartEntries(
   items: { id: string }[],
   itemQuantities: Map<string, number>,
+  customItems: CartEntry["item"][] = [],
 ): Map<string, CartEntry> | undefined {
   if (itemQuantities.size === 0) return undefined;
   const itemMap = new Map(items.map((it) => [it.id, it]));
+  for (const ci of customItems) {
+    itemMap.set(ci.id, ci);
+  }
   const map = new Map<string, CartEntry>();
   for (const [id, qty] of itemQuantities) {
     const item = itemMap.get(id);
@@ -50,6 +55,7 @@ function consumeSharedHash(): ShareParams | null {
   params.delete("cart");
   params.delete("name");
   params.delete("char");
+  params.delete("custom");
 
   // Rebuild hash with remaining params
   const remaining = params.toString();
@@ -123,7 +129,7 @@ function App() {
       if (shared.cart.size > 0) {
         const name = shared.charName || "Shared List";
         createList(name);
-        const built = buildCartEntries(items, shared.cart);
+        const built = buildCartEntries(items, shared.cart, shared.customItems);
         if (built) {
           replaceCart(built);
           saveActiveList(shared.cart);
@@ -326,6 +332,7 @@ function App() {
             onListNameChange={renameActiveList}
             onSetQuantity={setQuantity}
             onRemoveItem={removeItem}
+            onAddItem={addItem}
             onLoadList={handleLoadList}
             onNewList={handleNewList}
             onDeleteList={deleteList}

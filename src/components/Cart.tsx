@@ -5,8 +5,14 @@ import type { SavedList } from "../hooks/useSavedLists";
 import { aonUrl } from "../lib/aon";
 import { entriesToCsv } from "../lib/csv";
 import { formatPrice } from "../lib/price";
-import { buildHashString, serializeCart } from "../lib/url";
+import {
+  buildHashString,
+  buildCustomIdMap,
+  serializeCart,
+  serializeCustomItems,
+} from "../lib/url";
 import type { Price } from "../types";
+import { AddCustomItemModal } from "./AddCustomItemModal";
 import styles from "./Cart.module.css";
 import { ItemTooltipWrapper } from "./ItemTooltip";
 import { SavedListsModal } from "./SavedListsModal";
@@ -20,6 +26,7 @@ interface CartProps {
   onListNameChange: (name: string) => void;
   onSetQuantity: (itemId: string, quantity: number) => void;
   onRemoveItem: (itemId: string) => void;
+  onAddItem: (item: CartEntry["item"]) => void;
   onLoadList: (list: SavedList) => void;
   onNewList: (name: string, copyItems?: boolean) => void;
   onDeleteList: (id: string) => void;
@@ -40,10 +47,24 @@ function buildShareUrl(
   params.set("lid", listId);
 
   if (entries.length > 0) {
+    // Build a stable id mapping for custom items so the share URL
+    // uses `custom-0`, `custom-1`, … which parseCustomItems will produce.
+    const idMap = buildCustomIdMap(entries);
+
     const cart = new Map(
-      entries.map(({ item, quantity }) => [item.id, quantity]),
+      entries.map(({ item, quantity }) => [
+        idMap.get(item.id) ?? item.id,
+        quantity,
+      ]),
     );
     params.set("items", serializeCart(cart));
+
+    const customEntries = entries.filter((e) =>
+      e.item.id.startsWith("custom-"),
+    );
+    if (customEntries.length > 0) {
+      params.set("custom", serializeCustomItems(customEntries));
+    }
   }
 
   return `${window.location.origin}${base}/?view=list${buildHashString(params)}`;
@@ -58,6 +79,7 @@ export function Cart({
   onListNameChange,
   onSetQuantity,
   onRemoveItem,
+  onAddItem,
   onLoadList,
   onNewList,
   onDeleteList,
@@ -67,6 +89,7 @@ export function Cart({
   const [mobileCollapsed, setMobileCollapsed] = useState(true);
   const [listsOpen, setListsOpen] = useState(false);
   const [listsOpenCreating, setListsOpenCreating] = useState(false);
+  const [customItemOpen, setCustomItemOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
@@ -237,6 +260,17 @@ export function Cart({
                 className={styles.menuItem}
                 onClick={() => {
                   setMenuOpen(false);
+                  setCustomItemOpen(true);
+                }}
+              >
+                Add custom item
+              </button>
+              <hr className={styles.menuDivider} />
+              <button
+                type="button"
+                className={styles.menuItem}
+                onClick={() => {
+                  setMenuOpen(false);
                   handleExportCsv();
                 }}
               >
@@ -308,6 +342,13 @@ export function Cart({
             />
           )}
 
+          {customItemOpen && (
+            <AddCustomItemModal
+              onAdd={onAddItem}
+              onClose={() => setCustomItemOpen(false)}
+            />
+          )}
+
           {entries.length === 0 ? (
             <p className={styles.empty}>
               Add items from the table to start building your list.
@@ -317,16 +358,20 @@ export function Cart({
               {entries.map((entry) => (
                 <li key={entry.item.id} className={styles.item}>
                   <div className={styles.itemInfo}>
-                    <ItemTooltipWrapper item={entry.item}>
-                      <a
-                        className={styles.itemName}
-                        href={aonUrl(entry.item)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {entry.item.name}
-                      </a>
-                    </ItemTooltipWrapper>
+                    {entry.item.id.startsWith("custom-") ? (
+                      <span className={styles.itemName}>{entry.item.name}</span>
+                    ) : (
+                      <ItemTooltipWrapper item={entry.item}>
+                        <a
+                          className={styles.itemName}
+                          href={aonUrl(entry.item)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {entry.item.name}
+                        </a>
+                      </ItemTooltipWrapper>
+                    )}
                     <span className={styles.itemPrice}>
                       {formatPrice(entry.item.price)}
                       {entry.quantity > 1 && " each"}

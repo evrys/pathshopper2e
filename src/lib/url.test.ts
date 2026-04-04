@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
+import type { Item } from "../types";
 import {
+  buildCustomIdMap,
   buildHashString,
   parseCartString,
+  parseCustomItems,
   parseHashParams,
   parseShareParams,
   serializeCart,
+  serializeCustomItems,
 } from "./url";
 
 describe("parseCartString", () => {
@@ -141,5 +145,136 @@ describe("parseShareParams", () => {
     expect(result.listId).toBe("");
     expect(result.charName).toBe("");
     expect(result.cart).toEqual(new Map());
+    expect(result.customItems).toEqual([]);
+  });
+});
+
+function makeCustomItem(overrides: Partial<Item> = {}): Item {
+  return {
+    id: "custom-0-999",
+    name: "Magic Sword",
+    type: "equipment",
+    level: 0,
+    price: { gp: 50 },
+    category: "Custom",
+    traits: [],
+    rarity: "common",
+    bulk: 0,
+    usage: "",
+    source: "Custom",
+    remaster: false,
+    description: "",
+    plainDescription: "",
+    ...overrides,
+  };
+}
+
+describe("serializeCustomItems", () => {
+  it("serializes a single custom item with price", () => {
+    const result = serializeCustomItems([
+      { item: makeCustomItem({ name: "Magic Sword", price: { gp: 50 } }) },
+    ]);
+    expect(result).toBe("Magic Sword~50gp");
+  });
+
+  it("serializes a custom item with sp price", () => {
+    const result = serializeCustomItems([
+      { item: makeCustomItem({ name: "Rope", price: { sp: 5 } }) },
+    ]);
+    expect(result).toBe("Rope~5sp");
+  });
+
+  it("serializes a free custom item (no tilde)", () => {
+    const result = serializeCustomItems([
+      { item: makeCustomItem({ name: "Free Thing", price: {} }) },
+    ]);
+    expect(result).toBe("Free Thing");
+  });
+
+  it("serializes multiple custom items separated by commas", () => {
+    const result = serializeCustomItems([
+      { item: makeCustomItem({ name: "Sword", price: { gp: 10 } }) },
+      { item: makeCustomItem({ name: "Shield", price: { gp: 5 } }) },
+    ]);
+    expect(result).toBe("Sword~10gp,Shield~5gp");
+  });
+});
+
+describe("parseCustomItems", () => {
+  it("returns empty array for empty string", () => {
+    expect(parseCustomItems("")).toEqual([]);
+  });
+
+  it("parses a single custom item with price", () => {
+    const items = parseCustomItems("Magic Sword~50gp");
+    expect(items).toHaveLength(1);
+    expect(items[0].id).toBe("custom-0");
+    expect(items[0].name).toBe("Magic Sword");
+    expect(items[0].price).toEqual({ gp: 50 });
+  });
+
+  it("parses a free custom item (no tilde)", () => {
+    const items = parseCustomItems("Free Thing");
+    expect(items).toHaveLength(1);
+    expect(items[0].name).toBe("Free Thing");
+    expect(items[0].price).toEqual({});
+  });
+
+  it("parses multiple custom items", () => {
+    const items = parseCustomItems("Sword~10gp,Shield~5sp");
+    expect(items).toHaveLength(2);
+    expect(items[0].name).toBe("Sword");
+    expect(items[0].price).toEqual({ gp: 10 });
+    expect(items[0].id).toBe("custom-0");
+    expect(items[1].name).toBe("Shield");
+    expect(items[1].price).toEqual({ sp: 5 });
+    expect(items[1].id).toBe("custom-1");
+  });
+
+  it("roundtrips with serializeCustomItems", () => {
+    const original = [
+      { item: makeCustomItem({ name: "Sword", price: { gp: 10 } }) },
+      { item: makeCustomItem({ name: "Potion", price: { cp: 3 } }) },
+    ];
+    const serialized = serializeCustomItems(original);
+    const parsed = parseCustomItems(serialized);
+    expect(parsed[0].name).toBe("Sword");
+    expect(parsed[0].price).toEqual({ gp: 10 });
+    expect(parsed[1].name).toBe("Potion");
+    expect(parsed[1].price).toEqual({ cp: 3 });
+  });
+});
+
+describe("buildCustomIdMap", () => {
+  it("maps custom item ids to stable sequential ids", () => {
+    const entries = [
+      { item: makeCustomItem({ id: "custom-7-abc" }), quantity: 1 },
+      { item: makeCustomItem({ id: "e1082" }), quantity: 2 },
+      { item: makeCustomItem({ id: "custom-3-xyz" }), quantity: 1 },
+    ];
+    const map = buildCustomIdMap(entries);
+    expect(map.size).toBe(2);
+    expect(map.get("custom-7-abc")).toBe("custom-0");
+    expect(map.get("custom-3-xyz")).toBe("custom-1");
+  });
+
+  it("returns empty map when no custom items", () => {
+    const entries = [{ item: makeCustomItem({ id: "e1082" }), quantity: 1 }];
+    expect(buildCustomIdMap(entries).size).toBe(0);
+  });
+});
+
+describe("parseShareParams with custom items", () => {
+  it("parses custom items from the custom param", () => {
+    const params = new URLSearchParams();
+    params.set("items", "custom-0+e1082*2");
+    params.set("custom", "Magic Sword~50gp");
+
+    const result = parseShareParams(params);
+    expect(result.customItems).toHaveLength(1);
+    expect(result.customItems[0].name).toBe("Magic Sword");
+    expect(result.customItems[0].price).toEqual({ gp: 50 });
+    expect(result.cart.get("custom-0")).toBe(1);
+    expect(result.cart.get("e1082")).toBe(2);
   });
 });
