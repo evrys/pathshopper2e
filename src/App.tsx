@@ -15,6 +15,8 @@ import {
 import { useUrlState } from "./hooks/useUrlState";
 import { parseCsvItems } from "./lib/csv";
 import { parseHashParams, parseShareParams, type ShareParams } from "./lib/url";
+import { parseBudget } from "./lib/price";
+import type { Item } from "./types";
 
 /**
  * Parse shared-link params from the initial URL hash.
@@ -238,14 +240,37 @@ function App() {
       const itemsByName = new Map(
         items.map((it) => [it.name.toLowerCase(), it]),
       );
+      let customCounter = 0;
       const newEntries = new Map<string, CartEntry>();
-      for (const { name, quantity } of parsed) {
-        const item = itemsByName.get(name.toLowerCase());
+      for (const { name, quantity, discount, isCustom, price } of parsed) {
+        let item: Item | undefined;
+        if (isCustom) {
+          const parsedPrice = price ? parseBudget(price) : null;
+          item = {
+            id: `custom-csv-${++customCounter}-${Date.now()}`,
+            name,
+            type: "equipment",
+            level: 0,
+            price: parsedPrice ?? {},
+            category: "Custom",
+            traits: [],
+            rarity: "common",
+            bulk: 0,
+            usage: "",
+            source: "Custom",
+            remaster: false,
+            description: "",
+            plainDescription: "",
+          };
+        } else {
+          item = itemsByName.get(name.toLowerCase());
+        }
         if (item) {
           const existing = newEntries.get(item.id);
           newEntries.set(item.id, {
             item: item as CartEntry["item"],
             quantity: (existing?.quantity ?? 0) + quantity,
+            ...(discount ? { discount } : {}),
           });
         }
       }

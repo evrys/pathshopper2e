@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CartEntry } from "../hooks/useCart";
 import type { Item } from "../types";
-import { entriesToCsv, parseCsvItems } from "./csv";
+import { entriesToCsv, parseDiscount, parseCsvItems } from "./csv";
 
 function makeItem(
   overrides: Partial<Item> & { id: string; name: string },
@@ -49,12 +49,12 @@ describe("entriesToCsv", () => {
     ];
     const csv = entriesToCsv(entries);
     const lines = csv.split("\n");
-    expect(lines[0]).toBe("Name,Quantity,Level,Price,Type,URL");
+    expect(lines[0]).toBe("Name,Quantity,Level,Price,Type,Discount,URL");
     expect(lines[1]).toBe(
-      "Longsword,2,1,1 gp,weapon,https://2e.aonprd.com/Search.aspx?q=Longsword",
+      "Longsword,2,1,1 gp,weapon,,https://2e.aonprd.com/Search.aspx?q=Longsword",
     );
     expect(lines[2]).toBe(
-      "Shield,1,0,2 gp,armor,https://2e.aonprd.com/Search.aspx?q=Shield",
+      "Shield,1,0,2 gp,armor,,https://2e.aonprd.com/Search.aspx?q=Shield",
     );
   });
 
@@ -71,7 +71,7 @@ describe("entriesToCsv", () => {
 
   it("returns only header for empty list", () => {
     const csv = entriesToCsv([]);
-    expect(csv).toBe("Name,Quantity,Level,Price,Type,URL");
+    expect(csv).toBe("Name,Quantity,Level,Price,Type,Discount,URL");
   });
 });
 
@@ -80,8 +80,8 @@ describe("parseCsvItems", () => {
     const csv = "Name,Quantity\nLongsword,2\nShield,1";
     const result = parseCsvItems(csv);
     expect(result).toEqual([
-      { name: "Longsword", quantity: 2 },
-      { name: "Shield", quantity: 1 },
+      { name: "Longsword", quantity: 2, isCustom: false },
+      { name: "Shield", quantity: 1, isCustom: false },
     ]);
   });
 
@@ -89,29 +89,33 @@ describe("parseCsvItems", () => {
     const csv = "Name,Level\nLongsword,1\nShield,0";
     const result = parseCsvItems(csv);
     expect(result).toEqual([
-      { name: "Longsword", quantity: 1 },
-      { name: "Shield", quantity: 1 },
+      { name: "Longsword", quantity: 1, isCustom: false },
+      { name: "Shield", quantity: 1, isCustom: false },
     ]);
   });
 
   it("handles quoted fields with commas", () => {
     const csv = 'Name,Quantity\n"Aeon Stone, Dusty Rose",3';
     const result = parseCsvItems(csv);
-    expect(result).toEqual([{ name: "Aeon Stone, Dusty Rose", quantity: 3 }]);
+    expect(result).toEqual([
+      { name: "Aeon Stone, Dusty Rose", quantity: 3, isCustom: false },
+    ]);
   });
 
   it("handles quoted fields with escaped quotes", () => {
     const csv = 'Name,Quantity\n"""Special"" Item",1';
     const result = parseCsvItems(csv);
-    expect(result).toEqual([{ name: '"Special" Item', quantity: 1 }]);
+    expect(result).toEqual([
+      { name: '"Special" Item', quantity: 1, isCustom: false },
+    ]);
   });
 
   it("skips empty rows", () => {
     const csv = "Name,Quantity\nLongsword,1\n\nShield,2\n";
     const result = parseCsvItems(csv);
     expect(result).toEqual([
-      { name: "Longsword", quantity: 1 },
-      { name: "Shield", quantity: 2 },
+      { name: "Longsword", quantity: 1, isCustom: false },
+      { name: "Shield", quantity: 2, isCustom: false },
     ]);
   });
 
@@ -151,8 +155,242 @@ describe("parseCsvItems", () => {
     const csv = entriesToCsv(entries);
     const parsed = parseCsvItems(csv);
     expect(parsed).toEqual([
-      { name: "Longsword", quantity: 2 },
-      { name: "Aeon Stone, Dusty Rose", quantity: 1 },
+      { name: "Longsword", quantity: 2, isCustom: false, price: "1 gp" },
+      {
+        name: "Aeon Stone, Dusty Rose",
+        quantity: 1,
+        isCustom: false,
+        price: "100 gp",
+      },
     ]);
+  });
+
+  it("parses discount column", () => {
+    const csv =
+      "Name,Quantity,Discount\nLongsword,1,10%\nShield,2,5 gp\nHelm,1,";
+    const result = parseCsvItems(csv);
+    expect(result).toEqual([
+      {
+        name: "Longsword",
+        quantity: 1,
+        discount: { type: "percent", percent: 10 },
+        isCustom: false,
+      },
+      {
+        name: "Shield",
+        quantity: 2,
+        discount: { type: "flat", cp: 500 },
+        isCustom: false,
+      },
+      { name: "Helm", quantity: 1, isCustom: false },
+    ]);
+  });
+
+  it("parses type=custom as isCustom", () => {
+    const csv = "Name,Quantity,Type,Price\nMagic Wand,1,custom,50 gp";
+    const result = parseCsvItems(csv);
+    expect(result).toEqual([
+      { name: "Magic Wand", quantity: 1, isCustom: true, price: "50 gp" },
+    ]);
+  });
+});
+
+describe("parseDiscount", () => {
+  it("parses percentage discount", () => {
+    expect(parseDiscount("10%")).toEqual({ type: "percent", percent: 10 });
+    expect(parseDiscount("25 %")).toEqual({ type: "percent", percent: 25 });
+  });
+
+  it("parses flat discount in gp", () => {
+    expect(parseDiscount("5 gp")).toEqual({ type: "flat", cp: 500 });
+  });
+
+  it("parses flat discount in sp", () => {
+    expect(parseDiscount("3 sp")).toEqual({ type: "flat", cp: 30 });
+  });
+
+  it("parses flat discount in cp", () => {
+    expect(parseDiscount("15 cp")).toEqual({ type: "flat", cp: 15 });
+  });
+
+  it("parses mixed denomination discount", () => {
+    expect(parseDiscount("1 gp 5 sp 3 cp")).toEqual({
+      type: "flat",
+      cp: 153,
+    });
+  });
+
+  it("returns undefined for empty string", () => {
+    expect(parseDiscount("")).toBeUndefined();
+    expect(parseDiscount("  ")).toBeUndefined();
+  });
+
+  it("returns undefined for invalid input", () => {
+    expect(parseDiscount("free")).toBeUndefined();
+  });
+});
+
+describe("entriesToCsv export details", () => {
+  it("exports custom items with empty level and URL, type=custom", () => {
+    const entries: CartEntry[] = [
+      {
+        item: makeItem({
+          id: "custom-1-123",
+          name: "Magic Wand",
+          price: { gp: 50 },
+        }),
+        quantity: 1,
+      },
+    ];
+    const csv = entriesToCsv(entries);
+    const lines = csv.split("\n");
+    expect(lines[1]).toBe("Magic Wand,1,,50 gp,custom,,");
+  });
+
+  it("exports discounts in the Discount column", () => {
+    const entries: CartEntry[] = [
+      {
+        item: makeItem({
+          id: "a1",
+          name: "Longsword",
+          level: 1,
+          price: { gp: 1 },
+          type: "weapon",
+        }),
+        quantity: 1,
+        discount: { type: "percent", percent: 10 },
+      },
+    ];
+    const csv = entriesToCsv(entries);
+    const lines = csv.split("\n");
+    expect(lines[1]).toContain(",10%,");
+  });
+
+  it("exports flat discounts in gp/sp/cp format", () => {
+    const entries: CartEntry[] = [
+      {
+        item: makeItem({
+          id: "a1",
+          name: "Shield",
+          level: 0,
+          price: { gp: 2 },
+          type: "armor",
+        }),
+        quantity: 1,
+        discount: { type: "flat", cp: 153 },
+      },
+    ];
+    const csv = entriesToCsv(entries);
+    const lines = csv.split("\n");
+    expect(lines[1]).toContain(",1 gp 5 sp 3 cp,");
+  });
+});
+
+describe("complex roundtrip", () => {
+  it("preserves all data through export → import for a complex shopping list", () => {
+    const entries: CartEntry[] = [
+      // Regular item, no discount
+      {
+        item: makeItem({
+          id: "w1",
+          name: "Longsword",
+          level: 1,
+          price: { gp: 1 },
+          type: "weapon",
+        }),
+        quantity: 3,
+      },
+      // Regular item with percentage discount
+      {
+        item: makeItem({
+          id: "a1",
+          name: "Aeon Stone, Dusty Rose",
+          level: 5,
+          price: { gp: 100 },
+          type: "equipment",
+        }),
+        quantity: 1,
+        discount: { type: "percent", percent: 25 },
+      },
+      // Regular item with flat discount
+      {
+        item: makeItem({
+          id: "a2",
+          name: "Chain Mail",
+          level: 1,
+          price: { gp: 6 },
+          type: "armor",
+        }),
+        quantity: 2,
+        discount: { type: "flat", cp: 150 },
+      },
+      // Custom item, no discount
+      {
+        item: makeItem({
+          id: "custom-1-100",
+          name: "Homemade Potion",
+          price: { gp: 25 },
+        }),
+        quantity: 5,
+      },
+      // Custom item with discount
+      {
+        item: makeItem({
+          id: "custom-2-200",
+          name: "Lucky Charm",
+          price: { sp: 5 },
+        }),
+        quantity: 1,
+        discount: { type: "percent", percent: 50 },
+      },
+    ];
+
+    const csv = entriesToCsv(entries);
+    const parsed = parseCsvItems(csv);
+
+    expect(parsed).toHaveLength(5);
+
+    // Regular item, no discount
+    expect(parsed[0]).toEqual({
+      name: "Longsword",
+      quantity: 3,
+      isCustom: false,
+      price: "1 gp",
+    });
+
+    // Regular item with percentage discount
+    expect(parsed[1]).toEqual({
+      name: "Aeon Stone, Dusty Rose",
+      quantity: 1,
+      discount: { type: "percent", percent: 25 },
+      isCustom: false,
+      price: "100 gp",
+    });
+
+    // Regular item with flat discount (1 gp 5 sp = 150 cp)
+    expect(parsed[2]).toEqual({
+      name: "Chain Mail",
+      quantity: 2,
+      discount: { type: "flat", cp: 150 },
+      isCustom: false,
+      price: "6 gp",
+    });
+
+    // Custom item, no discount
+    expect(parsed[3]).toEqual({
+      name: "Homemade Potion",
+      quantity: 5,
+      isCustom: true,
+      price: "25 gp",
+    });
+
+    // Custom item with discount
+    expect(parsed[4]).toEqual({
+      name: "Lucky Charm",
+      quantity: 1,
+      discount: { type: "percent", percent: 50 },
+      isCustom: true,
+      price: "5 sp",
+    });
   });
 });
