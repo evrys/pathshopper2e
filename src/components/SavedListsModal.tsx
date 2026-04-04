@@ -22,6 +22,7 @@ export function SavedListsModal({
 }: SavedListsModalProps) {
   const [creatingNew, setCreatingNew] = useState(false);
   const [newName, setNewName] = useState("");
+  const [deletingList, setDeletingList] = useState<SavedList | null>(null);
   const newNameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -33,7 +34,9 @@ export function SavedListsModal({
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
-        if (creatingNew) {
+        if (deletingList) {
+          setDeletingList(null);
+        } else if (creatingNew) {
           setCreatingNew(false);
           setNewName("");
         } else {
@@ -43,7 +46,7 @@ export function SavedListsModal({
     }
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
-  }, [onClose, creatingNew]);
+  }, [onClose, creatingNew, deletingList]);
 
   function handleCreateSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -148,7 +151,7 @@ export function SavedListsModal({
                   <button
                     type="button"
                     className={styles.deleteBtn}
-                    onClick={() => onDelete(list.id)}
+                    onClick={() => setDeletingList(list)}
                     aria-label={`Delete "${list.name}"`}
                   >
                     ✕
@@ -159,6 +162,43 @@ export function SavedListsModal({
           </ul>
         )}
       </div>
+
+      {deletingList && (
+        <div
+          className={styles.confirmOverlay}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Confirm delete"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setDeletingList(null);
+          }}
+        >
+          <div className={styles.confirmPanel}>
+            <p className={styles.confirmText}>
+              Delete <strong>{deletingList.name}</strong>?
+            </p>
+            <div className={styles.confirmActions}>
+              <button
+                type="button"
+                className={styles.confirmDeleteBtn}
+                onClick={() => {
+                  onDelete(deletingList.id);
+                  setDeletingList(null);
+                }}
+              >
+                Delete
+              </button>
+              <button
+                type="button"
+                className={styles.confirmCancelBtn}
+                onClick={() => setDeletingList(null)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>,
     document.body,
   );

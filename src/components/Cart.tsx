@@ -181,7 +181,7 @@ export function Cart({
                   setListsOpen(true);
                 }}
               >
-                Load list
+                Open list
               </button>
               <button
                 type="button"

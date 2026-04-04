@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const STORAGE_KEY = "pathshopper2e:saved-lists";
+const LIST_PREFIX = "pathshopper2e:list:";
 const ACTIVE_KEY = "pathshopper2e:active-list-id";
 const DEFAULT_LIST_NAME = "Shopping List";
 
@@ -20,11 +20,9 @@ export interface SavedListsState {
   activeListId: string;
 }
 
-let idCounter = 0;
-
 /** Generate a unique list id. */
 export function generateListId(): string {
-  return `${Date.now()}-${++idCounter}`;
+  return crypto.randomUUID();
 }
 
 function createDefaultList(): SavedList {
@@ -36,20 +34,41 @@ function createDefaultList(): SavedList {
   };
 }
 
+/** Read a single list from its localStorage key. */
+function readList(id: string): SavedList | null {
+  try {
+    const raw = localStorage.getItem(`${LIST_PREFIX}${id}`);
+    if (!raw) return null;
+    return JSON.parse(raw) as SavedList;
+  } catch {
+    return null;
+  }
+}
+
+/** Discover all saved lists by scanning localStorage keys. */
+function readAllLists(): SavedList[] {
+  const lists: SavedList[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key?.startsWith(LIST_PREFIX)) continue;
+    const list = readList(key.slice(LIST_PREFIX.length));
+    if (list) lists.push(list);
+  }
+  // Sort newest first
+  lists.sort((a, b) => b.savedAt.localeCompare(a.savedAt));
+  return lists;
+}
+
 export function readFromStorage(): SavedListsState {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const lists = readAllLists();
     const activeId = localStorage.getItem(ACTIVE_KEY) ?? "";
-    if (!raw) {
-      const defaultList = createDefaultList();
-      return { lists: [defaultList], activeListId: defaultList.id };
-    }
-    const lists = JSON.parse(raw) as SavedList[];
     if (lists.length === 0) {
       const defaultList = createDefaultList();
+      writeList(defaultList);
+      writeActiveId(defaultList.id);
       return { lists: [defaultList], activeListId: defaultList.id };
     }
-    // If the saved active id doesn't match any list, default to the first
     const resolved = lists.find((l) => l.id === activeId)?.id ?? lists[0].id;
     return { lists, activeListId: resolved };
   } catch {
@@ -58,11 +77,19 @@ export function readFromStorage(): SavedListsState {
   }
 }
 
-function writeLists(lists: SavedList[]): void {
+function writeList(list: SavedList): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(lists));
+    localStorage.setItem(`${LIST_PREFIX}${list.id}`, JSON.stringify(list));
   } catch {
     // Storage full or unavailable — silently ignore
+  }
+}
+
+function removeList(id: string): void {
+  try {
+    localStorage.removeItem(`${LIST_PREFIX}${id}`);
+  } catch {
+    // silently ignore
   }
 }
 
@@ -80,7 +107,7 @@ export function useSavedLists() {
   // Keep in sync across tabs
   useEffect(() => {
     function onStorage(e: StorageEvent) {
-      if (e.key === STORAGE_KEY || e.key === ACTIVE_KEY) {
+      if (e.key === ACTIVE_KEY || e.key?.startsWith(LIST_PREFIX)) {
         setState(readFromStorage());
       }
     }
@@ -93,16 +120,16 @@ export function useSavedLists() {
   /** Save items to the currently active list (auto-save). */
   const saveActiveList = useCallback((items: Map<string, number>) => {
     setState((prev) => {
-      const next = prev.lists.map((l) =>
-        l.id === prev.activeListId
-          ? {
-              ...l,
-              items: Object.fromEntries(items),
-              savedAt: new Date().toISOString(),
-            }
-          : l,
-      );
-      writeLists(next);
+      const next = prev.lists.map((l) => {
+        if (l.id !== prev.activeListId) return l;
+        const updated = {
+          ...l,
+          items: Object.fromEntries(items),
+          savedAt: new Date().toISOString(),
+        };
+        writeList(updated);
+        return updated;
+      });
       return { ...prev, lists: next };
     });
   }, []);
@@ -110,10 +137,12 @@ export function useSavedLists() {
   /** Rename the currently active list. */
   const renameActiveList = useCallback((name: string) => {
     setState((prev) => {
-      const next = prev.lists.map((l) =>
-        l.id === prev.activeListId ? { ...l, name } : l,
-      );
-      writeLists(next);
+      const next = prev.lists.map((l) => {
+        if (l.id !== prev.activeListId) return l;
+        const updated = { ...l, name };
+        writeList(updated);
+        return updated;
+      });
       return { ...prev, lists: next };
     });
   }, []);
@@ -134,32 +163,31 @@ export function useSavedLists() {
       items: {},
       savedAt: new Date().toISOString(),
     };
-    setState((prev) => {
-      const next = [newList, ...prev.lists];
-      writeLists(next);
-      writeActiveId(newList.id);
-      return { lists: next, activeListId: newList.id };
-    });
+    writeList(newList);
+    writeActiveId(newList.id);
+    setState((prev) => ({
+      lists: [newList, ...prev.lists],
+      activeListId: newList.id,
+    }));
     return newList;
   }, []);
 
   /** Delete a list by id. If it's the active list, switch to the first remaining. */
   const deleteList = useCallback((id: string) => {
+    removeList(id);
     setState((prev) => {
       const next = prev.lists.filter((l) => l.id !== id);
-      // If we deleted the active list, switch to another
       let activeId = prev.activeListId;
       if (activeId === id) {
         if (next.length === 0) {
-          // Always keep at least one list
           const defaultList = createDefaultList();
+          writeList(defaultList);
           next.push(defaultList);
           activeId = defaultList.id;
         } else {
           activeId = next[0].id;
         }
       }
-      writeLists(next);
       writeActiveId(activeId);
       return { lists: next, activeListId: activeId };
     });

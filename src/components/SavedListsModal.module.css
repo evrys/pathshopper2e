@@ -171,6 +171,67 @@
   color: white;
 }
 
+.confirmOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.confirmPanel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  width: min(300px, calc(100vw - 2rem));
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  animation: slideUp 0.1s ease-out;
+}
+
+.confirmText {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  color: var(--color-text);
+}
+
+.confirmActions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.confirmDeleteBtn {
+  font-size: 0.8125rem;
+  padding: 0.375rem 0.75rem;
+  background: var(--color-danger);
+  border: none;
+  border-radius: var(--radius);
+  color: white;
+  cursor: pointer;
+}
+
+.confirmDeleteBtn:hover {
+  filter: brightness(0.9);
+}
+
+.confirmCancelBtn {
+  font-size: 0.8125rem;
+  padding: 0.375rem 0.75rem;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.confirmCancelBtn:hover {
+  color: var(--color-text);
+  border-color: var(--color-text-muted);
+}
+
 .newListForm {
   display: flex;
   gap: 0.375rem;
