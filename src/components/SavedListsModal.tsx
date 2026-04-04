@@ -6,6 +6,7 @@ import styles from "./SavedListsModal.module.css";
 interface SavedListsModalProps {
   lists: SavedList[];
   activeListId: string;
+  initialCreatingNew?: boolean;
   onLoad: (list: SavedList) => void;
   onDelete: (id: string) => void;
   onNewList: (name: string) => void;
@@ -15,12 +16,13 @@ interface SavedListsModalProps {
 export function SavedListsModal({
   lists,
   activeListId,
+  initialCreatingNew = false,
   onLoad,
   onDelete,
   onNewList,
   onClose,
 }: SavedListsModalProps) {
-  const [creatingNew, setCreatingNew] = useState(false);
+  const [creatingNew, setCreatingNew] = useState(initialCreatingNew);
   const [newName, setNewName] = useState("");
   const [deletingList, setDeletingList] = useState<SavedList | null>(null);
   const newNameInputRef = useRef<HTMLInputElement>(null);

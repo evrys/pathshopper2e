@@ -66,6 +66,7 @@ export function Cart({
   const isMobile = useMediaQuery("(max-width: 640px)");
   const [mobileCollapsed, setMobileCollapsed] = useState(true);
   const [listsOpen, setListsOpen] = useState(false);
+  const [listsOpenCreating, setListsOpenCreating] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
@@ -188,7 +189,8 @@ export function Cart({
                 className={styles.menuItem}
                 onClick={() => {
                   setMenuOpen(false);
-                  onNewList("Shopping List");
+                  setListsOpenCreating(true);
+                  setListsOpen(true);
                 }}
               >
                 New list
@@ -231,10 +233,14 @@ export function Cart({
             <SavedListsModal
               lists={lists}
               activeListId={activeListId}
+              initialCreatingNew={listsOpenCreating}
               onLoad={handleLoad}
               onDelete={onDeleteList}
               onNewList={onNewList}
-              onClose={() => setListsOpen(false)}
+              onClose={() => {
+                setListsOpen(false);
+                setListsOpenCreating(false);
+              }}
             />
           )}
 
