@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@leeoniya/ufuzzy": "^1.0.19",
+    "@tanstack/react-query": "^5.96.2",
     "@tanstack/react-virtual": "^3.13.23",
     "react": "^19.2.2",
     "react-dom": "^19.2.2",

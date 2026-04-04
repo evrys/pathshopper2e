@@ -1,8 +1,12 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const LIST_PREFIX = "pathshopper2e:list:";
 const ACTIVE_KEY = "pathshopper2e:active-list-id";
 const DEFAULT_LIST_NAME = "My shopping list";
+
+/** Query key used by TanStack Query for the saved lists. */
+export const LISTS_QUERY_KEY = ["saved-lists"] as const;
 
 export interface SavedList {
   /** Unique identifier for this list. */
@@ -102,121 +106,164 @@ function writeActiveId(id: string): void {
 }
 
 export function useSavedLists() {
-  const [state, setState] = useState<SavedListsState>(readFromStorage);
+  const queryClient = useQueryClient();
 
-  // Refresh list data when other tabs write to localStorage,
-  // but preserve this tab's own active list selection.
-  useEffect(() => {
-    function onStorage(e: StorageEvent) {
-      if (e.key?.startsWith(LIST_PREFIX)) {
-        setState((prev) => {
-          const lists = readAllLists();
-          // If the active list was deleted in another tab, fall back
-          const stillExists = lists.some((l) => l.id === prev.activeListId);
-          return {
-            lists,
-            activeListId: stillExists
-              ? prev.activeListId
-              : (lists[0]?.id ?? prev.activeListId),
-          };
-        });
-      }
-    }
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
+  // Read all lists from localStorage via TanStack Query.
+  // Automatically re-fetches on window focus, giving cross-tab sync.
+  const { data: lists = [] } = useQuery({
+    queryKey: LISTS_QUERY_KEY,
+    queryFn: () => {
+      const all = readAllLists();
+      if (all.length > 0) return all;
+      // Bootstrap a default list when storage is empty
+      const defaultList = createDefaultList();
+      writeList(defaultList);
+      return [defaultList];
+    },
+    // localStorage reads are sync, so treat them as always fresh
+    // but still refetch on window focus
+    staleTime: Number.POSITIVE_INFINITY,
+    refetchOnWindowFocus: "always",
+  });
 
-  const activeList = state.lists.find((l) => l.id === state.activeListId);
+  // Active list id is per-tab state (not synced across tabs).
+  const [activeListId, setActiveListId] = useState(() => {
+    const initial = readFromStorage();
+    return initial.activeListId;
+  });
+
+  // If the active list no longer exists (e.g. deleted in another tab),
+  // fall back to the first available list.
+  const resolvedActiveId =
+    lists.find((l) => l.id === activeListId)?.id ??
+    lists[0]?.id ??
+    activeListId;
+  if (resolvedActiveId !== activeListId) {
+    // Sync state without an extra render cycle
+    setActiveListId(resolvedActiveId);
+  }
+
+  const activeList = lists.find((l) => l.id === resolvedActiveId);
+
+  /** Invalidate the TanStack Query cache so the lists query re-reads localStorage. */
+  const invalidateLists = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: LISTS_QUERY_KEY });
+  }, [queryClient]);
+
+  // Track which savedAt values came from this tab's own saves,
+  // so we don't reload the cart after our own auto-save writes.
+  const ownSavedAtRef = useRef<Set<string>>(new Set());
 
   /** Save items to the currently active list (auto-save). */
-  const saveActiveList = useCallback((items: Map<string, number>) => {
-    setState((prev) => {
-      const next = prev.lists.map((l) => {
-        if (l.id !== prev.activeListId) return l;
-        const updated = {
-          ...l,
-          items: Object.fromEntries(items),
-          savedAt: new Date().toISOString(),
-        };
-        writeList(updated);
-        return updated;
-      });
-      return { ...prev, lists: next };
-    });
-  }, []);
+  const saveActiveList = useCallback(
+    (items: Map<string, number>) => {
+      const list = lists.find((l) => l.id === resolvedActiveId);
+      if (!list) return;
+      const savedAt = new Date().toISOString();
+      const updated = {
+        ...list,
+        items: Object.fromEntries(items),
+        savedAt,
+      };
+      writeList(updated);
+      ownSavedAtRef.current.add(savedAt);
+      invalidateLists();
+    },
+    [lists, resolvedActiveId, invalidateLists],
+  );
 
   /** Rename the currently active list. */
-  const renameActiveList = useCallback((name: string) => {
-    setState((prev) => {
-      const next = prev.lists.map((l) => {
-        if (l.id !== prev.activeListId) return l;
-        const updated = { ...l, name };
-        writeList(updated);
-        return updated;
-      });
-      return { ...prev, lists: next };
-    });
-  }, []);
+  const renameActiveList = useCallback(
+    (name: string) => {
+      const list = lists.find((l) => l.id === resolvedActiveId);
+      if (!list) return;
+      const savedAt = new Date().toISOString();
+      const updated = { ...list, name, savedAt };
+      writeList(updated);
+      ownSavedAtRef.current.add(savedAt);
+      invalidateLists();
+    },
+    [lists, resolvedActiveId, invalidateLists],
+  );
 
   /** Switch to a different list by id. */
   const switchToList = useCallback((id: string) => {
-    setState((prev) => {
-      writeActiveId(id);
-      return { ...prev, activeListId: id };
-    });
+    writeActiveId(id);
+    setActiveListId(id);
   }, []);
 
   /** Create a new empty list and switch to it. Returns the new list. */
-  const createList = useCallback((name: string): SavedList => {
-    const newList: SavedList = {
-      id: generateListId(),
-      name: name.trim() || DEFAULT_LIST_NAME,
-      items: {},
-      savedAt: new Date().toISOString(),
-    };
-    writeList(newList);
-    writeActiveId(newList.id);
-    setState((prev) => ({
-      lists: [newList, ...prev.lists],
-      activeListId: newList.id,
-    }));
-    return newList;
-  }, []);
+  const createList = useCallback(
+    (name: string): SavedList => {
+      const newList: SavedList = {
+        id: generateListId(),
+        name: name.trim() || DEFAULT_LIST_NAME,
+        items: {},
+        savedAt: new Date().toISOString(),
+      };
+      writeList(newList);
+      writeActiveId(newList.id);
+      setActiveListId(newList.id);
+      invalidateLists();
+      return newList;
+    },
+    [invalidateLists],
+  );
 
   /** Delete a list by id. If it's the active list, switch to the first remaining. */
-  const deleteList = useCallback((id: string) => {
-    removeList(id);
-    setState((prev) => {
-      const next = prev.lists.filter((l) => l.id !== id);
-      let activeId = prev.activeListId;
-      if (activeId === id) {
-        if (next.length === 0) {
+  const deleteList = useCallback(
+    (id: string) => {
+      removeList(id);
+      if (resolvedActiveId === id) {
+        const remaining = lists.filter((l) => l.id !== id);
+        if (remaining.length === 0) {
           const defaultList = createDefaultList();
           writeList(defaultList);
-          next.push(defaultList);
-          activeId = defaultList.id;
+          writeActiveId(defaultList.id);
+          setActiveListId(defaultList.id);
         } else {
-          activeId = next[0].id;
+          writeActiveId(remaining[0].id);
+          setActiveListId(remaining[0].id);
         }
       }
-      writeActiveId(activeId);
-      return { lists: next, activeListId: activeId };
-    });
-  }, []);
+      invalidateLists();
+    },
+    [lists, resolvedActiveId, invalidateLists],
+  );
 
-  // Track previous active list id to detect switches
-  const prevActiveIdRef = useRef(state.activeListId);
-  const activeListChanged = prevActiveIdRef.current !== state.activeListId;
+  // Detect when the cart should be reloaded from the saved list.
+  // This fires on list switches AND when another tab updates the same list
+  // (detected via savedAt changing on refetch).
+  const prevActiveRef = useRef({
+    id: resolvedActiveId,
+    savedAt: activeList?.savedAt ?? "",
+  });
+
+  const prev = prevActiveRef.current;
+  const idSwitched = prev.id !== resolvedActiveId;
+  const savedAtChanged = prev.savedAt !== (activeList?.savedAt ?? "");
+  const externalContentChange =
+    !idSwitched &&
+    savedAtChanged &&
+    !ownSavedAtRef.current.has(activeList?.savedAt ?? "");
+
+  const activeListChanged = idSwitched || externalContentChange;
 
   useEffect(() => {
-    prevActiveIdRef.current = state.activeListId;
-  }, [state.activeListId]);
+    prevActiveRef.current = {
+      id: resolvedActiveId,
+      savedAt: activeList?.savedAt ?? "",
+    };
+    // Prevent the ownSavedAt set from growing unboundedly — once a
+    // snapshot is consumed we no longer need older timestamps.
+    ownSavedAtRef.current.clear();
+  }, [resolvedActiveId, activeList?.savedAt]);
 
   return {
-    lists: state.lists,
+    lists,
     activeList,
-    activeListId: state.activeListId,
-    activeListChanged,
+    activeListId: resolvedActiveId,
+    activeListChanged: activeListChanged,
     saveActiveList,
     renameActiveList,
     switchToList,
