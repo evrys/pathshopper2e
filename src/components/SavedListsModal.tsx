@@ -73,23 +73,14 @@ export function SavedListsModal({
       <div className={styles.panel}>
         <div className={styles.panelHeader}>
           <h2>Saved Lists</h2>
-          <div className={styles.panelHeaderActions}>
-            <button
-              type="button"
-              className={styles.newBtn}
-              onClick={() => setCreatingNew(true)}
-            >
-              + New
-            </button>
-            <button
-              type="button"
-              className={styles.closeBtn}
-              onClick={onClose}
-              aria-label="Close"
-            >
-              ✕
-            </button>
-          </div>
+          <button
+            type="button"
+            className={styles.closeBtn}
+            onClick={onClose}
+            aria-label="Close"
+          >
+            ✕
+          </button>
         </div>
 
         {creatingNew && (
@@ -134,20 +125,19 @@ export function SavedListsModal({
               const savedDate = new Date(list.savedAt).toLocaleDateString();
               const isActive = list.id === activeListId;
               return (
-                <li key={list.id} className={styles.listItem}>
+                <li
+                  key={list.id}
+                  className={`${styles.listItem} ${isActive ? styles.activeItem : ""}`}
+                >
                   <button
                     type="button"
-                    className={`${styles.loadBtn} ${isActive ? styles.activeItem : ""}`}
+                    className={styles.loadBtn}
                     onClick={() => onLoad(list)}
                   >
-                    <span className={styles.listName}>
-                      {list.name}
-                      {isActive && (
-                        <span className={styles.activeBadge}> (current)</span>
-                      )}
-                    </span>
+                    <span className={styles.listName}>{list.name}</span>
                     <span className={styles.listMeta}>
                       {itemCount} item{itemCount !== 1 ? "s" : ""} · {savedDate}
+                      {isActive && " · current"}
                     </span>
                   </button>
                   <button
@@ -162,6 +152,16 @@ export function SavedListsModal({
               );
             })}
           </ul>
+        )}
+
+        {!creatingNew && (
+          <button
+            type="button"
+            className={styles.newListBtn}
+            onClick={() => setCreatingNew(true)}
+          >
+            + New list
+          </button>
         )}
       </div>
 
