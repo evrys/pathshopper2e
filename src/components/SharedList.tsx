@@ -1,5 +1,10 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useItems } from "../hooks/useItems";
+import {
+  generateListId,
+  saveListToStorage,
+  type SavedList,
+} from "../hooks/useSavedLists";
 import { aonUrl } from "../lib/aon";
 import { formatPrice, sumPrices } from "../lib/price";
 import { parseCartString } from "../lib/url";
@@ -27,39 +32,6 @@ function parseShareHash(hash: string): {
   const listId = params.get("lid") ?? "";
 
   return { cart, charName, listId };
-}
-
-/** Build a URL to the editor with the list ID (or cart items as fallback). */
-function buildEditUrl(
-  cart: Map<string, number>,
-  charName: string,
-  listId: string,
-): string {
-  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
-  const params = new URLSearchParams();
-
-  if (listId) {
-    // List ID is enough for the editor to look up the list from localStorage
-    params.set("lid", listId);
-  } else {
-    // Fallback: include full cart for links without a list ID
-    if (charName) params.set("name", charName);
-    if (cart.size > 0) {
-      const cartStr = [...cart]
-        .map(([id, qty]) => (qty === 1 ? id : `${id}*${qty}`))
-        .join("+");
-      params.set("items", cartStr);
-    }
-  }
-
-  const parts: string[] = [];
-  for (const [key, value] of params) {
-    parts.push(
-      `${encodeURIComponent(key)}=${encodeURIComponent(value).replace(/%2B/gi, "+")}`,
-    );
-  }
-  const hash = parts.length > 0 ? `#${parts.join("&")}` : "";
-  return `${window.location.origin}${base}/${hash}`;
 }
 
 export function SharedList() {
@@ -90,6 +62,21 @@ export function SharedList() {
   const totalItems = entries.reduce((sum, e) => sum + e.quantity, 0);
 
   const title = charName ? charName : "My shopping list";
+
+  /** Save the shared list to localStorage and navigate to the editor. */
+  const handleEdit = useCallback(() => {
+    const id = listId || generateListId();
+    const list: SavedList = {
+      id,
+      name: charName || "Shared List",
+      items: Object.fromEntries(cart),
+      savedAt: new Date().toISOString(),
+    };
+    saveListToStorage(list);
+
+    const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+    window.location.href = `${window.location.origin}${base}/#lid=${encodeURIComponent(id)}`;
+  }, [cart, charName, listId]);
 
   if (loading) {
     return (
@@ -146,7 +133,9 @@ export function SharedList() {
       )}
 
       <footer className={styles.footer}>
-        <a href={buildEditUrl(cart, charName, listId)}>Edit this list</a>
+        <button type="button" className={styles.editLink} onClick={handleEdit}>
+          Edit this list
+        </button>
         {" · "}
         <a href={`${import.meta.env.BASE_URL}`}>
           Create a new list on Pathshopper

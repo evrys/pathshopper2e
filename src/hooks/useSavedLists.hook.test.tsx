@@ -3,7 +3,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { type SavedList, useSavedLists } from "./useSavedLists";
+import {
+  type SavedList,
+  saveListToStorage,
+  useSavedLists,
+} from "./useSavedLists";
 
 const LIST_PREFIX = "pathshopper2e:list:";
 const ACTIVE_KEY = "pathshopper2e:active-list-id";
@@ -892,6 +896,99 @@ describe("useSavedLists hook", () => {
       expect(result.current.activeList?.name).toBe("Third");
       expect(result.current.lists.map((l) => l.name)).toContain("First");
       expect(result.current.lists.map((l) => l.name)).toContain("Second");
+    });
+  });
+
+  describe("saveListToStorage (shared list import)", () => {
+    it("a list saved via saveListToStorage is picked up after refetch", async () => {
+      // Start with one existing list
+      storeList(
+        makeList({
+          id: "list-1",
+          name: "Original",
+          savedAt: "2025-01-01T00:00:00.000Z",
+        }),
+      );
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(1);
+        expect(result.current.activeListId).toBe("list-1");
+      });
+
+      // Simulate SharedList's "Edit this list" click:
+      // saveListToStorage writes the list and sets it as active in localStorage
+      saveListToStorage({
+        id: "shared-1",
+        name: "Shared List",
+        items: { "sword-1": 2, "potion-1": 5 },
+        savedAt: "2025-06-01T00:00:00.000Z",
+      });
+
+      // After refetch (simulates navigation or tab focus), the hook picks it up
+      await act(async () => {
+        await queryClient.invalidateQueries({ queryKey: ["saved-lists"] });
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(2);
+      });
+
+      // The saved list should be available
+      const sharedList = result.current.lists.find((l) => l.id === "shared-1");
+      expect(sharedList).toBeDefined();
+      expect(sharedList?.name).toBe("Shared List");
+      expect(sharedList?.items).toEqual({ "sword-1": 2, "potion-1": 5 });
+    });
+
+    it("a list saved via saveListToStorage becomes active when switched to", async () => {
+      storeList(
+        makeList({
+          id: "list-1",
+          name: "Original",
+          savedAt: "2025-01-01T00:00:00.000Z",
+        }),
+      );
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeListId).toBe("list-1");
+      });
+
+      // Save a shared list
+      saveListToStorage({
+        id: "shared-1",
+        name: "From Share Link",
+        items: { "item-1": 3 },
+        savedAt: "2025-06-01T00:00:00.000Z",
+      });
+
+      // Refetch so the hook sees the new list
+      await act(async () => {
+        await queryClient.invalidateQueries({ queryKey: ["saved-lists"] });
+      });
+
+      await waitFor(() => {
+        expect(result.current.lists).toHaveLength(2);
+      });
+
+      // Switch to the shared list
+      act(() => {
+        result.current.switchToList("shared-1");
+      });
+
+      expect(result.current.activeListId).toBe("shared-1");
+      expect(result.current.activeList?.name).toBe("From Share Link");
+      expect(result.current.activeList?.items).toEqual({ "item-1": 3 });
+      expect(result.current.activeListChanged).toBe(true);
     });
   });
 });

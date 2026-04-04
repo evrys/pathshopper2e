@@ -126,3 +126,14 @@
 .footer a:hover {
   text-decoration: underline;
 }
+
+.editLink {
+  all: unset;
+  color: var(--color-primary);
+  cursor: pointer;
+  font: inherit;
+}
+
+.editLink:hover {
+  text-decoration: underline;
+}

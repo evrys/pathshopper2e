@@ -105,6 +105,16 @@ function writeActiveId(id: string): void {
   }
 }
 
+/**
+ * Save a list to localStorage and mark it as the active list.
+ * This is a standalone helper for use outside the hook (e.g. from
+ * the shared-list view) so the editor will pick it up on load.
+ */
+export function saveListToStorage(list: SavedList): void {
+  writeList(list);
+  writeActiveId(list.id);
+}
+
 export function useSavedLists() {
   const queryClient = useQueryClient();
 
