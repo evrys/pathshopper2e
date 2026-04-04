@@ -167,6 +167,13 @@ button.header {
   flex: 1;
 }
 
+/* Tooltip wrapper <span> must not break the truncation chain */
+.itemInfo > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .itemName {
   font-weight: 500;
   font-size: 0.8125rem;
