@@ -8,7 +8,7 @@ import {
 import { aonUrl } from "../lib/aon";
 import { formatPrice, sumPrices } from "../lib/price";
 import { parseHashParams, parseShareParams } from "../lib/url";
-import type { Item } from "../types";
+import type { Discount, Item } from "../types";
 import { ItemTooltipWrapper } from "./ItemTooltip";
 import styles from "./SharedList.module.css";
 import { VersionTag } from "./VersionTag";
@@ -16,11 +16,12 @@ import { VersionTag } from "./VersionTag";
 interface ListEntry {
   item: Item;
   quantity: number;
+  discount?: Discount;
 }
 
 export function SharedList() {
   const { items, loading } = useItems();
-  const { cart, charName, listId, customItems } = useMemo(
+  const { cart, charName, listId, customItems, discounts } = useMemo(
     () => parseShareParams(parseHashParams(window.location.hash)),
     [],
   );
@@ -34,15 +35,22 @@ export function SharedList() {
     const result: ListEntry[] = [];
     for (const [id, qty] of cart) {
       const item = itemMap.get(id);
-      if (item) result.push({ item, quantity: qty });
+      if (item) {
+        const discount = discounts.get(id);
+        result.push({ item, quantity: qty, discount });
+      }
     }
     return result;
-  }, [items, loading, cart, customItems]);
+  }, [items, loading, cart, customItems, discounts]);
 
   const totalPrice = useMemo(
     () =>
       sumPrices(
-        entries.map((e) => ({ price: e.item.price, quantity: e.quantity })),
+        entries.map((e) => ({
+          price: e.item.price,
+          quantity: e.quantity,
+          discount: e.discount,
+        })),
       ),
     [entries],
   );
@@ -87,7 +95,7 @@ export function SharedList() {
       ) : (
         <>
           <ul className={styles.items}>
-            {entries.map(({ item, quantity }) => (
+            {entries.map(({ item, quantity, discount }) => (
               <li key={item.id} className={styles.item}>
                 <div className={styles.itemInfo}>
                   {item.id.startsWith("custom-") ? (
@@ -105,9 +113,17 @@ export function SharedList() {
                     </ItemTooltipWrapper>
                   )}
                   <span className={styles.itemMeta}>
-                    {item.id.startsWith("custom-")
-                      ? formatPrice(item.price)
-                      : `Level ${item.level} · ${formatPrice(item.price)}`}
+                    {!item.id.startsWith("custom-") && `Level ${item.level} · `}
+                    {discount ? (
+                      <>
+                        <span className={styles.originalPrice}>
+                          {formatPrice(item.price)}
+                        </span>{" "}
+                        {formatPrice(item.price, discount)}
+                      </>
+                    ) : (
+                      formatPrice(item.price)
+                    )}
                     {quantity > 1 && " each"}
                   </span>
                 </div>

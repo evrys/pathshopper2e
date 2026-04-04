@@ -151,4 +151,80 @@ describe("cartReducer", () => {
       expect(state.entries.get("custom-1-1234567890")?.quantity).toBe(2);
     });
   });
+
+  describe("set-discount", () => {
+    it("sets a flat discount on an item", () => {
+      const item = makeItem();
+      let state = cartReducer(emptyState, { type: "add", item });
+      state = cartReducer(state, {
+        type: "set-discount",
+        itemId: "w386",
+        discount: { type: "flat", cp: 500 },
+      });
+      expect(state.entries.get("w386")?.discount).toEqual({
+        type: "flat",
+        cp: 500,
+      });
+    });
+
+    it("sets a percentage discount on an item", () => {
+      const item = makeItem();
+      let state = cartReducer(emptyState, { type: "add", item });
+      state = cartReducer(state, {
+        type: "set-discount",
+        itemId: "w386",
+        discount: { type: "percent", percent: 25 },
+      });
+      expect(state.entries.get("w386")?.discount).toEqual({
+        type: "percent",
+        percent: 25,
+      });
+    });
+
+    it("clears discount when set to undefined", () => {
+      const item = makeItem();
+      let state = cartReducer(emptyState, { type: "add", item });
+      state = cartReducer(state, {
+        type: "set-discount",
+        itemId: "w386",
+        discount: { type: "flat", cp: 250 },
+      });
+      expect(state.entries.get("w386")?.discount).toBeDefined();
+      state = cartReducer(state, {
+        type: "set-discount",
+        itemId: "w386",
+        discount: undefined,
+      });
+      expect(state.entries.get("w386")?.discount).toBeUndefined();
+    });
+
+    it("does nothing for unknown item", () => {
+      const state = cartReducer(emptyState, {
+        type: "set-discount",
+        itemId: "nonexistent",
+        discount: { type: "flat", cp: 100 },
+      });
+      expect(state.entries.size).toBe(0);
+    });
+
+    it("preserves quantity when setting discount", () => {
+      const item = makeItem();
+      let state = cartReducer(emptyState, { type: "add", item });
+      state = cartReducer(state, {
+        type: "set-quantity",
+        itemId: "w386",
+        quantity: 5,
+      });
+      state = cartReducer(state, {
+        type: "set-discount",
+        itemId: "w386",
+        discount: { type: "flat", cp: 200 },
+      });
+      expect(state.entries.get("w386")?.quantity).toBe(5);
+      expect(state.entries.get("w386")?.discount).toEqual({
+        type: "flat",
+        cp: 200,
+      });
+    });
+  });
 });

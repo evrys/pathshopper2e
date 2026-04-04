@@ -1,4 +1,4 @@
-import type { Item, Price } from "../types";
+import type { Discount, Item, Price } from "../types";
 
 /**
  * Parse a URL hash string into URLSearchParams.
@@ -27,37 +27,80 @@ export function buildHashString(params: URLSearchParams): string {
 }
 
 /**
- * Parse a `+`-separated cart string (e.g. "itemId1+itemId2*3+itemId3")
- * into a Map of item id → quantity.
- *
- * Format: entries joined by `+`, each is either `id` (qty 1) or `id*qty`.
- * The `*` separator is used because `encodeURIComponent` doesn't encode it,
- * keeping URLs clean. The legacy `:` separator is also accepted for
- * backwards compatibility.
+ * Parsed cart data from a `+`-separated cart string.
  */
-export function parseCartString(cartStr: string): Map<string, number> {
+export interface ParsedCart {
+  cart: Map<string, number>;
+  discounts: Map<string, Discount>;
+}
+
+/**
+ * Parse a `+`-separated cart string into item quantities and discounts.
+ *
+ * Format: entries joined by `+`. Each entry is one of:
+ *   - `id`             → qty 1, no discount
+ *   - `id*qty`         → qty N, no discount
+ *   - `id~dCOPPER`     → qty 1, flat discount in copper
+ *   - `id*qty~dCOPPER` → qty N, flat discount in copper
+ *   - `id~pPERCENT`    → qty 1, percentage discount
+ *   - `id*qty~pPERCENT` → qty N, percentage discount
+ *
+ * The `*` separator is used for quantities because `encodeURIComponent`
+ * doesn't encode it. The `~d` prefix marks a flat discount in copper;
+ * `~p` marks a percentage discount. The legacy `:` separator is also
+ * accepted for backwards-compatible quantity parsing.
+ */
+export function parseCartString(cartStr: string): ParsedCart {
   const cart = new Map<string, number>();
-  if (!cartStr) return cart;
+  const discounts = new Map<string, Discount>();
+  if (!cartStr) return { cart, discounts };
 
   for (const entry of cartStr.split("+")) {
+    // Split off optional discount suffix (~dNNN or ~pNNN)
+    const discountMatch = entry.match(/~([dp])(\d+)$/);
+    const mainPart = discountMatch
+      ? entry.slice(0, entry.length - discountMatch[0].length)
+      : entry;
+
+    // Parse id and quantity from the main part
     // Support both `*` (current) and `:` (legacy) as quantity separators
-    const sepIdx = Math.max(entry.lastIndexOf("*"), entry.lastIndexOf(":"));
+    const sepIdx = Math.max(
+      mainPart.lastIndexOf("*"),
+      mainPart.lastIndexOf(":"),
+    );
+    let id: string;
+    let qty: number;
     if (sepIdx === -1) {
-      cart.set(entry, 1);
+      id = mainPart;
+      qty = 1;
     } else {
-      const id = entry.slice(0, sepIdx);
-      const qty = Number.parseInt(entry.slice(sepIdx + 1), 10);
-      if (id && Number.isFinite(qty) && qty > 0) {
-        cart.set(id, qty);
-      } else if (id && Number.isNaN(qty)) {
-        // No numeric suffix after separator — treat whole thing as id with qty 1
-        cart.set(entry, 1);
+      id = mainPart.slice(0, sepIdx);
+      qty = Number.parseInt(mainPart.slice(sepIdx + 1), 10);
+      if (id && Number.isNaN(qty)) {
+        // Non-numeric suffix — treat whole mainPart as id with qty 1
+        id = mainPart;
+        qty = 1;
       }
-      // qty <= 0: skip (invalid)
+    }
+
+    if (!id || qty <= 0) continue;
+    cart.set(id, qty);
+
+    // Parse optional discount
+    if (discountMatch) {
+      const kind = discountMatch[1];
+      const value = Number.parseInt(discountMatch[2], 10);
+      if (Number.isFinite(value) && value > 0) {
+        if (kind === "p") {
+          discounts.set(id, { type: "percent", percent: value });
+        } else {
+          discounts.set(id, { type: "flat", cp: value });
+        }
+      }
     }
   }
 
-  return cart;
+  return { cart, discounts };
 }
 
 export interface ShareParams {
@@ -66,6 +109,8 @@ export interface ShareParams {
   charName: string;
   /** Custom item definitions embedded in the share URL, if any. */
   customItems: Item[];
+  /** Per-item discounts, keyed by item id. */
+  discounts: Map<string, Discount>;
 }
 
 /**
@@ -75,19 +120,38 @@ export interface ShareParams {
  */
 export function parseShareParams(params: URLSearchParams): ShareParams {
   const charName = params.get("name") ?? params.get("char") ?? "";
-  const cart = parseCartString(params.get("items") ?? params.get("cart") ?? "");
+  const { cart, discounts } = parseCartString(
+    params.get("items") ?? params.get("cart") ?? "",
+  );
   const listId = params.get("lid") ?? "";
   const customItems = parseCustomItems(params.get("custom") ?? "");
-  return { listId, cart, charName, customItems };
+  return { listId, cart, charName, customItems, discounts };
 }
 
 /**
  * Serialize a cart Map into the `+`-separated format used in share URLs.
- * Items with qty 1 are just the id; items with qty > 1 use `id*qty`.
+ *
+ * Each entry is one of:
+ *   - `id`              — qty 1, no discount
+ *   - `id*qty`          — qty > 1, no discount
+ *   - `id~dCOPPER`      — qty 1, flat discount
+ *   - `id*qty~dCOPPER`  — qty > 1, flat discount
+ *   - `id~pPERCENT`     — qty 1, percentage discount
+ *   - `id*qty~pPERCENT` — qty > 1, percentage discount
  */
-export function serializeCart(cart: Map<string, number>): string {
+export function serializeCart(
+  cart: Map<string, number>,
+  discounts?: Map<string, Discount>,
+): string {
   return [...cart]
-    .map(([id, qty]) => (qty === 1 ? id : `${id}*${qty}`))
+    .map(([id, qty]) => {
+      let s = qty === 1 ? id : `${id}*${qty}`;
+      const d = discounts?.get(id);
+      if (d) {
+        s += d.type === "percent" ? `~p${d.percent}` : `~d${d.cp}`;
+      }
+      return s;
+    })
     .join("+");
 }
 

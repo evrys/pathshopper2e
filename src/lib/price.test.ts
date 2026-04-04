@@ -3,6 +3,7 @@ import {
   formatPrice,
   fromCopper,
   parseBudget,
+  resolveDiscount,
   sumPrices,
   toCopper,
 } from "./price";
@@ -62,6 +63,27 @@ describe("formatPrice", () => {
 
   it("returns dash for empty price", () => {
     expect(formatPrice({})).toBe("—");
+  });
+
+  it("applies flat discount in cp to the price", () => {
+    // 100 gp = 10000 cp, minus 1000 cp (10 gp) = 90 gp
+    expect(formatPrice({ gp: 100 }, { type: "flat", cp: 1000 })).toBe("90 gp");
+  });
+
+  it("applies flat discount with denomination rollup", () => {
+    // 1 gp = 100 cp, minus 50 cp = 5 sp
+    expect(formatPrice({ gp: 1 }, { type: "flat", cp: 50 })).toBe("5 sp");
+  });
+
+  it("applies percentage discount", () => {
+    // 50% off 100 gp = 50 gp
+    expect(formatPrice({ gp: 100 }, { type: "percent", percent: 50 })).toBe(
+      "50 gp",
+    );
+  });
+
+  it("formats without discount when undefined", () => {
+    expect(formatPrice({ gp: 10 })).toBe("10 gp");
   });
 });
 
@@ -125,5 +147,65 @@ describe("sumPrices", () => {
     expect(sumPrices([{ price: { sp: 15 }, quantity: 10 }])).toEqual({
       gp: 15,
     });
+  });
+
+  it("applies flat discount in cp to individual entries", () => {
+    // 100 gp = 10000 cp, minus 1000 cp (10 gp) = 90 gp
+    expect(
+      sumPrices([
+        {
+          price: { gp: 100 },
+          quantity: 1,
+          discount: { type: "flat", cp: 1000 },
+        },
+      ]),
+    ).toEqual({ gp: 90 });
+  });
+
+  it("sums discounted and non-discounted entries", () => {
+    const result = sumPrices([
+      // 100 gp minus 5000 cp (50 gp) = 50 gp
+      {
+        price: { gp: 100 },
+        quantity: 1,
+        discount: { type: "flat", cp: 5000 },
+      },
+      { price: { gp: 10 }, quantity: 2 },
+    ]);
+    // 50 gp + 20 gp = 70 gp
+    expect(result).toEqual({ gp: 70 });
+  });
+
+  it("applies percentage discount in sumPrices", () => {
+    // 10% off 100 gp = 90 gp
+    expect(
+      sumPrices([
+        {
+          price: { gp: 100 },
+          quantity: 2,
+          discount: { type: "percent", percent: 10 },
+        },
+      ]),
+    ).toEqual({ gp: 180 });
+  });
+});
+
+describe("resolveDiscount", () => {
+  it("returns cp directly for flat discount", () => {
+    expect(resolveDiscount({ type: "flat", cp: 500 }, { gp: 100 })).toBe(500);
+  });
+
+  it("calculates copper from percentage discount", () => {
+    // 25% of 100 gp (10000 cp) = 2500 cp
+    expect(resolveDiscount({ type: "percent", percent: 25 }, { gp: 100 })).toBe(
+      2500,
+    );
+  });
+
+  it("rounds percentage discount to nearest copper", () => {
+    // 33% of 1 gp (100 cp) = 33 cp
+    expect(resolveDiscount({ type: "percent", percent: 33 }, { gp: 1 })).toBe(
+      33,
+    );
   });
 });

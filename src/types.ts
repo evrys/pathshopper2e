@@ -5,6 +5,11 @@ export interface Price {
   cp?: number;
 }
 
+/** A discount applied to an item's price. */
+export type Discount =
+  | { type: "flat"; cp: number }
+  | { type: "percent"; percent: number };
+
 /** Item as stored in JSON (before runtime enrichment) */
 export type JsonItem = Omit<Item, "plainDescription">;
 

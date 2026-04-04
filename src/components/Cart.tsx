@@ -6,14 +6,15 @@ import { aonUrl } from "../lib/aon";
 import { entriesToCsv } from "../lib/csv";
 import { formatPrice } from "../lib/price";
 import {
-  buildHashString,
   buildCustomIdMap,
+  buildHashString,
   serializeCart,
   serializeCustomItems,
 } from "../lib/url";
-import type { Price } from "../types";
+import type { Discount, Price } from "../types";
 import { AddCustomItemModal } from "./AddCustomItemModal";
 import styles from "./Cart.module.css";
+import { DiscountModal } from "./DiscountModal";
 import { ItemTooltipWrapper } from "./ItemTooltip";
 import { SavedListsModal } from "./SavedListsModal";
 
@@ -26,6 +27,7 @@ interface CartProps {
   onListNameChange: (name: string) => void;
   onSetQuantity: (itemId: string, quantity: number) => void;
   onRemoveItem: (itemId: string) => void;
+  onSetDiscount: (itemId: string, discount: Discount | undefined) => void;
   onAddItem: (item: CartEntry["item"]) => void;
   onLoadList: (list: SavedList) => void;
   onNewList: (name: string, copyItems?: boolean) => void;
@@ -57,7 +59,16 @@ function buildShareUrl(
         quantity,
       ]),
     );
-    params.set("items", serializeCart(cart));
+
+    // Collect per-item discounts keyed by share-URL id
+    const discountMap = new Map<string, Discount>();
+    for (const { item, discount } of entries) {
+      if (discount) {
+        discountMap.set(idMap.get(item.id) ?? item.id, discount);
+      }
+    }
+
+    params.set("items", serializeCart(cart, discountMap));
 
     const customEntries = entries.filter((e) =>
       e.item.id.startsWith("custom-"),
@@ -79,6 +90,7 @@ export function Cart({
   onListNameChange,
   onSetQuantity,
   onRemoveItem,
+  onSetDiscount,
   onAddItem,
   onLoadList,
   onNewList,
@@ -90,6 +102,7 @@ export function Cart({
   const [listsOpen, setListsOpen] = useState(false);
   const [listsOpenCreating, setListsOpenCreating] = useState(false);
   const [customItemOpen, setCustomItemOpen] = useState(false);
+  const [discountEntry, setDiscountEntry] = useState<CartEntry | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
@@ -349,6 +362,18 @@ export function Cart({
             />
           )}
 
+          {discountEntry && (
+            <DiscountModal
+              itemName={discountEntry.item.name}
+              price={discountEntry.item.price}
+              currentDiscount={discountEntry.discount}
+              onApply={(discount) =>
+                onSetDiscount(discountEntry.item.id, discount)
+              }
+              onClose={() => setDiscountEntry(null)}
+            />
+          )}
+
           {entries.length === 0 ? (
             <p className={styles.empty}>
               Add items from the table to start building your list.
@@ -373,11 +398,28 @@ export function Cart({
                       </ItemTooltipWrapper>
                     )}
                     <span className={styles.itemPrice}>
-                      {formatPrice(entry.item.price)}
+                      {entry.discount ? (
+                        <>
+                          <span className={styles.originalPrice}>
+                            {formatPrice(entry.item.price)}
+                          </span>{" "}
+                          {formatPrice(entry.item.price, entry.discount)}
+                        </>
+                      ) : (
+                        formatPrice(entry.item.price)
+                      )}
                       {entry.quantity > 1 && " each"}
                     </span>
                   </div>
                   <div className={styles.controls}>
+                    <button
+                      type="button"
+                      className={`${styles.discountBtn}${entry.discount ? ` ${styles.discountActive}` : ""}`}
+                      onClick={() => setDiscountEntry(entry)}
+                      title="Set discount"
+                    >
+                      %
+                    </button>
                     <button
                       type="button"
                       onClick={() =>

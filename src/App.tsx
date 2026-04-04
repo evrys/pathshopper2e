@@ -9,6 +9,7 @@ import { useSavedLists, type SavedList } from "./hooks/useSavedLists";
 import { useUrlState } from "./hooks/useUrlState";
 import { parseCsvItems } from "./lib/csv";
 import { parseHashParams, parseShareParams, type ShareParams } from "./lib/url";
+import type { Discount } from "./types";
 
 /** Build cart entries from a plain id→quantity map + loaded items.
  *  Optionally accepts custom items parsed from a share URL. */
@@ -16,6 +17,7 @@ function buildCartEntries(
   items: { id: string }[],
   itemQuantities: Map<string, number>,
   customItems: CartEntry["item"][] = [],
+  discounts: Map<string, Discount> = new Map(),
 ): Map<string, CartEntry> | undefined {
   if (itemQuantities.size === 0) return undefined;
   const itemMap = new Map(items.map((it) => [it.id, it]));
@@ -26,7 +28,12 @@ function buildCartEntries(
   for (const [id, qty] of itemQuantities) {
     const item = itemMap.get(id);
     if (item) {
-      map.set(id, { item: item as CartEntry["item"], quantity: qty });
+      const discount = discounts.get(id);
+      map.set(id, {
+        item: item as CartEntry["item"],
+        quantity: qty,
+        ...(discount ? { discount } : {}),
+      });
     }
   }
   return map.size > 0 ? map : undefined;
@@ -84,6 +91,7 @@ function App() {
     addItem,
     removeItem,
     setQuantity,
+    setDiscount,
     clearCart,
     replaceCart,
   } = useCart();
@@ -129,7 +137,12 @@ function App() {
       if (shared.cart.size > 0) {
         const name = shared.charName || "Shared List";
         createList(name);
-        const built = buildCartEntries(items, shared.cart, shared.customItems);
+        const built = buildCartEntries(
+          items,
+          shared.cart,
+          shared.customItems,
+          shared.discounts,
+        );
         if (built) {
           replaceCart(built);
           saveActiveList(shared.cart);
@@ -332,6 +345,7 @@ function App() {
             onListNameChange={renameActiveList}
             onSetQuantity={setQuantity}
             onRemoveItem={removeItem}
+            onSetDiscount={setDiscount}
             onAddItem={addItem}
             onLoadList={handleLoadList}
             onNewList={handleNewList}

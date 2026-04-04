@@ -1,4 +1,4 @@
-import type { Price } from "../types";
+import type { Discount, Price } from "../types";
 
 /** 1 gp = 10 sp = 100 cp */
 const CP_PER_SP = 10;
@@ -9,6 +9,12 @@ export function toCopper(price: Price): number {
   return (
     (price.gp ?? 0) * CP_PER_GP + (price.sp ?? 0) * CP_PER_SP + (price.cp ?? 0)
   );
+}
+
+/** Resolve a Discount to an absolute copper value given the item's price. */
+export function resolveDiscount(discount: Discount, price: Price): number {
+  if (discount.type === "flat") return discount.cp;
+  return Math.round((discount.percent / 100) * toCopper(price));
 }
 
 /** Convert copper pieces to a Price with the largest denominations */
@@ -25,12 +31,18 @@ export function fromCopper(cp: number): Price {
   return price;
 }
 
-/** Format a Price as a human-readable string, e.g. "12 gp 5 sp" */
-export function formatPrice(price: Price): string {
+/** Format a Price as a human-readable string, e.g. "12 gp 5 sp".
+ *  If a discount is provided, it is subtracted from the price. */
+export function formatPrice(price: Price, discount?: Discount): string {
+  let p = price;
+  if (discount) {
+    const cp = Math.max(0, toCopper(price) - resolveDiscount(discount, price));
+    p = fromCopper(cp);
+  }
   const parts: string[] = [];
-  if (price.gp) parts.push(`${price.gp} gp`);
-  if (price.sp) parts.push(`${price.sp} sp`);
-  if (price.cp) parts.push(`${price.cp} cp`);
+  if (p.gp) parts.push(`${p.gp} gp`);
+  if (p.sp) parts.push(`${p.sp} sp`);
+  if (p.cp) parts.push(`${p.cp} cp`);
   return parts.length > 0 ? parts.join(" ") : "—";
 }
 
@@ -61,13 +73,14 @@ export function parseBudget(input: string): Price | null {
   return null;
 }
 
-/** Sum prices across entries with quantities and return the total as a Price. */
+/** Sum prices across entries with quantities and optional discounts, returning the total as a Price. */
 export function sumPrices(
-  entries: { price: Price; quantity: number }[],
+  entries: { price: Price; quantity: number; discount?: Discount }[],
 ): Price {
   let totalCp = 0;
-  for (const { price, quantity } of entries) {
-    totalCp += toCopper(price) * quantity;
+  for (const { price, quantity, discount } of entries) {
+    const discountCp = discount ? resolveDiscount(discount, price) : 0;
+    totalCp += Math.max(0, toCopper(price) - discountCp) * quantity;
   }
-  return fromCopper(totalCp);
+  return fromCopper(Math.round(totalCp));
 }

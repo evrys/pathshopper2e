@@ -232,6 +232,34 @@ button.header {
   color: white;
 }
 
+.discountBtn {
+  color: var(--color-text-muted);
+  border-color: transparent;
+  background: transparent;
+  font-size: 0.75rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.item:hover .discountBtn {
+  opacity: 0.6;
+}
+
+.discountBtn:hover {
+  opacity: 1;
+  color: var(--color-primary);
+}
+
+.discountActive {
+  opacity: 1;
+  color: var(--color-primary);
+}
+
+.originalPrice {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
 .total {
   display: flex;
   justify-content: space-between;

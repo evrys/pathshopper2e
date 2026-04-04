@@ -94,6 +94,11 @@
   font-variant-numeric: tabular-nums;
 }
 
+.originalPrice {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
 .total {
   display: flex;
   justify-content: space-between;
