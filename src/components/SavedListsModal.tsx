@@ -83,37 +83,7 @@ export function SavedListsModal({
           </button>
         </div>
 
-        {creatingNew && (
-          <form className={styles.newListForm} onSubmit={handleCreateSubmit}>
-            <input
-              ref={newNameInputRef}
-              className={styles.newListInput}
-              type="text"
-              placeholder="List name"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-            />
-            <button
-              type="submit"
-              className={styles.newListSubmit}
-              disabled={!newName.trim()}
-            >
-              Create
-            </button>
-            <button
-              type="button"
-              className={styles.newListCancel}
-              onClick={() => {
-                setCreatingNew(false);
-                setNewName("");
-              }}
-            >
-              Cancel
-            </button>
-          </form>
-        )}
-
-        {lists.length === 0 ? (
+        {lists.length === 0 && !creatingNew ? (
           <p className={styles.empty}>No saved lists yet.</p>
         ) : (
           <ul className={styles.listItems}>
@@ -154,7 +124,7 @@ export function SavedListsModal({
           </ul>
         )}
 
-        {!creatingNew && (
+        {!creatingNew ? (
           <button
             type="button"
             className={styles.newListBtn}
@@ -162,6 +132,34 @@ export function SavedListsModal({
           >
             + New list
           </button>
+        ) : (
+          <form className={styles.newListForm} onSubmit={handleCreateSubmit}>
+            <input
+              ref={newNameInputRef}
+              className={styles.newListInput}
+              type="text"
+              placeholder="List name"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+            />
+            <button
+              type="submit"
+              className={styles.newListSubmit}
+              disabled={!newName.trim()}
+            >
+              Create
+            </button>
+            <button
+              type="button"
+              className={styles.newListCancel}
+              onClick={() => {
+                setCreatingNew(false);
+                setNewName("");
+              }}
+            >
+              Cancel
+            </button>
+          </form>
         )}
       </div>
 
