@@ -13,32 +13,43 @@ interface ListEntry {
   quantity: number;
 }
 
-/** Parse the URL hash into a cart map and list name. */
+/** Parse the URL hash into a cart map, list name, and optional list ID. */
 function parseShareHash(hash: string): {
   cart: Map<string, number>;
   charName: string;
+  listId: string;
 } {
   const str = hash.startsWith("#") ? hash.slice(1) : hash;
   const params = new URLSearchParams(str.replace(/\+/g, "%2B"));
 
   const charName = params.get("name") ?? params.get("char") ?? "";
   const cart = parseCartString(params.get("items") ?? params.get("cart") ?? "");
+  const listId = params.get("lid") ?? "";
 
-  return { cart, charName };
+  return { cart, charName, listId };
 }
 
-/** Build a URL to the editor with the current cart + list name pre-filled. */
-function buildEditUrl(cart: Map<string, number>, charName: string): string {
+/** Build a URL to the editor with the list ID (or cart items as fallback). */
+function buildEditUrl(
+  cart: Map<string, number>,
+  charName: string,
+  listId: string,
+): string {
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
   const params = new URLSearchParams();
 
-  if (charName) params.set("name", charName);
-
-  if (cart.size > 0) {
-    const cartStr = [...cart]
-      .map(([id, qty]) => (qty === 1 ? id : `${id}*${qty}`))
-      .join("+");
-    params.set("items", cartStr);
+  if (listId) {
+    // List ID is enough for the editor to look up the list from localStorage
+    params.set("lid", listId);
+  } else {
+    // Fallback: include full cart for links without a list ID
+    if (charName) params.set("name", charName);
+    if (cart.size > 0) {
+      const cartStr = [...cart]
+        .map(([id, qty]) => (qty === 1 ? id : `${id}*${qty}`))
+        .join("+");
+      params.set("items", cartStr);
+    }
   }
 
   const parts: string[] = [];
@@ -53,7 +64,7 @@ function buildEditUrl(cart: Map<string, number>, charName: string): string {
 
 export function SharedList() {
   const { items, loading } = useItems();
-  const { cart, charName } = useMemo(
+  const { cart, charName, listId } = useMemo(
     () => parseShareHash(window.location.hash),
     [],
   );
@@ -135,7 +146,7 @@ export function SharedList() {
       )}
 
       <footer className={styles.footer}>
-        <a href={buildEditUrl(cart, charName)}>Edit this list</a>
+        <a href={buildEditUrl(cart, charName, listId)}>Edit this list</a>
         {" · "}
         <a href={`${import.meta.env.BASE_URL}`}>
           Create a new list on Pathshopper

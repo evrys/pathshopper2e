@@ -24,11 +24,16 @@ interface CartProps {
 }
 
 /** Build a share URL pointing to the readonly list view with cart + list name in the hash. */
-function buildShareUrl(entries: CartEntry[], charName: string): string {
+function buildShareUrl(
+  entries: CartEntry[],
+  charName: string,
+  listId: string,
+): string {
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
   const params = new URLSearchParams();
 
   if (charName) params.set("name", charName);
+  params.set("lid", listId);
 
   if (entries.length > 0) {
     const cartStr = entries
@@ -140,7 +145,7 @@ export function Cart({
         {entries.length > 0 && (
           <a
             className={styles.shareBtn}
-            href={buildShareUrl(entries, listName)}
+            href={buildShareUrl(entries, listName, activeListId)}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}

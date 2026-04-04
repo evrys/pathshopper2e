@@ -83,6 +83,8 @@ export function SavedListsModal({
           </button>
         </div>
 
+        <p className={styles.storageNote}>Saved locally to this browser</p>
+
         {lists.length === 0 && !creatingNew ? (
           <p className={styles.empty}>No saved lists yet.</p>
         ) : (

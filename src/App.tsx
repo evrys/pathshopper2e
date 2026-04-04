@@ -27,10 +27,11 @@ function buildCartEntries(
 }
 
 /**
- * Parse cart items from the initial URL hash (for shared links).
- * Returns the cart map and char name, then strips those params from the hash.
+ * Parse shared-link params from the initial URL hash.
+ * Returns list ID and/or cart items, then strips those params from the hash.
  */
 function consumeSharedHash(): {
+  listId: string;
   cart: Map<string, number>;
   charName: string;
 } | null {
@@ -38,13 +39,18 @@ function consumeSharedHash(): {
   if (!hash) return null;
   const str = hash.startsWith("#") ? hash.slice(1) : hash;
   const params = new URLSearchParams(str.replace(/\+/g, "%2B"));
+
+  const listId = params.get("lid") ?? "";
   const itemsStr = params.get("items") ?? params.get("cart") ?? "";
-  if (!itemsStr) return null;
+
+  // Nothing share-related in the hash
+  if (!listId && !itemsStr) return null;
 
   const cart = parseCartString(itemsStr);
   const charName = params.get("name") ?? params.get("char") ?? "";
 
-  // Strip cart-related params from the hash, keep filter/search params
+  // Strip share-related params from the hash, keep filter/search params
+  params.delete("lid");
   params.delete("items");
   params.delete("cart");
   params.delete("name");
@@ -60,7 +66,7 @@ function consumeSharedHash(): {
   );
   window.dispatchEvent(new HashChangeEvent("hashchange"));
 
-  return cart.size > 0 ? { cart, charName } : null;
+  return { listId, cart, charName };
 }
 
 function App() {
@@ -103,14 +109,30 @@ function App() {
     const shared = sharedCart.current;
     if (shared) {
       sharedCart.current = null;
-      // Import shared items into a new list
-      const name = shared.charName || "Shared List";
-      createList(name);
-      const built = buildCartEntries(items, shared.cart);
-      if (built) {
-        replaceCart(built);
-        // Immediately persist to the new list
-        saveActiveList(shared.cart);
+
+      // If the share link includes a list ID we already have, just open it
+      if (shared.listId) {
+        const existing = lists.find((l) => l.id === shared.listId);
+        if (existing) {
+          switchToList(existing.id);
+          const built = buildCartEntries(
+            items,
+            new Map(Object.entries(existing.items)),
+          );
+          if (built) replaceCart(built);
+          return;
+        }
+      }
+
+      // Otherwise import the shared items into a new list
+      if (shared.cart.size > 0) {
+        const name = shared.charName || "Shared List";
+        createList(name);
+        const built = buildCartEntries(items, shared.cart);
+        if (built) {
+          replaceCart(built);
+          saveActiveList(shared.cart);
+        }
       }
       return;
     }
@@ -123,7 +145,16 @@ function App() {
       );
       if (built) replaceCart(built);
     }
-  }, [loading, items, replaceCart, activeList, createList, saveActiveList]);
+  }, [
+    loading,
+    items,
+    replaceCart,
+    activeList,
+    createList,
+    saveActiveList,
+    lists,
+    switchToList,
+  ]);
 
   // When the user switches to a different saved list, load its items
   useEffect(() => {
