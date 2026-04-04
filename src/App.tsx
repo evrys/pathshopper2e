@@ -7,6 +7,7 @@ import { useCart, type CartEntry } from "./hooks/useCart";
 import { useItems } from "./hooks/useItems";
 import { useSavedLists, type SavedList } from "./hooks/useSavedLists";
 import { useUrlState } from "./hooks/useUrlState";
+import { parseCartString } from "./lib/url";
 
 /** Build cart entries from a plain id→quantity map + loaded items. */
 function buildCartEntries(
@@ -25,12 +26,49 @@ function buildCartEntries(
   return map.size > 0 ? map : undefined;
 }
 
+/**
+ * Parse cart items from the initial URL hash (for shared links).
+ * Returns the cart map and char name, then strips those params from the hash.
+ */
+function consumeSharedHash(): {
+  cart: Map<string, number>;
+  charName: string;
+} | null {
+  const hash = window.location.hash;
+  if (!hash) return null;
+  const str = hash.startsWith("#") ? hash.slice(1) : hash;
+  const params = new URLSearchParams(str.replace(/\+/g, "%2B"));
+  const itemsStr = params.get("items") ?? params.get("cart") ?? "";
+  if (!itemsStr) return null;
+
+  const cart = parseCartString(itemsStr);
+  const charName = params.get("name") ?? params.get("char") ?? "";
+
+  // Strip cart-related params from the hash, keep filter/search params
+  params.delete("items");
+  params.delete("cart");
+  params.delete("name");
+  params.delete("char");
+
+  // Rebuild hash with remaining params
+  const remaining = params.toString();
+  const newHash = remaining ? `#${remaining}` : "";
+  window.history.replaceState(
+    null,
+    "",
+    newHash || window.location.pathname + window.location.search,
+  );
+  window.dispatchEvent(new HashChangeEvent("hashchange"));
+
+  return cart.size > 0 ? { cart, charName } : null;
+}
+
 function App() {
   const { items, loading } = useItems();
   const [urlState, setUrlState] = useUrlState();
 
-  // Capture the initial URL cart before any state changes
-  const initialUrlCart = useRef(urlState.cart);
+  // Capture shared cart from URL before any renders clear it
+  const sharedCart = useRef(consumeSharedHash());
 
   const {
     state: cartState,
@@ -56,17 +94,24 @@ function App() {
   } = useSavedLists();
 
   // Once items are loaded, hydrate the cart (one-time).
-  // Priority: URL cart > saved active list
+  // Priority: shared URL > saved active list
   const cartHydrated = useRef(false);
   useEffect(() => {
     if (loading || cartHydrated.current) return;
     cartHydrated.current = true;
 
-    const urlCart = initialUrlCart.current;
-    if (urlCart.size > 0) {
-      // URL takes priority (e.g. shared link)
-      const built = buildCartEntries(items, urlCart);
-      if (built) replaceCart(built);
+    const shared = sharedCart.current;
+    if (shared) {
+      sharedCart.current = null;
+      // Import shared items into a new list
+      const name = shared.charName || "Shared List";
+      createList(name);
+      const built = buildCartEntries(items, shared.cart);
+      if (built) {
+        replaceCart(built);
+        // Immediately persist to the new list
+        saveActiveList(shared.cart);
+      }
       return;
     }
 
@@ -78,7 +123,7 @@ function App() {
       );
       if (built) replaceCart(built);
     }
-  }, [loading, items, replaceCart, activeList]);
+  }, [loading, items, replaceCart, activeList, createList, saveActiveList]);
 
   // When the user switches to a different saved list, load its items
   useEffect(() => {
@@ -103,16 +148,13 @@ function App() {
     if (cartState === prevCartRef.current) return;
     prevCartRef.current = cartState;
 
-    // Sync to URL
     const cart = new Map<string, number>();
     for (const [id, entry] of cartState.entries) {
       cart.set(id, entry.quantity);
     }
-    setUrlState({ cart });
 
-    // Auto-save to active list
     saveActiveList(cart);
-  }, [cartState, setUrlState, saveActiveList]);
+  }, [cartState, saveActiveList]);
 
   // Derive filter state from URL state
   const [sortField, sortDirStr] = urlState.sort.split(":") as [
@@ -173,9 +215,8 @@ function App() {
   const handleListNameChange = useCallback(
     (name: string) => {
       renameActiveList(name);
-      setUrlState({ charName: name });
     },
-    [renameActiveList, setUrlState],
+    [renameActiveList],
   );
 
   if (loading) {

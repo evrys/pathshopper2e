@@ -1,10 +1,12 @@
 import { useCallback, useRef, useSyncExternalStore } from "react";
 import { DEFAULT_RARITIES, DEFAULT_REMASTER } from "../lib/constants";
-import { parseCartString } from "../lib/url";
 
 /**
  * App state that gets persisted in the URL hash.
  * Only non-default values are serialized to keep URLs short.
+ *
+ * Cart/list data lives in localStorage, not the URL.
+ * The URL only tracks filter & search state.
  */
 export interface UrlState {
   search: string;
@@ -15,9 +17,6 @@ export interface UrlState {
   minLevel: string;
   maxLevel: string;
   sort: string; // "field:dir", e.g. "name:asc"
-  charName: string;
-  /** Cart as Map of item id → quantity */
-  cart: Map<string, number>;
 }
 
 const DEFAULTS: UrlState = {
@@ -29,8 +28,6 @@ const DEFAULTS: UrlState = {
   minLevel: "",
   maxLevel: "",
   sort: ":asc",
-  charName: "",
-  cart: new Map(),
 };
 
 function setsEqual(a: Set<string>, b: Set<string>): boolean {
@@ -57,14 +54,6 @@ function serialize(state: UrlState): string {
   if (state.minLevel) params.set("minlvl", state.minLevel);
   if (state.maxLevel) params.set("maxlvl", state.maxLevel);
   if (state.sort !== DEFAULTS.sort) params.set("sort", state.sort);
-  if (state.charName) params.set("name", state.charName);
-
-  if (state.cart.size > 0) {
-    const cartStr = [...state.cart]
-      .map(([id, qty]) => (qty === 1 ? id : `${id}*${qty}`))
-      .join("+");
-    params.set("items", cartStr);
-  }
 
   // Build the hash ourselves to avoid URLSearchParams encoding `+` as `%2B`
   const parts: string[] = [];
@@ -112,9 +101,6 @@ function deserialize(hash: string): UrlState {
   const minLevel = params.get("minlvl") ?? "";
   const maxLevel = params.get("maxlvl") ?? "";
   const sort = params.get("sort") ?? ":asc";
-  const charName = params.get("name") ?? params.get("char") ?? "";
-
-  const cart = parseCartString(params.get("items") ?? params.get("cart") ?? "");
 
   return {
     search,
@@ -125,8 +111,6 @@ function deserialize(hash: string): UrlState {
     minLevel,
     maxLevel,
     sort,
-    charName,
-    cart,
   };
 }
 
