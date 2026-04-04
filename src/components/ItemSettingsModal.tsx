@@ -57,11 +57,10 @@ export function ItemSettingsModal({
     init?.denom ?? "gp",
   );
   const [notes, setNotes] = useState(currentNotes ?? "");
-  const inputRef = useRef<HTMLInputElement>(null);
+  const notesRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    inputRef.current?.focus();
-    inputRef.current?.select();
+    notesRef.current?.focus();
   }, []);
 
   useEffect(() => {
@@ -129,7 +128,6 @@ export function ItemSettingsModal({
             <label htmlFor="discount-amount">Discount per item</label>
             <div className={styles.inputRow}>
               <input
-                ref={inputRef}
                 id="discount-amount"
                 type="number"
                 min="0"
@@ -163,11 +161,12 @@ export function ItemSettingsModal({
           <div className={styles.field}>
             <label htmlFor="item-notes">Notes</label>
             <textarea
+              ref={notesRef}
               id="item-notes"
               className={styles.notesInput}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. Buy from Trader Joe in Absalom"
+              placeholder="e.g. why this is a cool item for your character"
               rows={3}
             />
           </div>
