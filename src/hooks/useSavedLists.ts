@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const LIST_PREFIX = "pathshopper2e:list:";
 const ACTIVE_KEY = "pathshopper2e:active-list-id";
-const DEFAULT_LIST_NAME = "Shopping List";
+const DEFAULT_LIST_NAME = "My shopping list";
 
 export interface SavedList {
   /** Unique identifier for this list. */

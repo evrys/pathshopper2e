@@ -19,7 +19,7 @@ interface CartProps {
   onSetQuantity: (itemId: string, quantity: number) => void;
   onRemoveItem: (itemId: string) => void;
   onLoadList: (list: SavedList) => void;
-  onNewList: (name: string) => void;
+  onNewList: (name: string, copyItems?: boolean) => void;
   onDeleteList: (id: string) => void;
 }
 
@@ -78,7 +78,7 @@ export function Cart({
   const menuRef = useRef<HTMLDivElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
   const expanded = !isMobile || !mobileCollapsed;
-  const title = listName || "Shopping List";
+  const title = listName || "My shopping list";
 
   // Close the dropdown when clicking outside
   useEffect(() => {

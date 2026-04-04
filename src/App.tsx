@@ -237,10 +237,18 @@ function App() {
   );
 
   const handleNewList = useCallback(
-    (name: string) => {
+    (name: string, copyItems?: boolean) => {
       createList(name);
+      if (copyItems) {
+        // Persist the current cart items into the newly created list
+        const cart = new Map<string, number>();
+        for (const [id, entry] of cartState.entries) {
+          cart.set(id, entry.quantity);
+        }
+        saveActiveList(cart);
+      }
     },
-    [createList],
+    [createList, cartState, saveActiveList],
   );
 
   const handleListNameChange = useCallback(
@@ -294,7 +302,7 @@ function App() {
           <Cart
             entries={entries}
             totalPrice={totalPrice}
-            listName={activeList?.name ?? "Shopping List"}
+            listName={activeList?.name ?? "My shopping list"}
             lists={lists}
             activeListId={activeListId}
             onListNameChange={handleListNameChange}

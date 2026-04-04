@@ -43,7 +43,7 @@ describe("readFromStorage", () => {
   it("returns a default list when storage is empty", () => {
     const state = readFromStorage();
     expect(state.lists).toHaveLength(1);
-    expect(state.lists[0].name).toBe("Shopping List");
+    expect(state.lists[0].name).toBe("My shopping list");
     expect(state.activeListId).toBe(state.lists[0].id);
   });
 
@@ -88,7 +88,7 @@ describe("readFromStorage", () => {
     localStorage.setItem("some-other-key", "value");
     const state = readFromStorage();
     expect(state.lists).toHaveLength(1);
-    expect(state.lists[0].name).toBe("Shopping List");
+    expect(state.lists[0].name).toBe("My shopping list");
   });
 
   it("skips list keys with invalid JSON", () => {

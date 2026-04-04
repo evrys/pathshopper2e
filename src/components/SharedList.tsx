@@ -89,7 +89,7 @@ export function SharedList() {
   );
   const totalItems = entries.reduce((sum, e) => sum + e.quantity, 0);
 
-  const title = charName ? charName : "Shopping List";
+  const title = charName ? charName : "My shopping list";
 
   if (loading) {
     return (

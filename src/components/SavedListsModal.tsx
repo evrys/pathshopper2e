@@ -9,7 +9,7 @@ interface SavedListsModalProps {
   initialCreatingNew?: boolean;
   onLoad: (list: SavedList) => void;
   onDelete: (id: string) => void;
-  onNewList: (name: string) => void;
+  onNewList: (name: string, copyItems?: boolean) => void;
   onClose: () => void;
 }
 
@@ -24,6 +24,7 @@ export function SavedListsModal({
 }: SavedListsModalProps) {
   const [creatingNew, setCreatingNew] = useState(initialCreatingNew);
   const [newName, setNewName] = useState("");
+  const [copyItems, setCopyItems] = useState(false);
   const [deletingList, setDeletingList] = useState<SavedList | null>(null);
   const newNameInputRef = useRef<HTMLInputElement>(null);
 
@@ -41,6 +42,7 @@ export function SavedListsModal({
         } else if (creatingNew) {
           setCreatingNew(false);
           setNewName("");
+          setCopyItems(false);
         } else {
           onClose();
         }
@@ -54,9 +56,10 @@ export function SavedListsModal({
     e.preventDefault();
     const trimmed = newName.trim();
     if (!trimmed) return;
-    onNewList(trimmed);
+    onNewList(trimmed, copyItems);
     setCreatingNew(false);
     setNewName("");
+    setCopyItems(false);
     onClose();
   }
 
@@ -136,31 +139,46 @@ export function SavedListsModal({
           </button>
         ) : (
           <form className={styles.newListForm} onSubmit={handleCreateSubmit}>
-            <input
-              ref={newNameInputRef}
-              className={styles.newListInput}
-              type="text"
-              placeholder="List name"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-            />
-            <button
-              type="submit"
-              className={styles.newListSubmit}
-              disabled={!newName.trim()}
-            >
-              Create
-            </button>
-            <button
-              type="button"
-              className={styles.newListCancel}
-              onClick={() => {
-                setCreatingNew(false);
-                setNewName("");
-              }}
-            >
-              Cancel
-            </button>
+            <div className={styles.newListRow}>
+              <input
+                ref={newNameInputRef}
+                className={styles.newListInput}
+                type="text"
+                placeholder="List name"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+              />
+              <button
+                type="submit"
+                className={styles.newListSubmit}
+                disabled={!newName.trim()}
+              >
+                Create
+              </button>
+              <button
+                type="button"
+                className={styles.newListCancel}
+                onClick={() => {
+                  setCreatingNew(false);
+                  setNewName("");
+                  setCopyItems(false);
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+            {activeListId &&
+              Object.keys(lists.find((l) => l.id === activeListId)?.items ?? {})
+                .length > 0 && (
+                <label className={styles.copyCheckbox}>
+                  <input
+                    type="checkbox"
+                    checked={copyItems}
+                    onChange={(e) => setCopyItems(e.target.checked)}
+                  />
+                  Copy items from current list
+                </label>
+              )}
           </form>
         )}
       </div>
