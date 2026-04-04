@@ -329,7 +329,13 @@ export function useSavedLists() {
   /** Save items to the currently active list (auto-save). */
   const saveActiveList = useCallback(
     (data: SavedListData) => {
-      const list = lists.find((l) => l.id === resolvedActiveId);
+      // Read the active list directly from localStorage rather than from
+      // the React-state `lists` array.  When createList() and saveActiveList()
+      // are called in the same synchronous tick (e.g. "copy items to new
+      // list"), the React state still points to the *previous* active list
+      // while localStorage has already been updated by createList().
+      const activeId = localStorage.getItem(ACTIVE_KEY) ?? resolvedActiveId;
+      const list = readList(activeId);
       if (!list) return;
       const savedAt = new Date().toISOString();
       const updated: SavedList = {
@@ -341,7 +347,7 @@ export function useSavedLists() {
       ownSavedAtRef.current.add(savedAt);
       refreshLists();
     },
-    [lists, resolvedActiveId, refreshLists],
+    [resolvedActiveId, refreshLists],
   );
 
   /** Rename the currently active list. */

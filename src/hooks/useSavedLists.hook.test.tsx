@@ -1123,6 +1123,48 @@ describe("useSavedLists hook", () => {
       expect(stored?.items).toEqual({ "item-1": 2 });
     });
 
+    it("create then immediately save in the same act() persists to the new list", async () => {
+      storeList(
+        makeList({
+          id: "list-1",
+          name: "Original",
+          items: { "sword-1": 1 },
+        }),
+      );
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeListId).toBe("list-1");
+      });
+
+      // Simulate what handleNewList does: createList + saveActiveList
+      // in the same synchronous callback (same act block, no re-render in between).
+      let createdId = "";
+      act(() => {
+        const newList = result.current.createList("Copied List");
+        createdId = newList.id;
+        result.current.saveActiveList(
+          makeSavedData(new Map([["potion-1", 3]])),
+        );
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeListId).toBe(createdId);
+      });
+
+      // The NEW list should have the copied items
+      const newStored = getStoredList(createdId);
+      expect(newStored?.items).toEqual({ "potion-1": 3 });
+
+      // The ORIGINAL list should NOT have been modified
+      const originalStored = getStoredList("list-1");
+      expect(originalStored?.items).toEqual({ "sword-1": 1 });
+    });
+
     it("create multiple lists in sequence", async () => {
       const { result } = renderHook(() => useSavedLists(), {
         wrapper: Wrapper,
