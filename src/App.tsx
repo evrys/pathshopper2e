@@ -36,7 +36,6 @@ function App() {
     state: cartState,
     entries,
     totalPrice,
-    totalItems,
     addItem,
     removeItem,
     setQuantity,
@@ -223,7 +222,6 @@ function App() {
           <Cart
             entries={entries}
             totalPrice={totalPrice}
-            totalItems={totalItems}
             listName={activeList?.name ?? "Shopping List"}
             lists={lists}
             activeListId={activeListId}

@@ -12,7 +12,6 @@ import { SavedListsModal } from "./SavedListsModal";
 interface CartProps {
   entries: CartEntry[];
   totalPrice: Price;
-  totalItems: number;
   listName: string;
   lists: SavedList[];
   activeListId: string;
@@ -54,7 +53,6 @@ function buildShareUrl(entries: CartEntry[], charName: string): string {
 export function Cart({
   entries,
   totalPrice,
-  totalItems,
   listName,
   lists,
   activeListId,
@@ -69,7 +67,10 @@ export function Cart({
   const [mobileCollapsed, setMobileCollapsed] = useState(true);
   const [listsOpen, setListsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
   const menuRef = useRef<HTMLDivElement>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
   const expanded = !isMobile || !mobileCollapsed;
   const title = listName || "Shopping List";
 
@@ -85,6 +86,22 @@ export function Cart({
     return () => document.removeEventListener("mousedown", handleClick);
   }, [menuOpen]);
 
+  // Focus rename input when entering rename mode
+  useEffect(() => {
+    if (renaming) {
+      renameInputRef.current?.focus();
+      renameInputRef.current?.select();
+    }
+  }, [renaming]);
+
+  function commitRename() {
+    const trimmed = renameValue.trim();
+    if (trimmed && trimmed !== listName) {
+      onListNameChange(trimmed);
+    }
+    setRenaming(false);
+  }
+
   function handleLoad(list: SavedList) {
     onLoadList(list);
     setListsOpen(false);
@@ -92,9 +109,32 @@ export function Cart({
 
   const headerContent = (
     <>
-      <h2>
-        {title} ({totalItems})
-      </h2>
+      {renaming ? (
+        <form
+          className={styles.renameForm}
+          onSubmit={(e) => {
+            e.preventDefault();
+            commitRename();
+          }}
+        >
+          <input
+            ref={renameInputRef}
+            className={styles.renameInput}
+            type="text"
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onBlur={commitRename}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                setRenaming(false);
+              }
+            }}
+            aria-label="Rename list"
+          />
+        </form>
+      ) : (
+        <h2>{title}</h2>
+      )}
       <div className={styles.headerActions}>
         {entries.length > 0 && (
           <a
@@ -107,6 +147,55 @@ export function Cart({
             Share
           </a>
         )}
+        <div className={styles.menuWrapper} ref={menuRef}>
+          <button
+            type="button"
+            className={styles.menuBtn}
+            onClick={(e) => {
+              e.stopPropagation();
+              setMenuOpen((o) => !o);
+            }}
+            aria-label="List options"
+            title="List options"
+          >
+            ⋮
+          </button>
+          {menuOpen && (
+            <div className={styles.menuDropdown}>
+              <button
+                type="button"
+                className={styles.menuItem}
+                onClick={() => {
+                  setMenuOpen(false);
+                  setRenameValue(listName);
+                  setRenaming(true);
+                }}
+              >
+                Rename
+              </button>
+              <button
+                type="button"
+                className={styles.menuItem}
+                onClick={() => {
+                  setMenuOpen(false);
+                  setListsOpen(true);
+                }}
+              >
+                Load list
+              </button>
+              <button
+                type="button"
+                className={styles.menuItem}
+                onClick={() => {
+                  setMenuOpen(false);
+                  onNewList("Shopping List");
+                }}
+              >
+                New list
+              </button>
+            </div>
+          )}
+        </div>
         {isMobile && (
           <span
             className={styles.collapseIcon}
@@ -138,55 +227,6 @@ export function Cart({
 
       {expanded && (
         <>
-          <div className={styles.charNameRow}>
-            <input
-              className={styles.charNameInput}
-              type="text"
-              placeholder="List name"
-              aria-label="List name"
-              value={listName}
-              onChange={(e) => onListNameChange(e.target.value)}
-            />
-            <div className={styles.menuWrapper} ref={menuRef}>
-              <button
-                type="button"
-                className={styles.menuBtn}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMenuOpen((o) => !o);
-                }}
-                aria-label="List options"
-                title="List options"
-              >
-                ⋮
-              </button>
-              {menuOpen && (
-                <div className={styles.menuDropdown}>
-                  <button
-                    type="button"
-                    className={styles.menuItem}
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setListsOpen(true);
-                    }}
-                  >
-                    Load list
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.menuItem}
-                    onClick={() => {
-                      setMenuOpen(false);
-                      onNewList("Shopping List");
-                    }}
-                  >
-                    New list
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
           {listsOpen && (
             <SavedListsModal
               lists={lists}
