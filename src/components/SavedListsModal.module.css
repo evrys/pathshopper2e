@@ -56,6 +56,27 @@
   font-size: 1rem;
 }
 
+.panelHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.newBtn {
+  font-size: 0.75rem;
+  padding: 0.3rem 0.625rem;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.newBtn:hover {
+  color: var(--color-text);
+  border-color: var(--color-text-muted);
+}
+
 .closeBtn {
   background: transparent;
   border: none;
@@ -148,4 +169,70 @@
   opacity: 1;
   background: var(--color-danger);
   color: white;
+}
+
+.newListForm {
+  display: flex;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.newListInput {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8125rem;
+  padding: 0.375rem 0.5rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-text);
+}
+
+.newListInput::placeholder {
+  color: var(--color-text-muted);
+}
+
+.newListSubmit {
+  font-size: 0.75rem;
+  padding: 0.375rem 0.75rem;
+  background: var(--color-primary);
+  border: none;
+  border-radius: var(--radius);
+  color: white;
+  cursor: pointer;
+}
+
+.newListSubmit:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.newListSubmit:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.newListCancel {
+  font-size: 0.75rem;
+  padding: 0.375rem 0.5rem;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.newListCancel:hover {
+  color: var(--color-text);
+  border-color: var(--color-text-muted);
+}
+
+.activeItem {
+  background: var(--color-surface-hover);
+}
+
+.activeBadge {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
 }

@@ -1,28 +1,59 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { SavedList } from "../hooks/useSavedLists";
 import styles from "./SavedListsModal.module.css";
 
 interface SavedListsModalProps {
   lists: SavedList[];
+  activeListId: string;
   onLoad: (list: SavedList) => void;
-  onDelete: (name: string) => void;
+  onDelete: (id: string) => void;
+  onNewList: (name: string) => void;
   onClose: () => void;
 }
 
 export function SavedListsModal({
   lists,
+  activeListId,
   onLoad,
   onDelete,
+  onNewList,
   onClose,
 }: SavedListsModalProps) {
+  const [creatingNew, setCreatingNew] = useState(false);
+  const [newName, setNewName] = useState("");
+  const newNameInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (creatingNew) {
+      newNameInputRef.current?.focus();
+    }
+  }, [creatingNew]);
+
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        if (creatingNew) {
+          setCreatingNew(false);
+          setNewName("");
+        } else {
+          onClose();
+        }
+      }
     }
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
-  }, [onClose]);
+  }, [onClose, creatingNew]);
+
+  function handleCreateSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    onNewList(trimmed);
+    setCreatingNew(false);
+    setNewName("");
+    onClose();
+  }
 
   return createPortal(
     <div
@@ -37,15 +68,54 @@ export function SavedListsModal({
       <div className={styles.panel}>
         <div className={styles.panelHeader}>
           <h2>Saved Lists</h2>
-          <button
-            type="button"
-            className={styles.closeBtn}
-            onClick={onClose}
-            aria-label="Close"
-          >
-            ✕
-          </button>
+          <div className={styles.panelHeaderActions}>
+            <button
+              type="button"
+              className={styles.newBtn}
+              onClick={() => setCreatingNew(true)}
+            >
+              + New
+            </button>
+            <button
+              type="button"
+              className={styles.closeBtn}
+              onClick={onClose}
+              aria-label="Close"
+            >
+              ✕
+            </button>
+          </div>
         </div>
+
+        {creatingNew && (
+          <form className={styles.newListForm} onSubmit={handleCreateSubmit}>
+            <input
+              ref={newNameInputRef}
+              className={styles.newListInput}
+              type="text"
+              placeholder="List name"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+            />
+            <button
+              type="submit"
+              className={styles.newListSubmit}
+              disabled={!newName.trim()}
+            >
+              Create
+            </button>
+            <button
+              type="button"
+              className={styles.newListCancel}
+              onClick={() => {
+                setCreatingNew(false);
+                setNewName("");
+              }}
+            >
+              Cancel
+            </button>
+          </form>
+        )}
 
         {lists.length === 0 ? (
           <p className={styles.empty}>No saved lists yet.</p>
@@ -57,14 +127,20 @@ export function SavedListsModal({
                 0,
               );
               const savedDate = new Date(list.savedAt).toLocaleDateString();
+              const isActive = list.id === activeListId;
               return (
-                <li key={list.name} className={styles.listItem}>
+                <li key={list.id} className={styles.listItem}>
                   <button
                     type="button"
-                    className={styles.loadBtn}
+                    className={`${styles.loadBtn} ${isActive ? styles.activeItem : ""}`}
                     onClick={() => onLoad(list)}
                   >
-                    <span className={styles.listName}>{list.name}</span>
+                    <span className={styles.listName}>
+                      {list.name}
+                      {isActive && (
+                        <span className={styles.activeBadge}> (current)</span>
+                      )}
+                    </span>
                     <span className={styles.listMeta}>
                       {itemCount} item{itemCount !== 1 ? "s" : ""} · {savedDate}
                     </span>
@@ -72,7 +148,7 @@ export function SavedListsModal({
                   <button
                     type="button"
                     className={styles.deleteBtn}
-                    onClick={() => onDelete(list.name)}
+                    onClick={() => onDelete(list.id)}
                     aria-label={`Delete "${list.name}"`}
                   >
                     ✕

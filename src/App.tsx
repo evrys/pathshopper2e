@@ -5,17 +5,18 @@ import { ItemTable, type FilterState } from "./components/ItemTable";
 import { VersionTag } from "./components/VersionTag";
 import { useCart, type CartEntry } from "./hooks/useCart";
 import { useItems } from "./hooks/useItems";
+import { useSavedLists, type SavedList } from "./hooks/useSavedLists";
 import { useUrlState } from "./hooks/useUrlState";
 
-/** Build cart entries from URL cart state + loaded items (one-time init). */
-function buildInitialCart(
+/** Build cart entries from a plain id→quantity map + loaded items. */
+function buildCartEntries(
   items: { id: string }[],
-  urlCart: Map<string, number>,
+  itemQuantities: Map<string, number>,
 ): Map<string, CartEntry> | undefined {
-  if (urlCart.size === 0) return undefined;
+  if (itemQuantities.size === 0) return undefined;
   const itemMap = new Map(items.map((it) => [it.id, it]));
   const map = new Map<string, CartEntry>();
-  for (const [id, qty] of urlCart) {
+  for (const [id, qty] of itemQuantities) {
     const item = itemMap.get(id);
     if (item) {
       map.set(id, { item: item as CartEntry["item"], quantity: qty });
@@ -39,33 +40,80 @@ function App() {
     addItem,
     removeItem,
     setQuantity,
+    clearCart,
     replaceCart,
   } = useCart();
 
-  // Once items are loaded, hydrate the cart from the URL (one-time)
+  const {
+    lists,
+    activeList,
+    activeListId,
+    activeListChanged,
+    saveActiveList,
+    renameActiveList,
+    switchToList,
+    createList,
+    deleteList,
+  } = useSavedLists();
+
+  // Once items are loaded, hydrate the cart (one-time).
+  // Priority: URL cart > saved active list
   const cartHydrated = useRef(false);
   useEffect(() => {
     if (loading || cartHydrated.current) return;
     cartHydrated.current = true;
+
     const urlCart = initialUrlCart.current;
-    if (urlCart.size === 0) return;
-    const built = buildInitialCart(items, urlCart);
+    if (urlCart.size > 0) {
+      // URL takes priority (e.g. shared link)
+      const built = buildCartEntries(items, urlCart);
+      if (built) replaceCart(built);
+      return;
+    }
+
+    // Otherwise load from the active saved list
+    if (activeList && Object.keys(activeList.items).length > 0) {
+      const built = buildCartEntries(
+        items,
+        new Map(Object.entries(activeList.items)),
+      );
+      if (built) replaceCart(built);
+    }
+  }, [loading, items, replaceCart, activeList]);
+
+  // When the user switches to a different saved list, load its items
+  useEffect(() => {
+    if (!cartHydrated.current || !activeListChanged || !activeList) return;
+    const savedItems = new Map(Object.entries(activeList.items));
+    if (savedItems.size === 0) {
+      clearCart();
+      return;
+    }
+    const built = buildCartEntries(items, savedItems);
     if (built) {
       replaceCart(built);
+    } else {
+      clearCart();
     }
-  }, [loading, items, replaceCart]);
+  }, [activeListChanged, activeList, items, replaceCart, clearCart]);
 
-  // Sync cart state → URL whenever cart changes
+  // Auto-save cart changes to the active saved list
   const prevCartRef = useRef(cartState);
   useEffect(() => {
+    if (!cartHydrated.current) return;
     if (cartState === prevCartRef.current) return;
     prevCartRef.current = cartState;
+
+    // Sync to URL
     const cart = new Map<string, number>();
     for (const [id, entry] of cartState.entries) {
       cart.set(id, entry.quantity);
     }
     setUrlState({ cart });
-  }, [cartState, setUrlState]);
+
+    // Auto-save to active list
+    saveActiveList(cart);
+  }, [cartState, setUrlState, saveActiveList]);
 
   // Derive filter state from URL state
   const [sortField, sortDirStr] = urlState.sort.split(":") as [
@@ -110,21 +158,25 @@ function App() {
   );
 
   const handleLoadList = useCallback(
-    (_name: string, loadedItems: Map<string, number>) => {
-      const itemMap = new Map(items.map((it) => [it.id, it]));
-      const map = new Map<string, CartEntry>();
-      for (const [id, qty] of loadedItems) {
-        const item = itemMap.get(id);
-        if (item) map.set(id, { item, quantity: qty });
-      }
-      if (map.size > 0) replaceCart(map);
+    (list: SavedList) => {
+      switchToList(list.id);
     },
-    [items, replaceCart],
+    [switchToList],
   );
 
-  const handleCharNameChange = useCallback(
-    (name: string) => setUrlState({ charName: name }),
-    [setUrlState],
+  const handleNewList = useCallback(
+    (name: string) => {
+      createList(name);
+    },
+    [createList],
+  );
+
+  const handleListNameChange = useCallback(
+    (name: string) => {
+      renameActiveList(name);
+      setUrlState({ charName: name });
+    },
+    [renameActiveList, setUrlState],
   );
 
   if (loading) {
@@ -172,11 +224,15 @@ function App() {
             entries={entries}
             totalPrice={totalPrice}
             totalItems={totalItems}
-            charName={urlState.charName}
-            onCharNameChange={handleCharNameChange}
+            listName={activeList?.name ?? "Shopping List"}
+            lists={lists}
+            activeListId={activeListId}
+            onListNameChange={handleListNameChange}
             onSetQuantity={setQuantity}
             onRemoveItem={removeItem}
             onLoadList={handleLoadList}
+            onNewList={handleNewList}
+            onDeleteList={deleteList}
           />
         </aside>
       </div>

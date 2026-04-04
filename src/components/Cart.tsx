@@ -1,7 +1,7 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CartEntry } from "../hooks/useCart";
 import { useMediaQuery } from "../hooks/useMediaQuery";
-import { type SavedList, useSavedLists } from "../hooks/useSavedLists";
+import type { SavedList } from "../hooks/useSavedLists";
 import { aonUrl } from "../lib/aon";
 import { formatPrice } from "../lib/price";
 import type { Price } from "../types";
@@ -13,11 +13,15 @@ interface CartProps {
   entries: CartEntry[];
   totalPrice: Price;
   totalItems: number;
-  charName: string;
-  onCharNameChange: (name: string) => void;
+  listName: string;
+  lists: SavedList[];
+  activeListId: string;
+  onListNameChange: (name: string) => void;
   onSetQuantity: (itemId: string, quantity: number) => void;
   onRemoveItem: (itemId: string) => void;
-  onLoadList: (name: string, items: Map<string, number>) => void;
+  onLoadList: (list: SavedList) => void;
+  onNewList: (name: string) => void;
+  onDeleteList: (id: string) => void;
 }
 
 /** Build a share URL pointing to the readonly list view with cart + list name in the hash. */
@@ -51,38 +55,38 @@ export function Cart({
   entries,
   totalPrice,
   totalItems,
-  charName,
-  onCharNameChange,
+  listName,
+  lists,
+  activeListId,
+  onListNameChange,
   onSetQuantity,
   onRemoveItem,
   onLoadList,
+  onNewList,
+  onDeleteList,
 }: CartProps) {
   const isMobile = useMediaQuery("(max-width: 640px)");
   const [mobileCollapsed, setMobileCollapsed] = useState(true);
   const [listsOpen, setListsOpen] = useState(false);
-  const [savedFeedback, setSavedFeedback] = useState(false);
-  const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const expanded = !isMobile || !mobileCollapsed;
-  const title = charName ? charName : "Shopping List";
+  const title = listName || "Shopping List";
 
-  const { lists, saveList, deleteList } = useSavedLists();
-
-  const currentItems = new Map(
-    entries.map(({ item, quantity }) => [item.id, quantity]),
-  );
-
-  function handleSave() {
-    if (!charName.trim()) return;
-    saveList(charName, currentItems);
-    // Show brief "Saved!" feedback
-    if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
-    setSavedFeedback(true);
-    feedbackTimer.current = setTimeout(() => setSavedFeedback(false), 1500);
-  }
+  // Close the dropdown when clicking outside
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [menuOpen]);
 
   function handleLoad(list: SavedList) {
-    onLoadList(list.name, new Map(Object.entries(list.items)));
-    onCharNameChange(list.name);
+    onLoadList(list);
     setListsOpen(false);
   }
 
@@ -95,7 +99,7 @@ export function Cart({
         {entries.length > 0 && (
           <a
             className={styles.shareBtn}
-            href={buildShareUrl(entries, charName)}
+            href={buildShareUrl(entries, listName)}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
@@ -140,41 +144,56 @@ export function Cart({
               type="text"
               placeholder="List name"
               aria-label="List name"
-              value={charName}
-              onChange={(e) => onCharNameChange(e.target.value)}
+              value={listName}
+              onChange={(e) => onListNameChange(e.target.value)}
             />
-            <div className={styles.listActions}>
+            <div className={styles.menuWrapper} ref={menuRef}>
               <button
                 type="button"
-                className={styles.listActionBtn}
-                onClick={handleSave}
-                disabled={!charName.trim()}
-                title={charName.trim() ? "Save list" : "Enter a name to save"}
-              >
-                {savedFeedback ? "Saved!" : "Save"}
-              </button>
-              <button
-                type="button"
-                className={styles.listActionBtn}
+                className={styles.menuBtn}
                 onClick={(e) => {
                   e.stopPropagation();
-                  setListsOpen(true);
+                  setMenuOpen((o) => !o);
                 }}
-                disabled={lists.length === 0}
-                title={
-                  lists.length === 0 ? "No saved lists" : "Load a saved list"
-                }
+                aria-label="List options"
+                title="List options"
               >
-                Load {lists.length > 0 && `(${lists.length})`}
+                ⋮
               </button>
+              {menuOpen && (
+                <div className={styles.menuDropdown}>
+                  <button
+                    type="button"
+                    className={styles.menuItem}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setListsOpen(true);
+                    }}
+                  >
+                    Load list
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.menuItem}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onNewList("Shopping List");
+                    }}
+                  >
+                    New list
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
           {listsOpen && (
             <SavedListsModal
               lists={lists}
+              activeListId={activeListId}
               onLoad={handleLoad}
-              onDelete={deleteList}
+              onDelete={onDeleteList}
+              onNewList={onNewList}
               onClose={() => setListsOpen(false)}
             />
           )}
