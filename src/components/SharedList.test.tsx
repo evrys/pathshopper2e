@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { SavedList } from "../hooks/useSavedLists";
 import { SharedList } from "./SharedList";
 
 afterEach(cleanup);
@@ -59,6 +60,7 @@ describe("SharedList", () => {
 
   beforeEach(() => {
     originalHash = window.location.hash;
+    localStorage.clear();
   });
 
   afterEach(() => {
@@ -116,5 +118,58 @@ describe("SharedList", () => {
     const gpElements = screen.getAllByText("1 gp");
     expect(gpElements.length).toBeGreaterThan(0);
     expect(screen.getAllByText("5 sp").length).toBeGreaterThan(0);
+  });
+
+  it("saves discounts when editing a shared list", () => {
+    // w1 with a 50cp flat discount
+    window.location.hash = "#items=w1~d50&name=Tester";
+    render(<SharedList />);
+
+    const editBtn = screen.getByText("Edit this list");
+
+    // jsdom may throw on navigation; we only care about localStorage
+    try {
+      fireEvent.click(editBtn);
+    } catch {
+      // "Not implemented: navigation" — expected in jsdom
+    }
+
+    // Verify the list was saved to localStorage with discounts
+    const keys = Object.keys(localStorage).filter((k) =>
+      k.startsWith("pathshopper2e:list:"),
+    );
+    expect(keys).toHaveLength(1);
+    const saved = JSON.parse(
+      localStorage.getItem(keys[0]) ?? "{}",
+    ) as SavedList;
+    expect(saved.items).toEqual({ w1: 1 });
+    expect(saved.discounts).toEqual({ w1: { type: "flat", cp: 50 } });
+    expect(saved.name).toBe("Tester");
+  });
+
+  it("saves custom items when editing a shared list", () => {
+    // w1 + a custom item "Wand" costing 50gp
+    window.location.hash = "#items=w1+custom-0*2&custom=Wand~50gp";
+    render(<SharedList />);
+
+    const editBtn = screen.getByText("Edit this list");
+
+    try {
+      fireEvent.click(editBtn);
+    } catch {
+      // "Not implemented: navigation" — expected in jsdom
+    }
+
+    const keys = Object.keys(localStorage).filter((k) =>
+      k.startsWith("pathshopper2e:list:"),
+    );
+    expect(keys).toHaveLength(1);
+    const saved = JSON.parse(
+      localStorage.getItem(keys[0]) ?? "{}",
+    ) as SavedList;
+    expect(saved.items).toEqual({ w1: 1, "custom-0": 2 });
+    expect(saved.customItems).toEqual([
+      { id: "custom-0", name: "Wand", price: { gp: 50 } },
+    ]);
   });
 });

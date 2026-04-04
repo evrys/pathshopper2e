@@ -5,39 +5,16 @@ import { ItemTable, type FilterState } from "./components/ItemTable";
 import { VersionTag } from "./components/VersionTag";
 import { useCart, type CartEntry } from "./hooks/useCart";
 import { useItems } from "./hooks/useItems";
-import { useSavedLists, type SavedList } from "./hooks/useSavedLists";
+import {
+  cartEntriesToSavedData,
+  savedListToCartEntries,
+  shareDataToSavedData,
+  useSavedLists,
+  type SavedList,
+} from "./hooks/useSavedLists";
 import { useUrlState } from "./hooks/useUrlState";
 import { parseCsvItems } from "./lib/csv";
 import { parseHashParams, parseShareParams, type ShareParams } from "./lib/url";
-import type { Discount } from "./types";
-
-/** Build cart entries from a plain id→quantity map + loaded items.
- *  Optionally accepts custom items parsed from a share URL. */
-function buildCartEntries(
-  items: { id: string }[],
-  itemQuantities: Map<string, number>,
-  customItems: CartEntry["item"][] = [],
-  discounts: Map<string, Discount> = new Map(),
-): Map<string, CartEntry> | undefined {
-  if (itemQuantities.size === 0) return undefined;
-  const itemMap = new Map(items.map((it) => [it.id, it]));
-  for (const ci of customItems) {
-    itemMap.set(ci.id, ci);
-  }
-  const map = new Map<string, CartEntry>();
-  for (const [id, qty] of itemQuantities) {
-    const item = itemMap.get(id);
-    if (item) {
-      const discount = discounts.get(id);
-      map.set(id, {
-        item: item as CartEntry["item"],
-        quantity: qty,
-        ...(discount ? { discount } : {}),
-      });
-    }
-  }
-  return map.size > 0 ? map : undefined;
-}
 
 /**
  * Parse shared-link params from the initial URL hash.
@@ -124,10 +101,7 @@ function App() {
         const existing = lists.find((l) => l.id === shared.listId);
         if (existing) {
           switchToList(existing.id);
-          const built = buildCartEntries(
-            items,
-            new Map(Object.entries(existing.items)),
-          );
+          const built = savedListToCartEntries(existing, items);
           if (built) replaceCart(built);
           return;
         }
@@ -137,26 +111,30 @@ function App() {
       if (shared.cart.size > 0) {
         const name = shared.charName || "Shared List";
         createList(name);
-        const built = buildCartEntries(
-          items,
+        const savedData = shareDataToSavedData(
           shared.cart,
-          shared.customItems,
           shared.discounts,
+          shared.customItems,
         );
+        // Build a temporary SavedList to reuse the standard conversion
+        const tempList: SavedList = {
+          id: "",
+          name,
+          ...savedData,
+          savedAt: new Date().toISOString(),
+        };
+        const built = savedListToCartEntries(tempList, items);
         if (built) {
           replaceCart(built);
-          saveActiveList(shared.cart);
+          saveActiveList(savedData);
         }
       }
       return;
     }
 
     // Otherwise load from the active saved list
-    if (activeList && Object.keys(activeList.items).length > 0) {
-      const built = buildCartEntries(
-        items,
-        new Map(Object.entries(activeList.items)),
-      );
+    if (activeList) {
+      const built = savedListToCartEntries(activeList, items);
       if (built) replaceCart(built);
     }
   }, [
@@ -173,12 +151,7 @@ function App() {
   // When the user switches to a different saved list, load its items
   useEffect(() => {
     if (!cartHydrated.current || !activeListChanged || !activeList) return;
-    const savedItems = new Map(Object.entries(activeList.items));
-    if (savedItems.size === 0) {
-      clearCart();
-      return;
-    }
-    const built = buildCartEntries(items, savedItems);
+    const built = savedListToCartEntries(activeList, items);
     if (built) {
       replaceCart(built);
     } else {
@@ -193,12 +166,7 @@ function App() {
     if (cartState === prevCartRef.current) return;
     prevCartRef.current = cartState;
 
-    const cart = new Map<string, number>();
-    for (const [id, entry] of cartState.entries) {
-      cart.set(id, entry.quantity);
-    }
-
-    saveActiveList(cart);
+    saveActiveList(cartEntriesToSavedData(cartState.entries));
   }, [cartState, saveActiveList]);
 
   // Derive filter state from URL state
@@ -255,11 +223,7 @@ function App() {
       createList(name);
       if (copyItems) {
         // Persist the current cart items into the newly created list
-        const cart = new Map<string, number>();
-        for (const [id, entry] of cartState.entries) {
-          cart.set(id, entry.quantity);
-        }
-        saveActiveList(cart);
+        saveActiveList(cartEntriesToSavedData(cartState.entries));
       }
     },
     [createList, cartState, saveActiveList],

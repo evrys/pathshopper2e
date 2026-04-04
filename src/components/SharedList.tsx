@@ -3,6 +3,7 @@ import { useItems } from "../hooks/useItems";
 import {
   generateListId,
   saveListToStorage,
+  shareDataToSavedData,
   type SavedList,
 } from "../hooks/useSavedLists";
 import { aonUrl } from "../lib/aon";
@@ -61,17 +62,18 @@ export function SharedList() {
   /** Save the shared list to localStorage and navigate to the editor. */
   const handleEdit = useCallback(() => {
     const id = listId || generateListId();
+    const savedData = shareDataToSavedData(cart, discounts, customItems);
     const list: SavedList = {
       id,
       name: charName || "Shared List",
-      items: Object.fromEntries(cart),
+      ...savedData,
       savedAt: new Date().toISOString(),
     };
     saveListToStorage(list);
 
     const base = import.meta.env.BASE_URL.replace(/\/$/, "");
     window.location.href = `${window.location.origin}${base}/#lid=${encodeURIComponent(id)}`;
-  }, [cart, charName, listId]);
+  }, [cart, charName, listId, discounts, customItems]);
 
   if (loading) {
     return (

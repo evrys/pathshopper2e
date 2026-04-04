@@ -1,5 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { Discount, Item, Price } from "../types";
+import type { CartEntry } from "./useCart";
 
 const LIST_PREFIX = "pathshopper2e:list:";
 const ACTIVE_KEY = "pathshopper2e:active-list-id";
@@ -8,6 +10,13 @@ const DEFAULT_LIST_NAME = "My shopping list";
 /** Query key used by TanStack Query for the saved lists. */
 export const LISTS_QUERY_KEY = ["saved-lists"] as const;
 
+/** Minimal data stored for a custom item. */
+export interface SavedCustomItem {
+  id: string;
+  name: string;
+  price: Price;
+}
+
 export interface SavedList {
   /** Unique identifier for this list. */
   id: string;
@@ -15,6 +24,10 @@ export interface SavedList {
   name: string;
   /** Map of item id → quantity. */
   items: Record<string, number>;
+  /** Per-item discounts, keyed by item id. */
+  discounts?: Record<string, Discount>;
+  /** Custom items (user-created, not from the game database). */
+  customItems?: SavedCustomItem[];
   /** ISO timestamp of last save. */
   savedAt: string;
 }
@@ -115,6 +128,133 @@ export function saveListToStorage(list: SavedList): void {
   writeActiveId(list.id);
 }
 
+// ── Shopping-list conversion helpers ─────────────────────────────────
+
+/** Data extracted from cart entries for persistence in a SavedList. */
+export interface SavedListData {
+  items: Record<string, number>;
+  discounts: Record<string, Discount> | undefined;
+  customItems: SavedCustomItem[] | undefined;
+}
+
+/**
+ * Extract persistable data from a cart entry map.
+ *
+ * This is the single source of truth for converting runtime cart state
+ * into the format stored in `SavedList`. Used by auto-save, shared-list
+ * editing, and anywhere else a cart needs to be persisted.
+ */
+export function cartEntriesToSavedData(
+  entries: ReadonlyMap<string, CartEntry>,
+): SavedListData {
+  const items: Record<string, number> = {};
+  const discounts: Record<string, Discount> = {};
+  const customItems: SavedCustomItem[] = [];
+  let hasDiscounts = false;
+
+  for (const [id, entry] of entries) {
+    items[id] = entry.quantity;
+    if (entry.discount) {
+      discounts[id] = entry.discount;
+      hasDiscounts = true;
+    }
+    if (id.startsWith("custom-")) {
+      customItems.push({
+        id: entry.item.id,
+        name: entry.item.name,
+        price: entry.item.price,
+      });
+    }
+  }
+
+  return {
+    items,
+    discounts: hasDiscounts ? discounts : undefined,
+    customItems: customItems.length > 0 ? customItems : undefined,
+  };
+}
+
+/**
+ * Build persistable data from the raw maps typically available in a
+ * share URL context (item quantities, discounts, and parsed custom items).
+ */
+export function shareDataToSavedData(
+  cart: ReadonlyMap<string, number>,
+  discounts: ReadonlyMap<string, Discount>,
+  customItems: Item[],
+): SavedListData {
+  const discountRecord =
+    discounts.size > 0 ? Object.fromEntries(discounts) : undefined;
+  const savedCustom: SavedCustomItem[] | undefined =
+    customItems.length > 0
+      ? customItems.map((ci) => ({ id: ci.id, name: ci.name, price: ci.price }))
+      : undefined;
+  return {
+    items: Object.fromEntries(cart),
+    discounts: discountRecord,
+    customItems: savedCustom,
+  };
+}
+
+/** Expand saved custom-item stubs into full Item objects. */
+export function expandCustomItems(
+  saved: SavedCustomItem[] | undefined,
+): Item[] {
+  if (!saved || saved.length === 0) return [];
+  return saved.map((ci) => ({
+    id: ci.id,
+    name: ci.name,
+    type: "equipment",
+    level: 0,
+    price: ci.price,
+    category: "Custom",
+    traits: [],
+    rarity: "common",
+    bulk: 0,
+    usage: "",
+    source: "Custom",
+    remaster: false,
+    description: "",
+    plainDescription: "",
+  }));
+}
+
+/**
+ * Build a cart entry map from a SavedList and loaded item definitions.
+ * Returns `undefined` when the resulting map would be empty.
+ */
+export function savedListToCartEntries(
+  savedList: SavedList,
+  items: { id: string }[],
+): Map<string, CartEntry> | undefined {
+  const itemQuantities = new Map(Object.entries(savedList.items));
+  if (itemQuantities.size === 0) return undefined;
+
+  const customItems = expandCustomItems(savedList.customItems);
+  const discounts: Map<string, Discount> = savedList.discounts
+    ? new Map(Object.entries(savedList.discounts))
+    : new Map();
+
+  const itemMap = new Map(items.map((it) => [it.id, it]));
+  for (const ci of customItems) {
+    itemMap.set(ci.id, ci);
+  }
+
+  const map = new Map<string, CartEntry>();
+  for (const [id, qty] of itemQuantities) {
+    const item = itemMap.get(id);
+    if (item) {
+      const discount = discounts.get(id);
+      map.set(id, {
+        item: item as CartEntry["item"],
+        quantity: qty,
+        ...(discount ? { discount } : {}),
+      });
+    }
+  }
+  return map.size > 0 ? map : undefined;
+}
+
 export function useSavedLists() {
   const queryClient = useQueryClient();
 
@@ -169,13 +309,13 @@ export function useSavedLists() {
 
   /** Save items to the currently active list (auto-save). */
   const saveActiveList = useCallback(
-    (items: Map<string, number>) => {
+    (data: SavedListData) => {
       const list = lists.find((l) => l.id === resolvedActiveId);
       if (!list) return;
       const savedAt = new Date().toISOString();
-      const updated = {
+      const updated: SavedList = {
         ...list,
-        items: Object.fromEntries(items),
+        ...data,
         savedAt,
       };
       writeList(updated);

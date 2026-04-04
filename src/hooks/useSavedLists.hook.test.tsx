@@ -3,14 +3,34 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import type { Discount } from "../types";
 import {
+  type SavedCustomItem,
   type SavedList,
+  type SavedListData,
   saveListToStorage,
   useSavedLists,
 } from "./useSavedLists";
 
 const LIST_PREFIX = "pathshopper2e:list:";
 const ACTIVE_KEY = "pathshopper2e:active-list-id";
+
+/** Build a SavedListData from Maps, matching the old saveActiveList arg style. */
+function makeSavedData(
+  items: Map<string, number>,
+  discounts?: Map<string, Discount>,
+  customItems?: SavedCustomItem[],
+): SavedListData {
+  return {
+    items: Object.fromEntries(items),
+    discounts:
+      discounts && discounts.size > 0
+        ? Object.fromEntries(discounts)
+        : undefined,
+    customItems:
+      customItems && customItems.length > 0 ? customItems : undefined,
+  };
+}
 
 function storeList(list: SavedList): void {
   localStorage.setItem(`${LIST_PREFIX}${list.id}`, JSON.stringify(list));
@@ -269,10 +289,12 @@ describe("useSavedLists hook", () => {
 
       act(() => {
         result.current.saveActiveList(
-          new Map([
-            ["sword-1", 2],
-            ["potion-1", 5],
-          ]),
+          makeSavedData(
+            new Map([
+              ["sword-1", 2],
+              ["potion-1", 5],
+            ]),
+          ),
         );
       });
 
@@ -302,7 +324,7 @@ describe("useSavedLists hook", () => {
       });
 
       act(() => {
-        result.current.saveActiveList(new Map([["item-1", 1]]));
+        result.current.saveActiveList(makeSavedData(new Map([["item-1", 1]])));
       });
 
       await waitFor(() => {
@@ -325,7 +347,7 @@ describe("useSavedLists hook", () => {
       });
 
       act(() => {
-        result.current.saveActiveList(new Map([["sword-1", 1]]));
+        result.current.saveActiveList(makeSavedData(new Map([["sword-1", 1]])));
       });
 
       await waitFor(() => {
@@ -348,7 +370,9 @@ describe("useSavedLists hook", () => {
       });
 
       act(() => {
-        result.current.saveActiveList(new Map([["new-item", 1]]));
+        result.current.saveActiveList(
+          makeSavedData(new Map([["new-item", 1]])),
+        );
       });
 
       await waitFor(() => {
@@ -373,12 +397,247 @@ describe("useSavedLists hook", () => {
       });
 
       act(() => {
-        result.current.saveActiveList(new Map());
+        result.current.saveActiveList(makeSavedData(new Map()));
       });
 
       await waitFor(() => {
         expect(result.current.activeList?.items).toEqual({});
       });
+    });
+
+    it("saves discounts alongside items", async () => {
+      const list = makeList();
+      storeList(list);
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList).toBeDefined();
+      });
+
+      act(() => {
+        result.current.saveActiveList(
+          makeSavedData(
+            new Map([
+              ["sword-1", 2],
+              ["potion-1", 5],
+            ]),
+            new Map<string, Discount>([
+              ["sword-1", { type: "flat", cp: 200 }],
+              ["potion-1", { type: "percent", percent: 10 }],
+            ]),
+          ),
+        );
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList?.discounts).toEqual({
+          "sword-1": { type: "flat", cp: 200 },
+          "potion-1": { type: "percent", percent: 10 },
+        });
+      });
+
+      // Verify localStorage has the discounts
+      const stored = getStoredList("list-1");
+      expect(stored?.discounts).toEqual({
+        "sword-1": { type: "flat", cp: 200 },
+        "potion-1": { type: "percent", percent: 10 },
+      });
+    });
+
+    it("persists discounts through a save/read round-trip", async () => {
+      const list = makeList();
+      storeList(list);
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList).toBeDefined();
+      });
+
+      act(() => {
+        result.current.saveActiveList(
+          makeSavedData(
+            new Map([["sword-1", 1]]),
+            new Map<string, Discount>([["sword-1", { type: "flat", cp: 500 }]]),
+          ),
+        );
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList?.items).toEqual({ "sword-1": 1 });
+      });
+
+      // Simulate a page refresh by reading the stored list back
+      const stored = getStoredList("list-1");
+      expect(stored).not.toBeNull();
+      expect(stored?.items).toEqual({ "sword-1": 1 });
+      expect(stored?.discounts).toEqual({
+        "sword-1": { type: "flat", cp: 500 },
+      });
+    });
+
+    it("clears discounts when saving without them", async () => {
+      const list = makeList({
+        items: { "sword-1": 1 },
+        discounts: { "sword-1": { type: "flat", cp: 200 } },
+      });
+      storeList(list);
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList?.discounts).toEqual({
+          "sword-1": { type: "flat", cp: 200 },
+        });
+      });
+
+      // Save without discounts
+      act(() => {
+        result.current.saveActiveList(makeSavedData(new Map([["sword-1", 1]])));
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList?.discounts).toBeUndefined();
+      });
+
+      const stored = getStoredList("list-1");
+      expect(stored?.discounts).toBeUndefined();
+    });
+
+    it("saves custom items alongside regular items", async () => {
+      const list = makeList();
+      storeList(list);
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList).toBeDefined();
+      });
+
+      act(() => {
+        result.current.saveActiveList(
+          makeSavedData(
+            new Map([
+              ["sword-1", 2],
+              ["custom-1-123", 1],
+            ]),
+            undefined,
+            [{ id: "custom-1-123", name: "Magic Wand", price: { gp: 50 } }],
+          ),
+        );
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList?.items).toEqual({
+          "sword-1": 2,
+          "custom-1-123": 1,
+        });
+      });
+
+      expect(result.current.activeList?.customItems).toEqual([
+        { id: "custom-1-123", name: "Magic Wand", price: { gp: 50 } },
+      ]);
+
+      // Verify localStorage has the custom items
+      const stored = getStoredList("list-1");
+      expect(stored?.customItems).toEqual([
+        { id: "custom-1-123", name: "Magic Wand", price: { gp: 50 } },
+      ]);
+    });
+
+    it("persists custom items through a save/read round-trip", async () => {
+      const list = makeList();
+      storeList(list);
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList).toBeDefined();
+      });
+
+      act(() => {
+        result.current.saveActiveList(
+          makeSavedData(
+            new Map([["custom-1-456", 3]]),
+            new Map<string, Discount>([
+              ["custom-1-456", { type: "percent", percent: 10 }],
+            ]),
+            [
+              {
+                id: "custom-1-456",
+                name: "Potion of Speed",
+                price: { gp: 12 },
+              },
+            ],
+          ),
+        );
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList?.items).toEqual({
+          "custom-1-456": 3,
+        });
+      });
+
+      // Simulate a page refresh by reading the stored list back
+      const stored = getStoredList("list-1");
+      expect(stored).not.toBeNull();
+      expect(stored?.items).toEqual({ "custom-1-456": 3 });
+      expect(stored?.customItems).toEqual([
+        { id: "custom-1-456", name: "Potion of Speed", price: { gp: 12 } },
+      ]);
+      expect(stored?.discounts).toEqual({
+        "custom-1-456": { type: "percent", percent: 10 },
+      });
+    });
+
+    it("clears custom items when saving without them", async () => {
+      const list = makeList({
+        items: { "custom-1-123": 1 },
+        customItems: [
+          { id: "custom-1-123", name: "Old Custom", price: { sp: 5 } },
+        ],
+      });
+      storeList(list);
+      localStorage.setItem(ACTIVE_KEY, "list-1");
+
+      const { result } = renderHook(() => useSavedLists(), {
+        wrapper: Wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList?.customItems).toEqual([
+          { id: "custom-1-123", name: "Old Custom", price: { sp: 5 } },
+        ]);
+      });
+
+      // Save without custom items (only regular items)
+      act(() => {
+        result.current.saveActiveList(makeSavedData(new Map([["sword-1", 1]])));
+      });
+
+      await waitFor(() => {
+        expect(result.current.activeList?.customItems).toBeUndefined();
+      });
+
+      const stored = getStoredList("list-1");
+      expect(stored?.customItems).toBeUndefined();
     });
   });
 
@@ -806,7 +1065,9 @@ describe("useSavedLists hook", () => {
 
       // Save some items to it
       act(() => {
-        result.current.saveActiveList(new Map([["potion-1", 5]]));
+        result.current.saveActiveList(
+          makeSavedData(new Map([["potion-1", 5]])),
+        );
       });
 
       await waitFor(() => {
@@ -847,7 +1108,7 @@ describe("useSavedLists hook", () => {
       });
 
       act(() => {
-        result.current.saveActiveList(new Map([["item-1", 2]]));
+        result.current.saveActiveList(makeSavedData(new Map([["item-1", 2]])));
       });
 
       await waitFor(() => {
