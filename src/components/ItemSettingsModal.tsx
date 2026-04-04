@@ -31,21 +31,41 @@ function initFromDiscount(d: Discount): {
   return { amount: String(amount), denom };
 }
 
+type PriceDenomination = "gp" | "sp" | "cp";
+
+/** Find the best-fit denomination for a Price object. */
+function priceToDenom(price: Price): {
+  amount: number;
+  denom: PriceDenomination;
+} {
+  if (price.gp) return { amount: price.gp, denom: "gp" };
+  if (price.sp) return { amount: price.sp, denom: "sp" };
+  if (price.cp) return { amount: price.cp, denom: "cp" };
+  return { amount: 0, denom: "gp" };
+}
+
 interface ItemSettingsModalProps {
   itemName: string;
   price: Price;
+  /** Whether this is a custom item whose name/price can be edited. */
+  isCustom?: boolean;
   /** Current discount, if any. */
   currentDiscount?: Discount;
   /** Current notes, if any. */
   currentNotes?: string;
-  /** Called with the new discount, or undefined to clear. */
-  onApply: (discount: Discount | undefined, notes: string) => void;
+  /** Called with the new discount, notes, and optional custom item updates. */
+  onApply: (
+    discount: Discount | undefined,
+    notes: string,
+    customUpdate?: { name: string; price: Price },
+  ) => void;
   onClose: () => void;
 }
 
 export function ItemSettingsModal({
   itemName,
   price,
+  isCustom,
   currentDiscount,
   currentNotes,
   onApply,
@@ -58,6 +78,16 @@ export function ItemSettingsModal({
   );
   const [notes, setNotes] = useState(currentNotes ?? "");
   const notesRef = useRef<HTMLTextAreaElement>(null);
+
+  // Custom item fields
+  const priceInit = priceToDenom(price);
+  const [customName, setCustomName] = useState(itemName);
+  const [customPriceAmount, setCustomPriceAmount] = useState(
+    priceInit.amount > 0 ? String(priceInit.amount) : "",
+  );
+  const [customPriceDenom, setCustomPriceDenom] = useState<PriceDenomination>(
+    priceInit.denom,
+  );
 
   useEffect(() => {
     notesRef.current?.focus();
@@ -73,17 +103,29 @@ export function ItemSettingsModal({
 
   const parsed = amount === "" ? 0 : Number(amount);
   const isPercent = denomination === "%";
+
+  // Effective price: use custom price fields when editing a custom item
+  const parsedCustomPrice =
+    customPriceAmount === "" ? 0 : Number(customPriceAmount);
+  const effectivePrice =
+    isCustom && parsedCustomPrice > 0
+      ? ({ [customPriceDenom]: parsedCustomPrice } as Price)
+      : isCustom
+        ? ({} as Price)
+        : price;
+
   const discountCp = !Number.isFinite(parsed)
     ? 0
     : isPercent
-      ? Math.round((parsed / 100) * toCopper(price))
+      ? Math.round((parsed / 100) * toCopper(effectivePrice))
       : parsed * CP_PER[denomination];
-  const priceCp = toCopper(price);
+  const priceCp = toCopper(effectivePrice);
   const isValid =
     Number.isFinite(parsed) &&
     parsed >= 0 &&
     discountCp <= priceCp &&
-    (!isPercent || parsed <= 100);
+    (!isPercent || parsed <= 100) &&
+    (!isCustom || customName.trim().length > 0);
   const discountedPrice = fromCopper(Math.max(0, priceCp - discountCp));
 
   function handleSubmit(e: React.FormEvent) {
@@ -97,7 +139,10 @@ export function ItemSettingsModal({
     } else {
       discount = { type: "flat", cp: discountCp };
     }
-    onApply(discount, notes.trim());
+    const customUpdate = isCustom
+      ? { name: customName.trim(), price: effectivePrice }
+      : undefined;
+    onApply(discount, notes.trim(), customUpdate);
     onClose();
   }
 
@@ -124,6 +169,46 @@ export function ItemSettingsModal({
           </button>
         </div>
         <form className={styles.body} onSubmit={handleSubmit}>
+          {isCustom && (
+            <>
+              <div className={styles.field}>
+                <label htmlFor="custom-item-name">Name</label>
+                <input
+                  id="custom-item-name"
+                  className={styles.textInput}
+                  type="text"
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  placeholder="e.g. Magic Sword"
+                />
+              </div>
+              <div className={styles.field}>
+                <label htmlFor="custom-item-price">Price</label>
+                <div className={styles.inputRow}>
+                  <input
+                    id="custom-item-price"
+                    type="number"
+                    min="0"
+                    value={customPriceAmount}
+                    onChange={(e) => setCustomPriceAmount(e.target.value)}
+                    placeholder="0"
+                  />
+                  <select
+                    className={styles.denomSelect}
+                    value={customPriceDenom}
+                    onChange={(e) =>
+                      setCustomPriceDenom(e.target.value as PriceDenomination)
+                    }
+                    aria-label="Price denomination"
+                  >
+                    <option value="gp">gp</option>
+                    <option value="sp">sp</option>
+                    <option value="cp">cp</option>
+                  </select>
+                </div>
+              </div>
+            </>
+          )}
           <div className={styles.field}>
             <label htmlFor="discount-amount">Discount per item</label>
             <div className={styles.inputRow}>
@@ -152,7 +237,7 @@ export function ItemSettingsModal({
           </div>
           {isValid && discountCp > 0 && (
             <p className={styles.preview}>
-              {formatPrice(price)} →{" "}
+              {formatPrice(effectivePrice)} →{" "}
               <span className={styles.previewPrice}>
                 {formatPrice(discountedPrice)}
               </span>

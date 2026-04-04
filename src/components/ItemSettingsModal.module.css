@@ -166,6 +166,22 @@
   opacity: 0.6;
 }
 
+.textInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem 0.625rem;
+  font-size: 0.875rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-text);
+}
+
+.textInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
 .actions {
   display: flex;
   justify-content: flex-end;

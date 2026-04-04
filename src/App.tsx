@@ -73,6 +73,7 @@ function App() {
     setQuantity,
     setDiscount,
     setNotes,
+    updateItem,
     clearCart,
     replaceCart,
   } = useCart();
@@ -347,6 +348,7 @@ function App() {
             onRemoveItem={removeItem}
             onSetDiscount={setDiscount}
             onSetNotes={setNotes}
+            onUpdateItem={updateItem}
             onAddItem={addItem}
             onLoadList={handleLoadList}
             onNewList={handleNewList}

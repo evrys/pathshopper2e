@@ -39,7 +39,11 @@ describe("ItemSettingsModal", () => {
     });
     fireEvent.click(screen.getByText("Apply"));
 
-    expect(onApply).toHaveBeenCalledWith({ type: "flat", cp: 200 }, "");
+    expect(onApply).toHaveBeenCalledWith(
+      { type: "flat", cp: 200 },
+      "",
+      undefined,
+    );
     expect(onClose).toHaveBeenCalledOnce();
   });
 
@@ -62,7 +66,11 @@ describe("ItemSettingsModal", () => {
     });
     fireEvent.click(screen.getByText("Apply"));
 
-    expect(onApply).toHaveBeenCalledWith({ type: "flat", cp: 50 }, "");
+    expect(onApply).toHaveBeenCalledWith(
+      { type: "flat", cp: 50 },
+      "",
+      undefined,
+    );
   });
 
   it("applies a percentage discount", () => {
@@ -84,7 +92,11 @@ describe("ItemSettingsModal", () => {
     });
     fireEvent.click(screen.getByText("Apply"));
 
-    expect(onApply).toHaveBeenCalledWith({ type: "percent", percent: 25 }, "");
+    expect(onApply).toHaveBeenCalledWith(
+      { type: "percent", percent: 25 },
+      "",
+      undefined,
+    );
   });
 
   it("clears discount when amount is 0", () => {
@@ -104,7 +116,7 @@ describe("ItemSettingsModal", () => {
     });
     fireEvent.click(screen.getByText("Apply"));
 
-    expect(onApply).toHaveBeenCalledWith(undefined, "");
+    expect(onApply).toHaveBeenCalledWith(undefined, "", undefined);
   });
 
   it("disables Apply when discount exceeds price", () => {
@@ -261,6 +273,7 @@ describe("ItemSettingsModal", () => {
     expect(onApply).toHaveBeenCalledWith(
       { type: "flat", cp: 100 },
       "Buy from Trader Joe",
+      undefined,
     );
   });
 
@@ -283,6 +296,7 @@ describe("ItemSettingsModal", () => {
     expect(onApply).toHaveBeenCalledWith(
       undefined,
       "Need this for the dungeon",
+      undefined,
     );
   });
 
@@ -317,6 +331,135 @@ describe("ItemSettingsModal", () => {
     });
     fireEvent.click(screen.getByText("Apply"));
 
-    expect(onApply).toHaveBeenCalledWith(undefined, "padded");
+    expect(onApply).toHaveBeenCalledWith(undefined, "padded", undefined);
+  });
+
+  describe("custom item editing", () => {
+    it("does not show name/price fields for non-custom items", () => {
+      render(
+        <ItemSettingsModal
+          itemName="Longsword"
+          price={BASE_PRICE}
+          onApply={() => {}}
+          onClose={() => {}}
+        />,
+      );
+      expect(screen.queryByLabelText("Name")).toBeNull();
+      expect(screen.queryByLabelText("Price")).toBeNull();
+    });
+
+    it("shows name/price fields for custom items", () => {
+      render(
+        <ItemSettingsModal
+          itemName="Magic Wand"
+          price={{ gp: 5 }}
+          isCustom
+          onApply={() => {}}
+          onClose={() => {}}
+        />,
+      );
+      expect(screen.getByLabelText("Name")).toBeDefined();
+      expect(screen.getByLabelText("Price")).toBeDefined();
+    });
+
+    it("pre-fills name and price from current values", () => {
+      render(
+        <ItemSettingsModal
+          itemName="Magic Wand"
+          price={{ sp: 30 }}
+          isCustom
+          onApply={() => {}}
+          onClose={() => {}}
+        />,
+      );
+      const nameInput = screen.getByLabelText("Name") as HTMLInputElement;
+      const priceInput = screen.getByLabelText("Price") as HTMLInputElement;
+      const denomSelect = screen.getByLabelText(
+        "Price denomination",
+      ) as HTMLSelectElement;
+      expect(nameInput.value).toBe("Magic Wand");
+      expect(priceInput.value).toBe("30");
+      expect(denomSelect.value).toBe("sp");
+    });
+
+    it("passes customUpdate on apply", () => {
+      const onApply = vi.fn();
+      render(
+        <ItemSettingsModal
+          itemName="Wand"
+          price={{ gp: 5 }}
+          isCustom
+          onApply={onApply}
+          onClose={() => {}}
+        />,
+      );
+      fireEvent.change(screen.getByLabelText("Name"), {
+        target: { value: "Better Wand" },
+      });
+      fireEvent.change(screen.getByLabelText("Price"), {
+        target: { value: "10" },
+      });
+      fireEvent.click(screen.getByText("Apply"));
+      expect(onApply).toHaveBeenCalledWith(undefined, "", {
+        name: "Better Wand",
+        price: { gp: 10 },
+      });
+    });
+
+    it("changes price denomination for custom items", () => {
+      const onApply = vi.fn();
+      render(
+        <ItemSettingsModal
+          itemName="Wand"
+          price={{ gp: 5 }}
+          isCustom
+          onApply={onApply}
+          onClose={() => {}}
+        />,
+      );
+      fireEvent.change(screen.getByLabelText("Price denomination"), {
+        target: { value: "sp" },
+      });
+      fireEvent.change(screen.getByLabelText("Price"), {
+        target: { value: "50" },
+      });
+      fireEvent.click(screen.getByText("Apply"));
+      expect(onApply).toHaveBeenCalledWith(undefined, "", {
+        name: "Wand",
+        price: { sp: 50 },
+      });
+    });
+
+    it("disables apply when custom name is empty", () => {
+      render(
+        <ItemSettingsModal
+          itemName="Wand"
+          price={{ gp: 5 }}
+          isCustom
+          onApply={() => {}}
+          onClose={() => {}}
+        />,
+      );
+      fireEvent.change(screen.getByLabelText("Name"), {
+        target: { value: "" },
+      });
+      expect((screen.getByText("Apply") as HTMLButtonElement).disabled).toBe(
+        true,
+      );
+    });
+
+    it("does not pass customUpdate for non-custom items", () => {
+      const onApply = vi.fn();
+      render(
+        <ItemSettingsModal
+          itemName="Longsword"
+          price={BASE_PRICE}
+          onApply={onApply}
+          onClose={() => {}}
+        />,
+      );
+      fireEvent.click(screen.getByText("Apply"));
+      expect(onApply).toHaveBeenCalledWith(undefined, "", undefined);
+    });
   });
 });

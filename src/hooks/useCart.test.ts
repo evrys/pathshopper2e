@@ -292,4 +292,100 @@ describe("cartReducer", () => {
       expect(state.entries.get("w386")?.notes).toBe("For the boss fight");
     });
   });
+
+  describe("update-item", () => {
+    it("updates item name", () => {
+      const item = makeItem({ id: "custom-1", name: "Old Name" });
+      let state = cartReducer(emptyState, { type: "add", item });
+      state = cartReducer(state, {
+        type: "update-item",
+        itemId: "custom-1",
+        update: { name: "New Name" },
+      });
+      expect(state.entries.get("custom-1")?.item.name).toBe("New Name");
+    });
+
+    it("updates item price", () => {
+      const item = makeItem({ id: "custom-1", price: { gp: 5 } });
+      let state = cartReducer(emptyState, { type: "add", item });
+      state = cartReducer(state, {
+        type: "update-item",
+        itemId: "custom-1",
+        update: { price: { sp: 10 } },
+      });
+      expect(state.entries.get("custom-1")?.item.price).toEqual({ sp: 10 });
+    });
+
+    it("updates both name and price", () => {
+      const item = makeItem({
+        id: "custom-1",
+        name: "Old",
+        price: { gp: 1 },
+      });
+      let state = cartReducer(emptyState, { type: "add", item });
+      state = cartReducer(state, {
+        type: "update-item",
+        itemId: "custom-1",
+        update: { name: "New", price: { cp: 50 } },
+      });
+      expect(state.entries.get("custom-1")?.item.name).toBe("New");
+      expect(state.entries.get("custom-1")?.item.price).toEqual({ cp: 50 });
+    });
+
+    it("preserves other item fields", () => {
+      const item = makeItem({
+        id: "custom-1",
+        name: "Wand",
+        category: "Custom",
+      });
+      let state = cartReducer(emptyState, { type: "add", item });
+      state = cartReducer(state, {
+        type: "update-item",
+        itemId: "custom-1",
+        update: { name: "Better Wand" },
+      });
+      expect(state.entries.get("custom-1")?.item.category).toBe("Custom");
+      expect(state.entries.get("custom-1")?.item.type).toBe("weapon");
+    });
+
+    it("preserves quantity, discount, and notes", () => {
+      const item = makeItem({ id: "custom-1" });
+      let state = cartReducer(emptyState, { type: "add", item });
+      state = cartReducer(state, {
+        type: "set-quantity",
+        itemId: "custom-1",
+        quantity: 3,
+      });
+      state = cartReducer(state, {
+        type: "set-discount",
+        itemId: "custom-1",
+        discount: { type: "flat", cp: 50 },
+      });
+      state = cartReducer(state, {
+        type: "set-notes",
+        itemId: "custom-1",
+        notes: "A note",
+      });
+      state = cartReducer(state, {
+        type: "update-item",
+        itemId: "custom-1",
+        update: { name: "Renamed" },
+      });
+      expect(state.entries.get("custom-1")?.quantity).toBe(3);
+      expect(state.entries.get("custom-1")?.discount).toEqual({
+        type: "flat",
+        cp: 50,
+      });
+      expect(state.entries.get("custom-1")?.notes).toBe("A note");
+    });
+
+    it("does nothing for unknown item", () => {
+      const state = cartReducer(emptyState, {
+        type: "update-item",
+        itemId: "nonexistent",
+        update: { name: "Nope" },
+      });
+      expect(state.entries.size).toBe(0);
+    });
+  });
 });

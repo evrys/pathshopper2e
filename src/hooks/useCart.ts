@@ -1,6 +1,6 @@
 import { useCallback, useReducer } from "react";
 import { resolveDiscount, sumPrices, toCopper } from "../lib/price";
-import type { Discount, Item } from "../types";
+import type { Discount, Item, Price } from "../types";
 
 export interface CartEntry {
   item: Item;
@@ -21,6 +21,11 @@ export type CartAction =
   | { type: "set-quantity"; itemId: string; quantity: number }
   | { type: "set-discount"; itemId: string; discount: Discount | undefined }
   | { type: "set-notes"; itemId: string; notes: string }
+  | {
+      type: "update-item";
+      itemId: string;
+      update: { name?: string; price?: Price };
+    }
   | { type: "clear" }
   | { type: "replace"; entries: Map<string, CartEntry> };
 
@@ -68,6 +73,16 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
       }
       break;
     }
+    case "update-item": {
+      const entry = next.get(action.itemId);
+      if (entry) {
+        const item = { ...entry.item };
+        if (action.update.name !== undefined) item.name = action.update.name;
+        if (action.update.price !== undefined) item.price = action.update.price;
+        next.set(action.itemId, { ...entry, item });
+      }
+      break;
+    }
     case "clear":
       return { entries: new Map() };
     case "replace":
@@ -105,6 +120,11 @@ export function useCart() {
       dispatch({ type: "set-notes", itemId, notes }),
     [],
   );
+  const updateItem = useCallback(
+    (itemId: string, update: { name?: string; price?: Price }) =>
+      dispatch({ type: "update-item", itemId, update }),
+    [],
+  );
   const clearCart = useCallback(() => dispatch({ type: "clear" }), []);
   const replaceCart = useCallback(
     (entries: Map<string, CartEntry>) => dispatch({ type: "replace", entries }),
@@ -139,6 +159,7 @@ export function useCart() {
     setQuantity,
     setDiscount,
     setNotes,
+    updateItem,
     clearCart,
     replaceCart,
   };

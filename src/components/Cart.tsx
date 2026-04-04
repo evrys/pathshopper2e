@@ -30,6 +30,10 @@ interface CartProps {
   onRemoveItem: (itemId: string) => void;
   onSetDiscount: (itemId: string, discount: Discount | undefined) => void;
   onSetNotes: (itemId: string, notes: string) => void;
+  onUpdateItem: (
+    itemId: string,
+    update: { name?: string; price?: Price },
+  ) => void;
   onAddItem: (item: CartEntry["item"]) => void;
   onLoadList: (list: SavedList) => void;
   onNewList: (name: string, copyItems?: boolean) => void;
@@ -106,6 +110,7 @@ export function Cart({
   onRemoveItem,
   onSetDiscount,
   onSetNotes,
+  onUpdateItem,
   onAddItem,
   onLoadList,
   onNewList,
@@ -381,11 +386,15 @@ export function Cart({
             <ItemSettingsModal
               itemName={discountEntry.item.name}
               price={discountEntry.item.price}
+              isCustom={discountEntry.item.id.startsWith("custom-")}
               currentDiscount={discountEntry.discount}
               currentNotes={discountEntry.notes}
-              onApply={(discount, notes) => {
+              onApply={(discount, notes, customUpdate) => {
                 onSetDiscount(discountEntry.item.id, discount);
                 onSetNotes(discountEntry.item.id, notes);
+                if (customUpdate) {
+                  onUpdateItem(discountEntry.item.id, customUpdate);
+                }
               }}
               onClose={() => setDiscountEntry(null)}
             />
@@ -438,7 +447,7 @@ export function Cart({
                       onClick={() => setDiscountEntry(entry)}
                       title="Item settings"
                     >
-                      ⚙
+                      ✏️
                     </button>
                     <button
                       type="button"
