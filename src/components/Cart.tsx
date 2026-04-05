@@ -1,6 +1,6 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { DotsVerticalIcon } from "@radix-ui/react-icons";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CartEntry } from "../hooks/useCart";
 import { useIsMobile } from "../hooks/useMediaQuery";
 import type { SavedList } from "../hooks/useSavedLists";
@@ -112,16 +112,23 @@ function MobileCartItem({
   onSetSettingsEntry,
   onSetQuantity,
   onRemoveItem,
+  isFlashing,
+  onFlashEnd,
 }: {
   entry: CartEntry;
   onSetSettingsEntry: (entry: CartEntry) => void;
   onSetQuantity: (id: string, qty: number) => void;
   onRemoveItem: (id: string) => void;
+  isFlashing: boolean;
+  onFlashEnd: () => void;
 }) {
   const { rowProps, portal } = useMobileTooltip(entry.item);
 
   return (
-    <li className={styles.item}>
+    <li
+      className={`${styles.item}${isFlashing ? ` ${styles.flash}` : ""}`}
+      onAnimationEnd={onFlashEnd}
+    >
       <div
         className={styles.itemInfo}
         {...(entry.item.id.startsWith("custom-") ? {} : rowProps)}
@@ -240,6 +247,23 @@ export function Cart({
   };
   const csvInputRef = useRef<HTMLInputElement>(null);
   const title = listName || "My shopping list";
+
+  // Track which item to flash-highlight (newly added or quantity bumped)
+  const [flashId, setFlashId] = useState<string | null>(null);
+  const prevEntriesRef = useRef<Map<string, number>>(new Map());
+  useEffect(() => {
+    const prev = prevEntriesRef.current;
+    for (const { item, quantity } of entries) {
+      const prevQty = prev.get(item.id);
+      if (prevQty === undefined || quantity > prevQty) {
+        setFlashId(item.id);
+        break;
+      }
+    }
+    prevEntriesRef.current = new Map(
+      entries.map(({ item, quantity }) => [item.id, quantity]),
+    );
+  }, [entries]);
 
   function commitRename() {
     const trimmed = renameRef.current?.value.trim() ?? "";
@@ -463,9 +487,16 @@ export function Cart({
                 onSetSettingsEntry={setSettingsEntry}
                 onSetQuantity={onSetQuantity}
                 onRemoveItem={onRemoveItem}
+                isFlashing={flashId === entry.item.id}
+                onFlashEnd={() => setFlashId(null)}
               />
             ) : (
-              <li key={entry.item.id} className={styles.item}>
+              <li
+                key={entry.item.id}
+                className={`${styles.item}${flashId === entry.item.id ? ` ${styles.flash}` : ""}`}
+                onAnimationEnd={() => setFlashId(null)}
+              >
+                {" "}
                 <div className={styles.itemInfo}>
                   {entry.item.id.startsWith("custom-") ? (
                     <span className={styles.itemName}>{entry.item.name}</span>

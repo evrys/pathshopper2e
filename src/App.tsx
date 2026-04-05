@@ -64,6 +64,7 @@ function App() {
   const [urlState, setUrlState] = useUrlState();
   const isMobile = useIsMobile();
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
+  const [fabBump, setFabBump] = useState(false);
 
   // Capture shared cart from URL before any renders clear it
   const sharedCart = useRef(consumeSharedHash());
@@ -300,6 +301,16 @@ function App() {
     [items, replaceCart],
   );
 
+  const handleAddItem = useCallback(
+    (item: CartEntry["item"]) => {
+      addItem(item);
+      if (isMobile && !mobileCartOpen) {
+        setFabBump(true);
+      }
+    },
+    [addItem, isMobile, mobileCartOpen],
+  );
+
   if (loading) {
     return (
       <div className={styles.loading}>
@@ -321,7 +332,7 @@ function App() {
     onSetPriceModifier: setDiscount,
     onSetNotes: setNotes,
     onUpdateItem: updateItem,
-    onAddItem: addItem,
+    onAddItem: handleAddItem,
     onLoadList: handleLoadList,
     onNewList: handleNewList,
     onDeleteList: deleteList,
@@ -359,7 +370,7 @@ function App() {
             items={items}
             filters={filters}
             onFiltersChange={handleFiltersChange}
-            onAddItem={addItem}
+            onAddItem={handleAddItem}
           />
         </main>
         <aside className={styles.sidebar}>
@@ -378,8 +389,9 @@ function App() {
           <Dialog.Trigger asChild>
             <button
               type="button"
-              className={`${styles.cartFab} ${mobileCartOpen ? styles.cartFabOpen : ""}`}
+              className={`${styles.cartFab} ${mobileCartOpen ? styles.cartFabOpen : ""}${fabBump ? ` ${styles.cartFabBump}` : ""}`}
               aria-label={mobileCartOpen ? "Close cart" : "Open cart"}
+              onAnimationEnd={() => setFabBump(false)}
             >
               {mobileCartOpen ? (
                 <svg

@@ -384,3 +384,16 @@
     transform: translateY(0);
   }
 }
+
+.flash {
+  animation: flashHighlight 0.6s ease-out;
+}
+
+@keyframes flashHighlight {
+  0% {
+    background: color-mix(in srgb, var(--color-primary) 30%, transparent);
+  }
+  100% {
+    background: transparent;
+  }
+}
