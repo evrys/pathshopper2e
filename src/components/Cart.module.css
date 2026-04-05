@@ -313,6 +313,12 @@
     min-height: 0;
   }
 
+  .items {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+
   .header {
     position: relative;
   }
