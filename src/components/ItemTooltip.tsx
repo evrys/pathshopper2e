@@ -119,16 +119,16 @@ function MobileTooltip({ item, onClose }: { item: Item; onClose: () => void }) {
 /**
  * Hook for managing mobile tooltip state at the row level.
  * Returns props to spread on the row element plus the portal to render.
+ * Uses onClick which the browser only fires for real taps, not scroll gestures.
  */
 export function useMobileTooltip(item: Item) {
   const [open, setOpen] = useState(false);
 
   const rowProps = {
-    onTouchEnd: (e: React.TouchEvent) => {
+    onClick: (e: React.MouseEvent) => {
       // Don't open tooltip when tapping buttons (add, etc.)
       const target = e.target as HTMLElement;
       if (target.closest("button")) return;
-      e.preventDefault();
       setOpen((prev) => !prev);
     },
   };
