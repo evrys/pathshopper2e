@@ -40,6 +40,79 @@ button.header {
   gap: 0.375rem;
 }
 
+.menuWrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.menuBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.menuBtn:hover {
+  color: var(--color-text);
+  border-color: var(--color-text-muted);
+}
+
+.menuDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 50;
+  min-width: 140px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  padding: 0.25rem 0;
+  animation: menuFadeIn 0.1s ease-out;
+}
+
+@keyframes menuFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.menuItem {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: none;
+  color: var(--color-text);
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menuItem:hover {
+  background: var(--color-surface-hover);
+}
+
+.menuDivider {
+  margin: 0.25rem 0;
+  border: none;
+  border-top: 1px solid var(--color-border);
+}
+
 .shareBtn {
   font-size: 0.75rem;
   background: transparent;
@@ -100,6 +173,13 @@ button.header {
   flex: 1;
 }
 
+/* Tooltip wrapper <span> must not break the truncation chain */
+.itemInfo > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .itemName {
   font-weight: 500;
   font-size: 0.8125rem;
@@ -118,6 +198,17 @@ button.header {
 .itemPrice {
   font-size: 0.75rem;
   color: var(--color-text-muted);
+}
+
+.itemNotes {
+  font-size: 0.6875rem;
+  color: var(--color-text-muted);
+  opacity: 0.7;
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .controls {
@@ -152,6 +243,29 @@ button.header {
   color: white;
 }
 
+.settingsBtn {
+  color: var(--color-text-muted);
+  border-color: transparent;
+  background: transparent;
+  font-size: 0.75rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.item:hover .settingsBtn {
+  opacity: 0.6;
+}
+
+.settingsBtn:hover {
+  opacity: 1;
+  color: var(--color-primary);
+}
+
+.originalPrice {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
 .total {
   display: flex;
   justify-content: space-between;
@@ -160,53 +274,24 @@ button.header {
   font-size: 0.9375rem;
 }
 
-.charNameRow {
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid var(--color-border);
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
-}
-
-.listActions {
-  display: flex;
-  gap: 0.375rem;
-}
-
-.listActionBtn {
+.renameForm {
   flex: 1;
-  font-size: 0.75rem;
-  padding: 0.3rem 0.5rem;
-  background: transparent;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  color: var(--color-text-muted);
-  cursor: pointer;
+  min-width: 0;
 }
 
-.listActionBtn:hover:not(:disabled) {
-  color: var(--color-text);
-  border-color: var(--color-text-muted);
-}
-
-.listActionBtn:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-.charNameInput {
+.renameInput {
   width: 100%;
   box-sizing: border-box;
-  font-size: 0.8125rem;
-  padding: 0.375rem 0.5rem;
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-primary);
+  border-radius: 0;
   color: var(--color-text);
-}
-
-.charNameInput::placeholder {
-  color: var(--color-text-muted);
+  outline: none;
 }
 
 .collapseIcon {
@@ -222,9 +307,31 @@ button.header {
 @media (max-width: 640px) {
   .cart {
     position: static;
+    overflow: visible;
+  }
+
+  .header {
+    position: relative;
+  }
+
+  .menuDropdown {
+    top: auto;
+    bottom: calc(100% + 4px);
+    animation-name: menuFadeInUp;
   }
 
   .items {
     max-height: 40vh;
+  }
+}
+
+@keyframes menuFadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

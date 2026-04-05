@@ -3,7 +3,6 @@ import { useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import tippy from "tippy.js";
 import "tippy.js/dist/tippy.css";
-import { formatUsage } from "../lib/format";
 import { sanitizeHtml } from "../lib/html";
 import { formatPrice } from "../lib/price";
 import { formatTrait, traitUrl } from "../lib/traits";
@@ -41,7 +40,7 @@ function TooltipContent({ item }: { item: Item }) {
           )}
           {item.usage && (
             <span>
-              <strong>Usage</strong> {formatUsage(item.usage)}
+              <strong>Usage</strong> {item.usage}
             </span>
           )}
           {item.bulk > 0 && (

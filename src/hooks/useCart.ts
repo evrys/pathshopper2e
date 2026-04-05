@@ -1,10 +1,14 @@
 import { useCallback, useReducer } from "react";
-import { sumPrices, toCopper } from "../lib/price";
-import type { Item } from "../types";
+import { resolvePriceModifier, sumPrices, toCopper } from "../lib/price";
+import type { Item, Price, PriceModifier } from "../types";
 
 export interface CartEntry {
   item: Item;
   quantity: number;
+  /** Price modifier applied to each unit's price. */
+  priceModifier?: PriceModifier;
+  /** Free-form notes about this item (e.g. where to buy, why you need it). */
+  notes?: string;
 }
 
 export interface CartState {
@@ -15,6 +19,17 @@ export type CartAction =
   | { type: "add"; item: Item }
   | { type: "remove"; itemId: string }
   | { type: "set-quantity"; itemId: string; quantity: number }
+  | {
+      type: "set-price-modifier";
+      itemId: string;
+      priceModifier: PriceModifier | undefined;
+    }
+  | { type: "set-notes"; itemId: string; notes: string }
+  | {
+      type: "update-item";
+      itemId: string;
+      update: { name?: string; price?: Price };
+    }
   | { type: "clear" }
   | { type: "replace"; entries: Map<string, CartEntry> };
 
@@ -47,6 +62,34 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
         }
       }
       break;
+    case "set-price-modifier": {
+      const entry = next.get(action.itemId);
+      if (entry) {
+        next.set(action.itemId, {
+          ...entry,
+          priceModifier: action.priceModifier,
+        });
+      }
+      break;
+    }
+    case "set-notes": {
+      const entry = next.get(action.itemId);
+      if (entry) {
+        const notes = action.notes || undefined; // clear empty strings
+        next.set(action.itemId, { ...entry, notes });
+      }
+      break;
+    }
+    case "update-item": {
+      const entry = next.get(action.itemId);
+      if (entry) {
+        const item = { ...entry.item };
+        if (action.update.name !== undefined) item.name = action.update.name;
+        if (action.update.price !== undefined) item.price = action.update.price;
+        next.set(action.itemId, { ...entry, item });
+      }
+      break;
+    }
     case "clear":
       return { entries: new Map() };
     case "replace":
@@ -74,6 +117,21 @@ export function useCart() {
       dispatch({ type: "set-quantity", itemId, quantity }),
     [],
   );
+  const setDiscount = useCallback(
+    (itemId: string, priceModifier: PriceModifier | undefined) =>
+      dispatch({ type: "set-price-modifier", itemId, priceModifier }),
+    [],
+  );
+  const setNotes = useCallback(
+    (itemId: string, notes: string) =>
+      dispatch({ type: "set-notes", itemId, notes }),
+    [],
+  );
+  const updateItem = useCallback(
+    (itemId: string, update: { name?: string; price?: Price }) =>
+      dispatch({ type: "update-item", itemId, update }),
+    [],
+  );
   const clearCart = useCallback(() => dispatch({ type: "clear" }), []);
   const replaceCart = useCallback(
     (entries: Map<string, CartEntry>) => dispatch({ type: "replace", entries }),
@@ -83,12 +141,18 @@ export function useCart() {
   const entries = [...state.entries.values()];
 
   const totalPrice = sumPrices(
-    entries.map((e) => ({ price: e.item.price, quantity: e.quantity })),
+    entries.map((e) => ({
+      price: e.item.price,
+      quantity: e.quantity,
+      priceModifier: e.priceModifier,
+    })),
   );
-  const totalCopper = entries.reduce(
-    (sum, e) => sum + toCopper(e.item.price) * e.quantity,
-    0,
-  );
+  const totalCopper = entries.reduce((sum, e) => {
+    const adjustCp = e.priceModifier
+      ? resolvePriceModifier(e.priceModifier, e.item.price)
+      : 0;
+    return sum + (toCopper(e.item.price) + adjustCp) * e.quantity;
+  }, 0);
   const totalItems = entries.reduce((sum, e) => sum + e.quantity, 0);
 
   return {
@@ -100,6 +164,9 @@ export function useCart() {
     addItem,
     removeItem,
     setQuantity,
+    setDiscount,
+    setNotes,
+    updateItem,
     clearCart,
     replaceCart,
   };

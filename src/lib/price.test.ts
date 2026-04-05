@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   formatPrice,
   fromCopper,
+  modifierLabel,
   parseBudget,
+  resolvePriceModifier,
   sumPrices,
   toCopper,
 } from "./price";
@@ -45,6 +47,19 @@ describe("fromCopper", () => {
   it("returns empty for 0", () => {
     expect(fromCopper(0)).toEqual({});
   });
+
+  it("converts negative copper to negative denominations", () => {
+    expect(fromCopper(-234)).toEqual({ gp: -2, sp: -3, cp: -4 });
+  });
+
+  it("converts small negative copper", () => {
+    expect(fromCopper(-50)).toEqual({ sp: -5 });
+  });
+
+  it("converts negative copper with single denomination", () => {
+    expect(fromCopper(-100)).toEqual({ gp: -1 });
+    expect(fromCopper(-3)).toEqual({ cp: -3 });
+  });
 });
 
 describe("formatPrice", () => {
@@ -62,6 +77,38 @@ describe("formatPrice", () => {
 
   it("returns dash for empty price", () => {
     expect(formatPrice({})).toBe("—");
+  });
+
+  it("applies flat discount in cp to the price", () => {
+    // 100 gp = 10000 cp, minus 1000 cp (10 gp) = 90 gp
+    expect(formatPrice({ gp: 100 }, { type: "flat", cp: -1000 })).toBe("90 gp");
+  });
+
+  it("applies flat discount with denomination rollup", () => {
+    // 1 gp = 100 cp, minus 50 cp = 5 sp
+    expect(formatPrice({ gp: 1 }, { type: "flat", cp: -50 })).toBe("5 sp");
+  });
+
+  it("applies percentage discount", () => {
+    // 50% off 100 gp = 50 gp
+    expect(formatPrice({ gp: 100 }, { type: "percent", percent: -50 })).toBe(
+      "50 gp",
+    );
+  });
+
+  it("formats without discount when undefined", () => {
+    expect(formatPrice({ gp: 10 })).toBe("10 gp");
+  });
+
+  it("formats negative price from discount exceeding base", () => {
+    // 10 gp = 1000 cp, minus 2000 cp = -10 gp
+    expect(formatPrice({ gp: 10 }, { type: "flat", cp: -2000 })).toBe("−10 gp");
+  });
+
+  it("formats negative price with mixed denominations", () => {
+    expect(formatPrice({ gp: 1 }, { type: "flat", cp: -234 })).toBe(
+      "−1 gp 3 sp 4 cp",
+    );
   });
 });
 
@@ -125,5 +172,149 @@ describe("sumPrices", () => {
     expect(sumPrices([{ price: { sp: 15 }, quantity: 10 }])).toEqual({
       gp: 15,
     });
+  });
+
+  it("applies flat discount in cp to individual entries", () => {
+    // 100 gp = 10000 cp, minus 1000 cp (10 gp) = 90 gp
+    expect(
+      sumPrices([
+        {
+          price: { gp: 100 },
+          quantity: 1,
+          priceModifier: { type: "flat", cp: -1000 },
+        },
+      ]),
+    ).toEqual({ gp: 90 });
+  });
+
+  it("sums discounted and non-discounted entries", () => {
+    const result = sumPrices([
+      // 100 gp minus 5000 cp (50 gp) = 50 gp
+      {
+        price: { gp: 100 },
+        quantity: 1,
+        priceModifier: { type: "flat", cp: -5000 },
+      },
+      { price: { gp: 10 }, quantity: 2 },
+    ]);
+    // 50 gp + 20 gp = 70 gp
+    expect(result).toEqual({ gp: 70 });
+  });
+
+  it("applies percentage discount in sumPrices", () => {
+    // 10% off 100 gp = 90 gp per item, 2 items = 180 gp
+    expect(
+      sumPrices([
+        {
+          price: { gp: 100 },
+          quantity: 2,
+          priceModifier: { type: "percent", percent: -10 },
+        },
+      ]),
+    ).toEqual({ gp: 180 });
+  });
+
+  it("allows negative per-item prices when discount exceeds base (selling)", () => {
+    // Item is 10 gp but sold (discount of 15 gp), net is -5 gp per item
+    const result = sumPrices([
+      {
+        price: { gp: 10 },
+        quantity: 2,
+        priceModifier: { type: "flat", cp: -1500 },
+      },
+    ]);
+    // 2 * -500cp = -1000cp = -10 gp
+    expect(result).toEqual({ gp: -10 });
+  });
+
+  it("sums positive and negative entries for net total", () => {
+    const result = sumPrices([
+      { price: { gp: 50 }, quantity: 1 }, // buying for 50 gp
+      {
+        price: { gp: 20 },
+        quantity: 1,
+        priceModifier: { type: "flat", cp: -4000 },
+      }, // selling for -20 gp
+    ]);
+    // 50 gp + (-20 gp) = 30 gp
+    expect(result).toEqual({ gp: 30 });
+  });
+});
+
+describe("resolvePriceModifier", () => {
+  it("returns cp directly for flat modifier (positive = surcharge)", () => {
+    expect(resolvePriceModifier({ type: "flat", cp: 500 }, { gp: 100 })).toBe(
+      500,
+    );
+  });
+
+  it("returns negative cp for flat discount", () => {
+    expect(resolvePriceModifier({ type: "flat", cp: -500 }, { gp: 100 })).toBe(
+      -500,
+    );
+  });
+
+  it("calculates copper from percentage modifier", () => {
+    // 25% of 100 gp (10000 cp) = 2500 cp surcharge
+    expect(
+      resolvePriceModifier({ type: "percent", percent: 25 }, { gp: 100 }),
+    ).toBe(2500);
+  });
+
+  it("calculates negative copper from negative percentage modifier", () => {
+    // -25% of 100 gp (10000 cp) = -2500 cp discount
+    expect(
+      resolvePriceModifier({ type: "percent", percent: -25 }, { gp: 100 }),
+    ).toBe(-2500);
+  });
+
+  it("rounds percentage modifier to nearest copper", () => {
+    // 33% of 1 gp (100 cp) = 33 cp
+    expect(
+      resolvePriceModifier({ type: "percent", percent: 33 }, { gp: 1 }),
+    ).toBe(33);
+  });
+
+  it("returns negated cp for upgrade modifier (always a discount)", () => {
+    expect(
+      resolvePriceModifier({ type: "upgrade", cp: 6500 }, { gp: 100 }),
+    ).toBe(-6500);
+  });
+
+  it("calculates -50% for crafting modifier (always a discount)", () => {
+    // -50% of 10 gp (1000 cp) = -500 cp
+    expect(resolvePriceModifier({ type: "crafting" }, { gp: 10 })).toBe(-500);
+  });
+
+  it("calculates -150% for sell modifier (net = -50% of original)", () => {
+    // Sell 100 gp item: adjustment = -150% of 10000 cp = -15000 cp
+    // Net = 10000 - 15000 = -5000 cp = -50 gp (you receive 50 gp)
+    expect(resolvePriceModifier({ type: "sell" }, { gp: 100 })).toBe(-15000);
+  });
+});
+
+describe("modifierLabel", () => {
+  it('returns "(crafting)" for crafting modifier', () => {
+    expect(modifierLabel({ type: "crafting" })).toBe("(crafting)");
+  });
+
+  it('returns "(selling)" for sell modifier', () => {
+    expect(modifierLabel({ type: "sell" })).toBe("(selling)");
+  });
+
+  it('returns "(upgrading)" for upgrade modifier', () => {
+    expect(modifierLabel({ type: "upgrade", cp: 5000 })).toBe("(upgrading)");
+  });
+
+  it("returns undefined for flat modifier", () => {
+    expect(modifierLabel({ type: "flat", cp: -500 })).toBeUndefined();
+  });
+
+  it("returns undefined for percent modifier", () => {
+    expect(modifierLabel({ type: "percent", percent: -25 })).toBeUndefined();
+  });
+
+  it("returns undefined when no modifier provided", () => {
+    expect(modifierLabel(undefined)).toBeUndefined();
   });
 });

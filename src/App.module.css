@@ -2,10 +2,14 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 1rem 1.5rem 2rem;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .header {
   margin-bottom: 1rem;
+  flex-shrink: 0;
 }
 
 .header h1 {
@@ -39,8 +43,21 @@ a.badge:hover {
 .body {
   display: grid;
   grid-template-columns: 1fr 340px;
+  grid-template-rows: 1fr;
   gap: 1.5rem;
-  align-items: start;
+  flex: 1;
+  min-height: 0;
+}
+
+.body > main {
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar {
+  align-self: start;
 }
 
 .loading {
@@ -52,6 +69,11 @@ a.badge:hover {
 }
 
 @media (max-width: 900px) {
+  .app {
+    height: auto;
+    min-height: 100vh;
+  }
+
   .body {
     grid-template-columns: 1fr;
   }

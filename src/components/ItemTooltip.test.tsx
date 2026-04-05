@@ -1,0 +1,55 @@
+// @vitest-environment jsdom
+import { cleanup, render } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { Item } from "../types";
+import { ItemTooltipWrapper } from "./ItemTooltip";
+
+afterEach(cleanup);
+
+// Mock tippy.js since it relies on DOM positioning not available in jsdom
+vi.mock("tippy.js", () => ({
+  default: () => ({ destroy: () => {} }),
+}));
+
+vi.mock("tippy.js/dist/tippy.css", () => ({}));
+
+const ITEM: Item = {
+  id: "w1",
+  name: "Longsword",
+  type: "weapon",
+  level: 1,
+  price: { gp: 1 },
+  category: "Base Weapons",
+  traits: ["versatile"],
+  rarity: "common",
+  bulk: 1,
+  usage: "held in 1 hand",
+  source: "Core Rulebook",
+  remaster: true,
+  description: "<p>A common longsword.</p>",
+  plainDescription: "A common longsword.",
+};
+
+describe("ItemTooltipWrapper", () => {
+  it("renders children inside a span", () => {
+    const { container } = render(
+      <ItemTooltipWrapper item={ITEM}>
+        <a href="/test">Longsword</a>
+      </ItemTooltipWrapper>,
+    );
+    const span = container.querySelector("span");
+    expect(span).toBeDefined();
+    const link = container.querySelector("a");
+    expect(link).toBeDefined();
+    expect(link?.textContent).toBe("Longsword");
+  });
+
+  it("wraps children without breaking them", () => {
+    const { container } = render(
+      <ItemTooltipWrapper item={ITEM}>
+        <span data-testid="child">Hello</span>
+      </ItemTooltipWrapper>,
+    );
+    expect(container.querySelector("[data-testid='child']")).toBeDefined();
+  });
+});

@@ -5,6 +5,14 @@ export interface Price {
   cp?: number;
 }
 
+/** A modifier applied to an item's price (positive = surcharge, negative = discount). */
+export type PriceModifier =
+  | { type: "flat"; cp: number }
+  | { type: "percent"; percent: number }
+  | { type: "upgrade"; cp: number }
+  | { type: "crafting" }
+  | { type: "sell" };
+
 /** Item as stored in JSON (before runtime enrichment) */
 export type JsonItem = Omit<Item, "plainDescription">;
 
