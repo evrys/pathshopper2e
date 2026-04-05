@@ -164,6 +164,13 @@
 }
 
 @media (max-width: 640px) {
+  .filterBtn {
+    flex: 1;
+    min-height: 44px;
+    justify-content: center;
+    font-size: 0.8125rem;
+  }
+
   .overlay {
     padding-top: 5vh;
     align-items: flex-start;
