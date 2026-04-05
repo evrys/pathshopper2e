@@ -101,6 +101,7 @@ a.badge:hover {
   .body > main {
     height: 100%;
     min-height: 0;
+    overflow: hidden;
   }
 
   .header h1 {
