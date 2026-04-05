@@ -86,7 +86,7 @@ a.badge:hover {
 
 @media (max-width: 640px) {
   .app {
-    padding: 0.75rem 0.75rem 6rem;
+    padding: 0.75rem 0.75rem calc(env(safe-area-inset-bottom, 0px) + 6rem);
     height: 100%;
     overflow: hidden;
   }
@@ -131,7 +131,7 @@ a.badge:hover {
     align-items: center;
     justify-content: center;
     position: fixed;
-    bottom: 1.25rem;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 1.25rem);
     right: 1.25rem;
     z-index: 60;
     width: 56px;
@@ -192,7 +192,7 @@ a.badge:hover {
 
   .cartFabPrice {
     position: fixed;
-    bottom: 1.25rem;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 1.25rem);
     right: calc(1.25rem + 56px + 0.625rem);
     z-index: 60;
     background: none;
@@ -221,7 +221,7 @@ a.badge:hover {
     left: 0;
     right: 0;
     top: 0;
-    bottom: 6rem;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 6rem);
     z-index: 50;
     display: flex;
     flex-direction: column;
