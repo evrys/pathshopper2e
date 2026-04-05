@@ -1,4 +1,5 @@
 import * as Dialog from "@radix-ui/react-dialog";
+import { MixerHorizontalIcon } from "@radix-ui/react-icons";
 import { useMemo, useState } from "react";
 import {
   DEFAULT_RARITIES,
@@ -103,7 +104,7 @@ export function FilterModal({
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger asChild>
         <button type="button" className={styles.filterBtn}>
-          <span className={styles.filterIcon}>⚙</span>
+          <MixerHorizontalIcon className={styles.filterIcon} />
           Filters
           {activeCount > 0 && (
             <span className={styles.badge}>{activeCount}</span>
