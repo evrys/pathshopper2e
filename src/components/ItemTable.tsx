@@ -289,6 +289,34 @@ export function ItemTable({
           maxLevel={maxLevel}
           onFiltersChange={onFiltersChange}
         />
+        {isMobile && (
+          <select
+            className={styles.sortSelect}
+            value={sortField ? `${sortField}-${sortDir}` : ""}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (!val) {
+                onFiltersChange({ sortField: "", sortDir: "asc" });
+              } else {
+                const [field, dir] = val.split("-") as [SortField, SortDir];
+                onFiltersChange({ sortField: field, sortDir: dir });
+              }
+            }}
+            aria-label="Sort order"
+          >
+            <option value="">Sort: Relevance</option>
+            <option value="name-asc">Name ▲</option>
+            <option value="name-desc">Name ▼</option>
+            <option value="level-asc">Level ▲</option>
+            <option value="level-desc">Level ▼</option>
+            <option value="price-asc">Price ▲</option>
+            <option value="price-desc">Price ▼</option>
+            <option value="type-asc">Type ▲</option>
+            <option value="type-desc">Type ▼</option>
+            <option value="rarity-asc">Rarity ▲</option>
+            <option value="rarity-desc">Rarity ▼</option>
+          </select>
+        )}
         <span className={styles.resultCount}>{sorted.length} items</span>
       </div>
 
