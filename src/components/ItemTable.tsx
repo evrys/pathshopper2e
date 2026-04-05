@@ -1,6 +1,7 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { type ReactNode, useCallback, useMemo, useRef } from "react";
 import { useFuzzySearch } from "../hooks/useFuzzySearch";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 import { aonUrl } from "../lib/aon";
 import { TYPE_LABELS } from "../lib/constants";
 import { formatPrice, toCopper } from "../lib/price";
@@ -86,6 +87,7 @@ export function ItemTable({
   onFiltersChange,
   onAddItem,
 }: ItemTableProps) {
+  const isMobile = useMediaQuery("(max-width: 640px)");
   const {
     search,
     typeFilter,
@@ -237,6 +239,12 @@ export function ItemTable({
       const data = fuzzyDataMap.get(item.id);
       const hasSnippet = !!data?.snippet;
       const hasTraits = !!data?.matchedTraits?.size;
+      if (isMobile) {
+        // Two-line card layout on mobile (name + level/price row)
+        if (hasSnippet && hasTraits) return 88;
+        if (hasSnippet || hasTraits) return 72;
+        return 48;
+      }
       if (hasSnippet && hasTraits) return 72;
       if (hasSnippet || hasTraits) return 56;
       return 36;

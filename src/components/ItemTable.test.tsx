@@ -8,6 +8,16 @@ import { ItemTable } from "./ItemTable";
 
 afterEach(cleanup);
 
+// Stub matchMedia for useMediaQuery (desktop by default)
+vi.stubGlobal(
+  "matchMedia",
+  vi.fn().mockReturnValue({
+    matches: false,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }),
+);
+
 function renderWithProviders(ui: React.ReactElement) {
   return render(<Tooltip.Provider>{ui}</Tooltip.Provider>);
 }
