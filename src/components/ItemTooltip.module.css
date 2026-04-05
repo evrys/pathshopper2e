@@ -39,6 +39,17 @@
   border-bottom: 1px solid #3a3d45;
 }
 
+.headerRight {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.closeBtn {
+  display: none;
+}
+
 .name {
   font-size: 1rem;
   font-weight: 700;
@@ -202,6 +213,25 @@ a.trait:hover {
 
   .header {
     padding: 0.3rem 0.5rem;
+    align-items: center;
+  }
+
+  .closeBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: inherit;
+    opacity: 0.7;
+    font-size: 0.75rem;
+    padding: 0.25rem;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  .closeBtn:hover {
+    opacity: 1;
   }
 
   .name {

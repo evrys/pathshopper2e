@@ -16,7 +16,13 @@ const RARITY_HEADER_COLORS: Record<string, string> = {
   unique: "#54166e",
 };
 
-function TooltipContent({ item }: { item: Item }) {
+function TooltipContent({
+  item,
+  onClose,
+}: {
+  item: Item;
+  onClose?: () => void;
+}) {
   const price = formatPrice(item.price);
   const description = item.description ? sanitizeHtml(item.description) : null;
   const headerBg =
@@ -38,7 +44,19 @@ function TooltipContent({ item }: { item: Item }) {
         ) : (
           <span className={styles.name}>{item.name}</span>
         )}
-        <span className={styles.level}>Item {item.level}</span>
+        <span className={styles.headerRight}>
+          <span className={styles.level}>Item {item.level}</span>
+          {onClose && (
+            <button
+              type="button"
+              className={styles.closeBtn}
+              onClick={onClose}
+              aria-label="Close"
+            >
+              ✕
+            </button>
+          )}
+        </span>
       </div>
       <div className={styles.body}>
         <div className={styles.meta}>
@@ -124,7 +142,7 @@ function MobileTooltip({ item, onClose }: { item: Item; onClose: () => void }) {
         onPointerDown={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
       >
-        <TooltipContent item={item} />
+        <TooltipContent item={item} onClose={onClose} />
       </div>
     </div>,
     document.body,
