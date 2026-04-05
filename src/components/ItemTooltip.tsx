@@ -1,5 +1,5 @@
 import * as Tooltip from "@radix-ui/react-tooltip";
-import type { ReactNode } from "react";
+import { useCallback, useRef, useState, type ReactNode } from "react";
 import { sanitizeHtml } from "../lib/html";
 import { formatPrice } from "../lib/price";
 import { formatTrait, traitUrl } from "../lib/traits";
@@ -91,10 +91,32 @@ export function ItemTooltipWrapper({
   item: Item;
   children: ReactNode;
 }) {
+  const [open, setOpen] = useState(false);
+  const touchedRef = useRef(false);
+
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      // Only intercept touch-originated clicks when the tooltip isn't open yet
+      if (touchedRef.current && !open) {
+        e.preventDefault();
+        setOpen(true);
+      }
+      touchedRef.current = false;
+    },
+    [open],
+  );
+
   return (
-    <Tooltip.Root>
+    <Tooltip.Root open={open} onOpenChange={setOpen}>
       <Tooltip.Trigger asChild>
-        <span>{children}</span>
+        <span
+          onTouchStart={() => {
+            touchedRef.current = true;
+          }}
+          onClickCapture={handleClick}
+        >
+          {children}
+        </span>
       </Tooltip.Trigger>
       <Tooltip.Portal>
         <Tooltip.Content
