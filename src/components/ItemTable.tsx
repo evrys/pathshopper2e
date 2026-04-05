@@ -263,6 +263,9 @@ export function ItemTable({
             onChange={(e) => {
               onFiltersChange({ search: e.target.value });
             }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
+            }}
             className={styles.searchInput}
           />
           {search && (

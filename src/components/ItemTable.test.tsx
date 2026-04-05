@@ -163,6 +163,24 @@ describe("ItemTable", () => {
     expect(onFiltersChange).toHaveBeenCalledWith({ search: "sword" });
   });
 
+  it("blurs search input when Enter is pressed", () => {
+    renderWithProviders(
+      <ItemTable
+        items={ITEMS}
+        filters={defaultFilters()}
+        onFiltersChange={() => {}}
+        onAddItem={() => {}}
+      />,
+    );
+
+    const input = screen.getByPlaceholderText("Search items...");
+    (input as HTMLInputElement).focus();
+    expect(document.activeElement).toBe(input);
+
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(document.activeElement).not.toBe(input);
+  });
+
   it("renders sort column headers", () => {
     renderWithProviders(
       <ItemTable
