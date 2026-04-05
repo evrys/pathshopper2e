@@ -100,13 +100,28 @@ function TooltipContent({ item }: { item: Item }) {
 }
 
 function MobileTooltip({ item, onClose }: { item: Item; onClose: () => void }) {
+  const handleDismiss = useCallback(
+    (e: React.SyntheticEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      onClose();
+    },
+    [onClose],
+  );
+
   return createPortal(
     // biome-ignore lint/a11y/useKeyWithClickEvents: tap-to-dismiss overlay
-    <div className={styles.mobileOverlay} role="dialog" onClick={onClose}>
+    <div
+      className={styles.mobileOverlay}
+      role="dialog"
+      onClick={handleDismiss}
+      onPointerDown={handleDismiss}
+    >
       {/* biome-ignore lint/a11y/noStaticElementInteractions: stop propagation wrapper */}
       <div
         className={styles.mobileContent}
         onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
       >
         <TooltipContent item={item} />

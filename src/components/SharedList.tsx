@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { useItems } from "../hooks/useItems";
+import { useIsMobile } from "../hooks/useMediaQuery";
 import {
   generateListId,
   saveListToStorage,
@@ -10,7 +11,7 @@ import { aonUrl } from "../lib/aon";
 import { formatPrice, modifierLabel, sumPrices } from "../lib/price";
 import { parseHashParams, parseShareParams } from "../lib/url";
 import type { Item, PriceModifier } from "../types";
-import { ItemTooltipWrapper } from "./ItemTooltip";
+import { ItemTooltipWrapper, useMobileTooltip } from "./ItemTooltip";
 import styles from "./SharedList.module.css";
 import { VersionTag } from "./VersionTag";
 
@@ -19,6 +20,40 @@ interface ListEntry {
   quantity: number;
   priceModifier?: PriceModifier;
   notes?: string;
+}
+
+/** Shared list item that opens the tooltip on any tap (mobile). */
+function MobileSharedListItem({ entry }: { entry: ListEntry }) {
+  const { item, quantity, priceModifier, notes: itemNotes } = entry;
+  const isCustom = item.id.startsWith("custom-");
+  const { rowProps, portal } = useMobileTooltip(item);
+
+  return (
+    <li className={styles.item} {...(isCustom ? {} : rowProps)}>
+      <div className={styles.itemInfo}>
+        <span className={styles.itemName}>{item.name}</span>
+        <span className={styles.itemMeta}>
+          {!isCustom && `Level ${item.level} · `}
+          {priceModifier ? (
+            <>
+              <span className={styles.originalPrice}>
+                {formatPrice(item.price)}
+              </span>{" "}
+              {formatPrice(item.price, priceModifier)}
+              {modifierLabel(priceModifier) &&
+                ` ${modifierLabel(priceModifier)}`}
+            </>
+          ) : (
+            formatPrice(item.price)
+          )}
+          {quantity > 1 && " each"}
+        </span>
+        {itemNotes && <span className={styles.itemNotes}>{itemNotes}</span>}
+      </div>
+      {quantity > 1 && <span className={styles.qty}>&times;{quantity}</span>}
+      {portal}
+    </li>
+  );
 }
 
 export function SharedList() {
@@ -58,6 +93,8 @@ export function SharedList() {
   const totalItems = entries.reduce((sum, e) => sum + e.quantity, 0);
 
   const title = charName ? charName : "My shopping list";
+
+  const isMobile = useIsMobile();
 
   /** Save the shared list to localStorage and navigate to the editor. */
   const handleEdit = useCallback(() => {
@@ -102,47 +139,49 @@ export function SharedList() {
       ) : (
         <>
           <ul className={styles.items}>
-            {entries.map(
-              ({ item, quantity, priceModifier, notes: itemNotes }) => (
-                <li key={item.id} className={styles.item}>
+            {entries.map((entry) =>
+              isMobile ? (
+                <MobileSharedListItem key={entry.item.id} entry={entry} />
+              ) : (
+                <li key={entry.item.id} className={styles.item}>
                   <div className={styles.itemInfo}>
-                    {item.id.startsWith("custom-") ? (
-                      <span className={styles.itemName}>{item.name}</span>
+                    {entry.item.id.startsWith("custom-") ? (
+                      <span className={styles.itemName}>{entry.item.name}</span>
                     ) : (
-                      <ItemTooltipWrapper item={item}>
+                      <ItemTooltipWrapper item={entry.item}>
                         <a
                           className={styles.itemName}
-                          href={aonUrl(item)}
+                          href={aonUrl(entry.item)}
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          {item.name}
+                          {entry.item.name}
                         </a>
                       </ItemTooltipWrapper>
                     )}
                     <span className={styles.itemMeta}>
-                      {!item.id.startsWith("custom-") &&
-                        `Level ${item.level} · `}
-                      {priceModifier ? (
+                      {!entry.item.id.startsWith("custom-") &&
+                        `Level ${entry.item.level} · `}
+                      {entry.priceModifier ? (
                         <>
                           <span className={styles.originalPrice}>
-                            {formatPrice(item.price)}
+                            {formatPrice(entry.item.price)}
                           </span>{" "}
-                          {formatPrice(item.price, priceModifier)}
-                          {modifierLabel(priceModifier) &&
-                            ` ${modifierLabel(priceModifier)}`}
+                          {formatPrice(entry.item.price, entry.priceModifier)}
+                          {modifierLabel(entry.priceModifier) &&
+                            ` ${modifierLabel(entry.priceModifier)}`}
                         </>
                       ) : (
-                        formatPrice(item.price)
+                        formatPrice(entry.item.price)
                       )}
-                      {quantity > 1 && " each"}
+                      {entry.quantity > 1 && " each"}
                     </span>
-                    {itemNotes && (
-                      <span className={styles.itemNotes}>{itemNotes}</span>
+                    {entry.notes && (
+                      <span className={styles.itemNotes}>{entry.notes}</span>
                     )}
                   </div>
-                  {quantity > 1 && (
-                    <span className={styles.qty}>&times;{quantity}</span>
+                  {entry.quantity > 1 && (
+                    <span className={styles.qty}>&times;{entry.quantity}</span>
                   )}
                 </li>
               ),
