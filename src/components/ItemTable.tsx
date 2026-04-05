@@ -9,7 +9,7 @@ import { formatTrait, traitUrl } from "../lib/traits";
 import type { Item } from "../types";
 import { FilterModal } from "./FilterModal";
 import styles from "./ItemTable.module.css";
-import { ItemTooltipWrapper } from "./ItemTooltip";
+import { ItemTooltipWrapper, useMobileTooltip } from "./ItemTooltip";
 
 type SortField = "name" | "level" | "price" | "type" | "rarity" | "";
 type SortDir = "asc" | "desc";
@@ -78,6 +78,61 @@ function TraitBadges({
         );
       })}
     </span>
+  );
+}
+
+/** Row wrapper that opens the item tooltip on any tap (mobile only). */
+function MobileItemRow({
+  item,
+  highlighted,
+  snippet,
+  matchedTraits,
+  onAddItem,
+  style,
+}: {
+  item: Item;
+  highlighted: ReactNode | null;
+  snippet: ReactNode | null;
+  matchedTraits: Set<string> | undefined;
+  onAddItem: (item: Item) => void;
+  style: React.CSSProperties;
+}) {
+  const { rowProps, portal } = useMobileTooltip(item);
+
+  return (
+    <div className={styles.row} style={style} {...rowProps}>
+      <span className={styles.name}>
+        <a href={aonUrl(item)} target="_blank" rel="noopener noreferrer">
+          {highlighted ?? item.name}
+        </a>
+        {snippet && <span className={styles.snippet}>{snippet}</span>}
+        {matchedTraits && matchedTraits.size > 0 && (
+          <TraitBadges traits={item.traits} matchedTraits={matchedTraits} />
+        )}
+      </span>
+      <span className={styles.colType}>
+        {TYPE_LABELS[item.type] ?? item.type}
+      </span>
+      <span className={styles.level}>{item.level}</span>
+      <span className={styles.price}>{formatPrice(item.price)}</span>
+      <span
+        className={styles.colRarity}
+        style={{ color: RARITY_COLORS[item.rarity] ?? "inherit" }}
+      >
+        {item.rarity}
+      </span>
+      <span className={styles.actions}>
+        <button
+          type="button"
+          className={styles.addBtn}
+          onClick={() => onAddItem(item)}
+          title={`Add ${item.name} to list`}
+        >
+          +
+        </button>
+      </span>
+      {portal}
+    </div>
   );
 }
 
@@ -369,21 +424,33 @@ export function ItemTable({
             {virtualizer.getVirtualItems().map((virtualRow) => {
               const item = sorted[virtualRow.index];
               const fuzzyData = fuzzyDataMap.get(item.id);
-              const snippet = fuzzyData?.snippet;
+              const snippet = fuzzyData?.snippet ?? null;
               const matchedTraits = fuzzyData?.matchedTraits;
+              const rowStyle: React.CSSProperties = {
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: virtualRow.size,
+                transform: `translateY(${virtualRow.start}px)`,
+              };
+
+              if (isMobile) {
+                return (
+                  <MobileItemRow
+                    key={item.id}
+                    item={item}
+                    highlighted={fuzzyData?.highlighted ?? null}
+                    snippet={snippet}
+                    matchedTraits={matchedTraits}
+                    onAddItem={onAddItem}
+                    style={rowStyle}
+                  />
+                );
+              }
+
               return (
-                <div
-                  key={item.id}
-                  className={styles.row}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: virtualRow.size,
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
+                <div key={item.id} className={styles.row} style={rowStyle}>
                   <span className={styles.name}>
                     <ItemTooltipWrapper item={item}>
                       <a

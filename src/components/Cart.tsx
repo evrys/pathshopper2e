@@ -19,7 +19,7 @@ import type { Item, Price, PriceModifier } from "../types";
 import { AddCustomItemModal } from "./AddCustomItemModal";
 import styles from "./Cart.module.css";
 import { ItemSettingsModal } from "./ItemSettingsModal";
-import { ItemTooltipWrapper } from "./ItemTooltip";
+import { ItemTooltipWrapper, useMobileTooltip } from "./ItemTooltip";
 import { SavedListsModal } from "./SavedListsModal";
 
 interface CartProps {
@@ -104,6 +104,104 @@ function buildShareUrl(
   }
 
   return `${window.location.origin}${base}/?view=list${buildHashString(params)}`;
+}
+
+/** Cart list item that opens the tooltip on any tap in the info area (mobile). */
+function MobileCartItem({
+  entry,
+  onSetSettingsEntry,
+  onSetQuantity,
+  onRemoveItem,
+}: {
+  entry: CartEntry;
+  onSetSettingsEntry: (entry: CartEntry) => void;
+  onSetQuantity: (id: string, qty: number) => void;
+  onRemoveItem: (id: string) => void;
+}) {
+  const { rowProps, portal } = useMobileTooltip(entry.item);
+
+  return (
+    <li className={styles.item}>
+      <div
+        className={styles.itemInfo}
+        {...(entry.item.id.startsWith("custom-") ? {} : rowProps)}
+      >
+        {entry.item.id.startsWith("custom-") ? (
+          <span className={styles.itemName}>{entry.item.name}</span>
+        ) : (
+          <a
+            className={styles.itemName}
+            href={aonUrl(entry.item)}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {entry.item.name}
+          </a>
+        )}
+        <span className={styles.itemPrice}>
+          {entry.priceModifier ? (
+            <>
+              <span className={styles.originalPrice}>
+                {formatPrice(entry.item.price)}
+              </span>{" "}
+              {formatPrice(entry.item.price, entry.priceModifier)}
+              {modifierLabel(entry.priceModifier) &&
+                ` ${modifierLabel(entry.priceModifier)}`}
+            </>
+          ) : (
+            formatPrice(entry.item.price)
+          )}
+          {entry.quantity > 1 && " each"}
+        </span>
+        {entry.notes && <span className={styles.itemNotes}>{entry.notes}</span>}
+      </div>
+      <div className={styles.controls}>
+        <button
+          type="button"
+          className={styles.settingsBtn}
+          onClick={() => onSetSettingsEntry(entry)}
+          title="Item settings"
+        >
+          <svg
+            aria-hidden="true"
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+            <path d="m15 5 4 4" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          onClick={() => onSetQuantity(entry.item.id, entry.quantity - 1)}
+        >
+          −
+        </button>
+        <span className={styles.qty}>{entry.quantity}</span>
+        <button
+          type="button"
+          onClick={() => onSetQuantity(entry.item.id, entry.quantity + 1)}
+        >
+          +
+        </button>
+        <button
+          type="button"
+          className={styles.removeBtn}
+          onClick={() => onRemoveItem(entry.item.id)}
+          title="Remove"
+        >
+          ✕
+        </button>
+      </div>
+      {portal}
+    </li>
+  );
 }
 
 export function Cart({
@@ -357,92 +455,102 @@ export function Cart({
         </p>
       ) : (
         <ul className={styles.items}>
-          {entries.map((entry) => (
-            <li key={entry.item.id} className={styles.item}>
-              <div className={styles.itemInfo}>
-                {entry.item.id.startsWith("custom-") ? (
-                  <span className={styles.itemName}>{entry.item.name}</span>
-                ) : (
-                  <ItemTooltipWrapper item={entry.item}>
-                    <a
-                      className={styles.itemName}
-                      href={aonUrl(entry.item)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {entry.item.name}
-                    </a>
-                  </ItemTooltipWrapper>
-                )}
-                <span className={styles.itemPrice}>
-                  {entry.priceModifier ? (
-                    <>
-                      <span className={styles.originalPrice}>
-                        {formatPrice(entry.item.price)}
-                      </span>{" "}
-                      {formatPrice(entry.item.price, entry.priceModifier)}
-                      {modifierLabel(entry.priceModifier) &&
-                        ` ${modifierLabel(entry.priceModifier)}`}
-                    </>
+          {entries.map((entry) =>
+            isMobile ? (
+              <MobileCartItem
+                key={entry.item.id}
+                entry={entry}
+                onSetSettingsEntry={setSettingsEntry}
+                onSetQuantity={onSetQuantity}
+                onRemoveItem={onRemoveItem}
+              />
+            ) : (
+              <li key={entry.item.id} className={styles.item}>
+                <div className={styles.itemInfo}>
+                  {entry.item.id.startsWith("custom-") ? (
+                    <span className={styles.itemName}>{entry.item.name}</span>
                   ) : (
-                    formatPrice(entry.item.price)
+                    <ItemTooltipWrapper item={entry.item}>
+                      <a
+                        className={styles.itemName}
+                        href={aonUrl(entry.item)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {entry.item.name}
+                      </a>
+                    </ItemTooltipWrapper>
                   )}
-                  {entry.quantity > 1 && " each"}
-                </span>
-                {entry.notes && (
-                  <span className={styles.itemNotes}>{entry.notes}</span>
-                )}
-              </div>
-              <div className={styles.controls}>
-                <button
-                  type="button"
-                  className={styles.settingsBtn}
-                  onClick={() => setSettingsEntry(entry)}
-                  title="Item settings"
-                >
-                  <svg
-                    aria-hidden="true"
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                  <span className={styles.itemPrice}>
+                    {entry.priceModifier ? (
+                      <>
+                        <span className={styles.originalPrice}>
+                          {formatPrice(entry.item.price)}
+                        </span>{" "}
+                        {formatPrice(entry.item.price, entry.priceModifier)}
+                        {modifierLabel(entry.priceModifier) &&
+                          ` ${modifierLabel(entry.priceModifier)}`}
+                      </>
+                    ) : (
+                      formatPrice(entry.item.price)
+                    )}
+                    {entry.quantity > 1 && " each"}
+                  </span>
+                  {entry.notes && (
+                    <span className={styles.itemNotes}>{entry.notes}</span>
+                  )}
+                </div>
+                <div className={styles.controls}>
+                  <button
+                    type="button"
+                    className={styles.settingsBtn}
+                    onClick={() => setSettingsEntry(entry)}
+                    title="Item settings"
                   >
-                    <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                    <path d="m15 5 4 4" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    onSetQuantity(entry.item.id, entry.quantity - 1)
-                  }
-                >
-                  −
-                </button>
-                <span className={styles.qty}>{entry.quantity}</span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    onSetQuantity(entry.item.id, entry.quantity + 1)
-                  }
-                >
-                  +
-                </button>
-                <button
-                  type="button"
-                  className={styles.removeBtn}
-                  onClick={() => onRemoveItem(entry.item.id)}
-                  title="Remove"
-                >
-                  ✕
-                </button>
-              </div>
-            </li>
-          ))}
+                    <svg
+                      aria-hidden="true"
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                      <path d="m15 5 4 4" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onSetQuantity(entry.item.id, entry.quantity - 1)
+                    }
+                  >
+                    −
+                  </button>
+                  <span className={styles.qty}>{entry.quantity}</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onSetQuantity(entry.item.id, entry.quantity + 1)
+                    }
+                  >
+                    +
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.removeBtn}
+                    onClick={() => onRemoveItem(entry.item.id)}
+                    title="Remove"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </li>
+            ),
+          )}
         </ul>
       )}
 
