@@ -327,6 +327,29 @@
   .items {
     max-height: none;
   }
+
+  .item {
+    padding: 0.625rem 1rem;
+  }
+
+  .controls {
+    gap: 0.125rem;
+  }
+
+  .controls button {
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 1rem;
+  }
+
+  .qty {
+    min-width: 2rem;
+    font-size: 1rem;
+  }
+
+  .settingsBtn {
+    opacity: 0.5;
+  }
 }
 
 @keyframes menuFadeInUp {
