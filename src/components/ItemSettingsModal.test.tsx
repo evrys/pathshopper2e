@@ -6,6 +6,15 @@ import { ItemSettingsModal } from "./ItemSettingsModal";
 
 afterEach(cleanup);
 
+vi.stubGlobal(
+  "matchMedia",
+  vi.fn().mockReturnValue({
+    matches: false,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }),
+);
+
 const BASE_PRICE = { gp: 10 };
 
 /** Select the Custom (gp) Price modifier preset to reveal the amount input. */
