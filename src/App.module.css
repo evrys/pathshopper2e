@@ -181,18 +181,8 @@ a.badge:hover {
     display: flex;
     flex-direction: column;
     background: var(--color-bg);
-    animation: slideUp 0.2s ease-out;
     overflow-y: auto;
     border-radius: 0 0 var(--radius) var(--radius);
-  }
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
   }
 }
 
