@@ -241,9 +241,9 @@ export function ItemTable({
       const hasTraits = !!data?.matchedTraits?.size;
       if (isMobile) {
         // Two-line card layout on mobile (name + level/price row)
-        if (hasSnippet && hasTraits) return 88;
-        if (hasSnippet || hasTraits) return 72;
-        return 48;
+        if (hasSnippet && hasTraits) return 96;
+        if (hasSnippet || hasTraits) return 78;
+        return 54;
       }
       if (hasSnippet && hasTraits) return 72;
       if (hasSnippet || hasTraits) return 56;
