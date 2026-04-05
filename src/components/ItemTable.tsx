@@ -102,9 +102,7 @@ function MobileItemRow({
   return (
     <div className={styles.row} style={style} {...rowProps}>
       <span className={styles.name}>
-        <a href={aonUrl(item)} target="_blank" rel="noopener noreferrer">
-          {highlighted ?? item.name}
-        </a>
+        <span>{highlighted ?? item.name}</span>
         {snippet && <span className={styles.snippet}>{snippet}</span>}
         {matchedTraits && matchedTraits.size > 0 && (
           <TraitBadges traits={item.traits} matchedTraits={matchedTraits} />

@@ -133,18 +133,7 @@ function MobileCartItem({
         className={styles.itemInfo}
         {...(entry.item.id.startsWith("custom-") ? {} : rowProps)}
       >
-        {entry.item.id.startsWith("custom-") ? (
-          <span className={styles.itemName}>{entry.item.name}</span>
-        ) : (
-          <a
-            className={styles.itemName}
-            href={aonUrl(entry.item)}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {entry.item.name}
-          </a>
-        )}
+        <span className={styles.itemName}>{entry.item.name}</span>
         <span className={styles.itemPrice}>
           {entry.priceModifier ? (
             <>
