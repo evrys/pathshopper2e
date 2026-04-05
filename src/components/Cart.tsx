@@ -126,6 +126,7 @@ function MobileCartItem({
 
   return (
     <li
+      data-item-id={entry.item.id}
       className={`${styles.item}${isFlashing ? ` ${styles.flash}` : ""}`}
       onAnimationEnd={onFlashEnd}
     >
@@ -240,6 +241,7 @@ export function Cart({
   // Track which item to flash-highlight (newly added or quantity bumped)
   const [flashId, setFlashId] = useState<string | null>(null);
   const prevEntriesRef = useRef<Map<string, number>>(new Map());
+  const itemsListRef = useRef<HTMLUListElement>(null);
   useEffect(() => {
     const prev = prevEntriesRef.current;
     for (const { item, quantity } of entries) {
@@ -253,6 +255,17 @@ export function Cart({
       entries.map(({ item, quantity }) => [item.id, quantity]),
     );
   }, [entries]);
+
+  // Scroll the flashed item into view
+  useEffect(() => {
+    if (!flashId || !itemsListRef.current) return;
+    const el = itemsListRef.current.querySelector<HTMLElement>(
+      `[data-item-id="${flashId}"]`,
+    );
+    if (typeof el?.scrollIntoView === "function") {
+      el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [flashId]);
 
   function commitRename() {
     const trimmed = renameRef.current?.value.trim() ?? "";
@@ -467,7 +480,7 @@ export function Cart({
           Add items from the table to start building your list.
         </p>
       ) : (
-        <ul className={styles.items}>
+        <ul className={styles.items} ref={itemsListRef}>
           {entries.map((entry) =>
             isMobile ? (
               <MobileCartItem
@@ -482,6 +495,7 @@ export function Cart({
             ) : (
               <li
                 key={entry.item.id}
+                data-item-id={entry.item.id}
                 className={`${styles.item}${flashId === entry.item.id ? ` ${styles.flash}` : ""}`}
                 onAnimationEnd={() => setFlashId(null)}
               >
