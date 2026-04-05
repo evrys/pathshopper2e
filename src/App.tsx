@@ -373,26 +373,45 @@ function App() {
           <Dialog.Trigger asChild>
             <button
               type="button"
-              className={styles.cartFab}
-              aria-label="Open cart"
+              className={`${styles.cartFab} ${mobileCartOpen ? styles.cartFabOpen : ""}`}
+              aria-label={mobileCartOpen ? "Close cart" : "Open cart"}
             >
-              <svg
-                aria-hidden="true"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="8" cy="21" r="1" />
-                <circle cx="19" cy="21" r="1" />
-                <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
-              </svg>
-              {itemCount > 0 && (
-                <span className={styles.cartFabBadge}>{itemCount}</span>
+              {mobileCartOpen ? (
+                <svg
+                  aria-hidden="true"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
+                </svg>
+              ) : (
+                <>
+                  <svg
+                    aria-hidden="true"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="8" cy="21" r="1" />
+                    <circle cx="19" cy="21" r="1" />
+                    <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
+                  </svg>
+                  {itemCount > 0 && (
+                    <span className={styles.cartFabBadge}>{itemCount}</span>
+                  )}
+                </>
               )}
             </button>
           </Dialog.Trigger>
@@ -403,17 +422,6 @@ function App() {
               aria-describedby={undefined}
             >
               <Dialog.Title className="sr-only">Shopping cart</Dialog.Title>
-              <div className={styles.cartDrawerClose}>
-                <Dialog.Close asChild>
-                  <button
-                    type="button"
-                    className={styles.cartDrawerCloseBtn}
-                    aria-label="Close cart"
-                  >
-                    ✕
-                  </button>
-                </Dialog.Close>
-              </div>
               <Cart {...cartProps} />
             </Dialog.Content>
           </Dialog.Portal>
