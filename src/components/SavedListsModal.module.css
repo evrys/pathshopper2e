@@ -110,6 +110,7 @@
   padding: 0 0.5rem 0 0;
   border-top: 1px solid var(--color-border);
   transition: background 0.1s;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .listItem:hover {
@@ -118,6 +119,7 @@
 
 .activeItem {
   border-left: 3px solid var(--color-primary);
+  background: rgba(232, 115, 30, 0.08);
 }
 
 .loadBtn {
@@ -132,6 +134,7 @@
   padding: 0.625rem 0.75rem;
   cursor: pointer;
   text-align: left;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .listName {
@@ -145,6 +148,10 @@
 }
 
 .loadBtn:hover .listName {
+  color: var(--color-primary);
+}
+
+.activeItem .listName {
   color: var(--color-primary);
 }
 
