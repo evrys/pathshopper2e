@@ -332,9 +332,21 @@
   }
 
   .menuBtn {
-    width: 44px;
-    height: 44px;
+    position: fixed;
+    bottom: 1.25rem;
+    right: 1.25rem;
+    z-index: 60;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     font-size: 1.5rem;
+  }
+
+  .menuBtn:hover {
+    background: var(--color-surface-hover);
   }
 
   .menuDropdown {

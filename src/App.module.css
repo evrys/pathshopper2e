@@ -161,6 +161,8 @@ a.badge:hover {
   .cartFabOpen:focus,
   .cartFabOpen:active {
     background: var(--color-text-muted);
+    right: auto;
+    left: 1.25rem;
   }
 
   .cartFabBadge {
