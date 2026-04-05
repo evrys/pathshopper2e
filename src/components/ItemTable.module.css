@@ -335,7 +335,9 @@
   }
 
   .tableScroll {
-    max-height: calc(100dvh - 240px);
+    flex: 1;
+    min-height: 0;
+    max-height: none;
   }
 
   .addBtn {

@@ -85,18 +85,21 @@ a.badge:hover {
 
 @media (max-width: 640px) {
   .app {
-    padding: 0.75rem 0.75rem 2rem;
+    padding: 0.75rem 0.75rem 5.5rem;
     height: 100dvh;
     overflow: hidden;
   }
 
   .body {
     gap: 0.75rem;
+    flex: 1;
+    min-height: 0;
+    grid-template-rows: 1fr;
   }
 
   .body > main {
-    height: 0;
-    flex: 1;
+    height: 100%;
+    min-height: 0;
   }
 
   .header h1 {
