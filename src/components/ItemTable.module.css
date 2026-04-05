@@ -233,6 +233,12 @@
 
 /* ── Mobile responsive ── */
 
+@media (max-width: 900px) {
+  .tableScroll {
+    max-height: calc(100dvh - 280px);
+  }
+}
+
 @media (max-width: 640px) {
   .filters {
     padding: 0.5rem;

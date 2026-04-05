@@ -71,11 +71,14 @@ a.badge:hover {
 @media (max-width: 900px) {
   .app {
     height: auto;
-    min-height: 100vh;
   }
 
   .body {
     grid-template-columns: 1fr;
+  }
+
+  .body > main {
+    height: auto;
   }
 }
 
