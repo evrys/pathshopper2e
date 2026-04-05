@@ -110,6 +110,10 @@ a.badge:hover {
   display: none;
 }
 
+.cartFabPrice {
+  display: none;
+}
+
 @media (max-width: 640px) {
   .cartFab {
     display: flex;
@@ -169,6 +173,24 @@ a.badge:hover {
     justify-content: center;
     line-height: 1;
     font-variant-numeric: tabular-nums;
+  }
+
+  .cartFabPrice {
+    position: fixed;
+    bottom: 1.25rem;
+    right: calc(1.25rem + 56px + 0.625rem);
+    z-index: 60;
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--color-primary);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    height: 56px;
+    display: flex;
+    align-items: center;
   }
 
   .cartDrawerOverlay {

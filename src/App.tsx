@@ -16,7 +16,7 @@ import {
 } from "./hooks/useSavedLists";
 import { useUrlState } from "./hooks/useUrlState";
 import { parseCsvItems } from "./lib/csv";
-import { parseBudget } from "./lib/price";
+import { formatPrice, parseBudget } from "./lib/price";
 import { parseHashParams, parseShareParams, type ShareParams } from "./lib/url";
 import type { Item } from "./types";
 
@@ -370,6 +370,11 @@ function App() {
       {/* Mobile floating cart button + drawer */}
       {isMobile && (
         <Dialog.Root open={mobileCartOpen} onOpenChange={setMobileCartOpen}>
+          {!mobileCartOpen && itemCount > 0 && (
+            <span className={styles.cartFabPrice}>
+              {formatPrice(totalPrice)}
+            </span>
+          )}
           <Dialog.Trigger asChild>
             <button
               type="button"
