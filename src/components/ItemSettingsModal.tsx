@@ -41,6 +41,9 @@ function initPreset(
   if (modifier.type === "crafting") {
     return { preset: "crafting", amount: "" };
   }
+  if (modifier.type === "sell") {
+    return { preset: "sell", amount: "" };
+  }
   if (modifier.type === "percent") {
     return { preset: "custom-percent", amount: String(modifier.percent) };
   }
@@ -137,6 +140,9 @@ export function ItemSettingsModal({
     if (preset === "crafting") {
       return -Math.round(0.5 * toCopper(effectivePrice));
     }
+    if (preset === "sell") {
+      return -Math.round(1.5 * toCopper(effectivePrice));
+    }
     if (preset.startsWith("upgrade-")) {
       const idx = Number(preset.slice("upgrade-".length));
       return -(upgradeOptions[idx]?.priceCp ?? 0);
@@ -155,7 +161,7 @@ export function ItemSettingsModal({
   const isValid = (() => {
     if (isCustom && customName.trim().length === 0) return false;
     if (isCustom && !Number.isInteger(customPriceCp)) return false;
-    if (preset === "none") return true;
+    if (preset === "none" || preset === "sell") return true;
     if (preset === "crafting" || preset.startsWith("upgrade-")) {
       return -adjustCp <= priceCp;
     }
@@ -190,6 +196,8 @@ export function ItemSettingsModal({
       priceModifier = undefined;
     } else if (preset === "crafting") {
       priceModifier = { type: "crafting" };
+    } else if (preset === "sell") {
+      priceModifier = { type: "sell" };
     } else if (preset === "custom-percent") {
       priceModifier = { type: "percent", percent: parsed };
     } else if (preset.startsWith("upgrade-")) {
@@ -282,6 +290,7 @@ export function ItemSettingsModal({
                 </option>
               ))}
               <option value="crafting">Crafting (-50%)</option>
+              <option value="sell">Selling (-150%)</option>
               <option value="custom-gp">Custom (gp)</option>
               <option value="custom-percent">Custom (%)</option>
             </select>

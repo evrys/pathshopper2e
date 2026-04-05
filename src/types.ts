@@ -10,7 +10,8 @@ export type PriceModifier =
   | { type: "flat"; cp: number }
   | { type: "percent"; percent: number }
   | { type: "upgrade"; cp: number }
-  | { type: "crafting" };
+  | { type: "crafting" }
+  | { type: "sell" };
 
 /** Item as stored in JSON (before runtime enrichment) */
 export type JsonItem = Omit<Item, "plainDescription">;

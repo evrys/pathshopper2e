@@ -284,4 +284,10 @@ describe("resolvePriceModifier", () => {
     // -50% of 10 gp (1000 cp) = -500 cp
     expect(resolvePriceModifier({ type: "crafting" }, { gp: 10 })).toBe(-500);
   });
+
+  it("calculates -150% for sell modifier (net = -50% of original)", () => {
+    // Sell 100 gp item: adjustment = -150% of 10000 cp = -15000 cp
+    // Net = 10000 - 15000 = -5000 cp = -50 gp (you receive 50 gp)
+    expect(resolvePriceModifier({ type: "sell" }, { gp: 100 })).toBe(-15000);
+  });
 });

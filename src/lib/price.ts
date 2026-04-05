@@ -18,6 +18,7 @@ export function resolvePriceModifier(
   if (modifier.type === "flat") return modifier.cp;
   if (modifier.type === "upgrade") return -modifier.cp;
   if (modifier.type === "crafting") return -Math.round(0.5 * toCopper(price));
+  if (modifier.type === "sell") return -Math.round(1.5 * toCopper(price));
   return Math.round((modifier.percent / 100) * toCopper(price));
 }
 

@@ -757,5 +757,54 @@ describe("ItemSettingsModal", () => {
       fireEvent.click(screen.getByText("Apply"));
       expect(onApply).toHaveBeenCalledWith(undefined, "", undefined);
     });
+
+    it("shows Sell preset option in dropdown", () => {
+      render(
+        <ItemSettingsModal
+          itemName="Longsword"
+          price={BASE_PRICE}
+          onApply={() => {}}
+          onClose={() => {}}
+        />,
+      );
+      const select = screen.getByLabelText(
+        "Price modifier",
+      ) as HTMLSelectElement;
+      const options = [...select.options].map((o) => o.text);
+      expect(options).toContain("Selling (-150%)");
+    });
+
+    it("selecting sell applies a sell modifier", () => {
+      const onApply = vi.fn();
+      render(
+        <ItemSettingsModal
+          itemName="Longsword"
+          price={BASE_PRICE}
+          onApply={onApply}
+          onClose={() => {}}
+        />,
+      );
+      fireEvent.change(screen.getByLabelText("Price modifier"), {
+        target: { value: "sell" },
+      });
+      fireEvent.click(screen.getByText("Apply"));
+      expect(onApply).toHaveBeenCalledWith({ type: "sell" }, "", undefined);
+    });
+
+    it("initializes preset from existing sell modifier", () => {
+      render(
+        <ItemSettingsModal
+          itemName="Longsword"
+          price={BASE_PRICE}
+          currentModifier={{ type: "sell" }}
+          onApply={() => {}}
+          onClose={() => {}}
+        />,
+      );
+      const select = screen.getByLabelText(
+        "Price modifier",
+      ) as HTMLSelectElement;
+      expect(select.value).toBe("sell");
+    });
   });
 });

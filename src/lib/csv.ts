@@ -41,6 +41,7 @@ function formatPriceModifier(modifier: PriceModifier | undefined): string {
   if (!modifier) return "";
   if (modifier.type === "percent") return `${modifier.percent}%`;
   if (modifier.type === "crafting") return "-50%";
+  if (modifier.type === "sell") return "sell";
   // Flat/upgrade modifier in copper — express in the most natural denomination
   // Upgrade cp is always positive (discount), so negate for display
   const displayCp = modifier.type === "upgrade" ? -modifier.cp : modifier.cp;
@@ -69,6 +70,11 @@ function fromCopperForModifier(totalCp: number): {
 export function parsePriceModifier(s: string): PriceModifier | undefined {
   const trimmed = s.trim();
   if (!trimmed) return undefined;
+
+  // Sell modifier
+  if (trimmed.toLowerCase() === "sell") {
+    return { type: "sell" };
+  }
 
   // Percentage: "10%", "-25 %", "+10%"
   const pctMatch = trimmed.match(/^([+-]?\d+)\s*%$/);

@@ -48,11 +48,14 @@ export interface ParsedCart {
  *   - `id*qty~uCOPPER` → qty N, upgrade modifier in copper
  *   - `id~c`           → qty 1, crafting modifier (-50%)
  *   - `id*qty~c`       → qty N, crafting modifier (-50%)
+ *   - `id~s`           → qty 1, sell modifier (receive 50% value)
+ *   - `id*qty~s`       → qty N, sell modifier (receive 50% value)
  *
  * The `*` separator is used for quantities because `encodeURIComponent`
  * doesn't encode it. The `~d` prefix marks a flat modifier in copper;
  * `~p` marks a percentage modifier; `~u` marks an upgrade modifier;
- * `~c` marks a crafting modifier. The legacy `:` separator is also
+ * `~c` marks a crafting modifier; `~s` marks a sell modifier.
+ * The legacy `:` separator is also
  * accepted for backwards-compatible quantity parsing.
  */
 export function parseCartString(cartStr: string): ParsedCart {
@@ -61,9 +64,9 @@ export function parseCartString(cartStr: string): ParsedCart {
   if (!cartStr) return { cart, priceModifiers };
 
   for (const entry of cartStr.split("+")) {
-    // Split off optional modifier suffix (~dNNN, ~pNNN, ~uNNN, or ~c)
+    // Split off optional modifier suffix (~dNNN, ~pNNN, ~uNNN, ~c, or ~s)
     // Values may be negative for flat/percent modifiers (e.g. ~d-500 for a discount)
-    const modifierMatch = entry.match(/~([dpu])(-?\d+)$|~(c)$/);
+    const modifierMatch = entry.match(/~([dpu])(-?\d+)$|~([cs])$/);
     const mainPart = modifierMatch
       ? entry.slice(0, entry.length - modifierMatch[0].length)
       : entry;
@@ -96,6 +99,8 @@ export function parseCartString(cartStr: string): ParsedCart {
     if (modifierMatch) {
       if (modifierMatch[3] === "c") {
         priceModifiers.set(id, { type: "crafting" });
+      } else if (modifierMatch[3] === "s") {
+        priceModifiers.set(id, { type: "sell" });
       } else {
         const kind = modifierMatch[1];
         const value = Number.parseInt(modifierMatch[2], 10);
@@ -167,6 +172,8 @@ export function serializeCart(
           s += `~p${d.percent}`;
         } else if (d.type === "crafting") {
           s += "~c";
+        } else if (d.type === "sell") {
+          s += "~s";
         } else if (d.type === "upgrade") {
           s += `~u${d.cp}`;
         } else {

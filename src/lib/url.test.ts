@@ -136,6 +136,18 @@ describe("parseCartString", () => {
     );
   });
 
+  it("parses sell modifier with ~s suffix", () => {
+    const { cart, priceModifiers } = parseCartString("sword-01~s");
+    expect(cart).toEqual(new Map([["sword-01", 1]]));
+    expect(priceModifiers).toEqual(new Map([["sword-01", { type: "sell" }]]));
+  });
+
+  it("parses qty and sell modifier together", () => {
+    const { cart, priceModifiers } = parseCartString("sword-01*2~s");
+    expect(cart).toEqual(new Map([["sword-01", 2]]));
+    expect(priceModifiers).toEqual(new Map([["sword-01", { type: "sell" }]]));
+  });
+
   it("parses mixed entries with and without discounts", () => {
     const { cart, priceModifiers } = parseCartString(
       "sword-01*2~d500+shield-02+potion-03~p50",
@@ -298,6 +310,22 @@ describe("serializeCart", () => {
       ["sword-01", { type: "crafting" }],
     ]);
     expect(serializeCart(cart, priceModifiers)).toBe("sword-01*3~c");
+  });
+
+  it("appends ~s suffix for sell modifier", () => {
+    const cart = new Map([["sword-01", 1]]);
+    const priceModifiers = new Map<string, PriceModifier>([
+      ["sword-01", { type: "sell" }],
+    ]);
+    expect(serializeCart(cart, priceModifiers)).toBe("sword-01~s");
+  });
+
+  it("appends sell modifier after qty", () => {
+    const cart = new Map([["sword-01", 2]]);
+    const priceModifiers = new Map<string, PriceModifier>([
+      ["sword-01", { type: "sell" }],
+    ]);
+    expect(serializeCart(cart, priceModifiers)).toBe("sword-01*2~s");
   });
 });
 

@@ -233,6 +233,12 @@ describe("parsePriceModifier", () => {
   it("returns undefined for invalid input", () => {
     expect(parsePriceModifier("free")).toBeUndefined();
   });
+
+  it("parses 'sell' as sell modifier", () => {
+    expect(parsePriceModifier("sell")).toEqual({ type: "sell" });
+    expect(parsePriceModifier("Sell")).toEqual({ type: "sell" });
+    expect(parsePriceModifier(" sell ")).toEqual({ type: "sell" });
+  });
 });
 
 describe("entriesToCsv export details", () => {
