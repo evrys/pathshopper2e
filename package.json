@@ -27,6 +27,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tanstack/react-query": "^5.96.2",
     "@tanstack/react-virtual": "^3.13.23",
+    "modern-normalize": "^3.0.1",
     "react": "^19.2.2",
     "react-dom": "^19.2.2"
   },
