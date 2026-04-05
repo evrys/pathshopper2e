@@ -57,6 +57,18 @@ body {
   min-height: 100vh;
 }
 
+@media (max-width: 640px) {
+  body {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  #root {
+    height: 100dvh;
+    min-height: 0;
+  }
+}
+
 button {
   font-family: inherit;
   font-size: 0.875rem;

@@ -86,10 +86,17 @@ a.badge:hover {
 @media (max-width: 640px) {
   .app {
     padding: 0.75rem 0.75rem 2rem;
+    height: 100dvh;
+    overflow: hidden;
   }
 
   .body {
     gap: 0.75rem;
+  }
+
+  .body > main {
+    height: 0;
+    flex: 1;
   }
 
   .header h1 {
