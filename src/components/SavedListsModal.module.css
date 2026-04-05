@@ -341,7 +341,66 @@
 }
 
 @media (max-width: 640px) {
+  .panel {
+    width: calc(100vw - 1.5rem);
+    max-height: 80vh;
+    top: 50%;
+  }
+
+  .panelHeader {
+    padding: 1rem 1.125rem;
+  }
+
+  .closeBtn {
+    font-size: 1rem;
+    padding: 0.5rem 0.625rem;
+  }
+
+  .loadBtn {
+    padding: 0.875rem 1rem;
+    gap: 0.25rem;
+  }
+
+  .listName {
+    font-size: 1rem;
+  }
+
+  .listMeta {
+    font-size: 0.75rem;
+  }
+
   .deleteBtn {
     opacity: 0.5;
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .newListBtn {
+    padding: 1rem 1.125rem;
+    font-size: 0.875rem;
+  }
+
+  .newListForm {
+    padding: 1rem 1.125rem;
+    gap: 0.625rem;
+  }
+
+  .newListRow {
+    gap: 0.5rem;
+  }
+
+  .newListInput {
+    font-size: 1rem;
+    padding: 0.5rem 0.625rem;
+  }
+
+  .newListSubmit,
+  .newListCancel {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .copyCheckbox {
+    font-size: 0.8125rem;
   }
 }
