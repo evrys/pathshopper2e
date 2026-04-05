@@ -3,7 +3,7 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
+  color-scheme: dark;
   color: #d8d8da;
   background-color: #1a1d24;
 
@@ -30,6 +30,7 @@
 
 @media (prefers-color-scheme: light) {
   :root {
+    color-scheme: light;
     color: #1a1d24;
     background-color: #f5f3ef;
 
