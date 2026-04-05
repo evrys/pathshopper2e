@@ -44,10 +44,15 @@ export interface ParsedCart {
  *   - `id*qty~dCOPPER` → qty N, flat discount in copper
  *   - `id~pPERCENT`    → qty 1, percentage discount
  *   - `id*qty~pPERCENT` → qty N, percentage discount
+ *   - `id~uCOPPER`     → qty 1, upgrade discount in copper
+ *   - `id*qty~uCOPPER` → qty N, upgrade discount in copper
+ *   - `id~c`           → qty 1, crafting discount (50%)
+ *   - `id*qty~c`       → qty N, crafting discount (50%)
  *
  * The `*` separator is used for quantities because `encodeURIComponent`
  * doesn't encode it. The `~d` prefix marks a flat discount in copper;
- * `~p` marks a percentage discount. The legacy `:` separator is also
+ * `~p` marks a percentage discount; `~u` marks an upgrade discount;
+ * `~c` marks a crafting discount. The legacy `:` separator is also
  * accepted for backwards-compatible quantity parsing.
  */
 export function parseCartString(cartStr: string): ParsedCart {
@@ -56,8 +61,8 @@ export function parseCartString(cartStr: string): ParsedCart {
   if (!cartStr) return { cart, discounts };
 
   for (const entry of cartStr.split("+")) {
-    // Split off optional discount suffix (~dNNN or ~pNNN)
-    const discountMatch = entry.match(/~([dp])(\d+)$/);
+    // Split off optional discount suffix (~dNNN, ~pNNN, ~uNNN, or ~c)
+    const discountMatch = entry.match(/~([dpu])(\d+)$|~(c)$/);
     const mainPart = discountMatch
       ? entry.slice(0, entry.length - discountMatch[0].length)
       : entry;
@@ -88,13 +93,19 @@ export function parseCartString(cartStr: string): ParsedCart {
 
     // Parse optional discount
     if (discountMatch) {
-      const kind = discountMatch[1];
-      const value = Number.parseInt(discountMatch[2], 10);
-      if (Number.isFinite(value) && value > 0) {
-        if (kind === "p") {
-          discounts.set(id, { type: "percent", percent: value });
-        } else {
-          discounts.set(id, { type: "flat", cp: value });
+      if (discountMatch[3] === "c") {
+        discounts.set(id, { type: "crafting" });
+      } else {
+        const kind = discountMatch[1];
+        const value = Number.parseInt(discountMatch[2], 10);
+        if (Number.isFinite(value) && value > 0) {
+          if (kind === "p") {
+            discounts.set(id, { type: "percent", percent: value });
+          } else if (kind === "u") {
+            discounts.set(id, { type: "upgrade", cp: value });
+          } else {
+            discounts.set(id, { type: "flat", cp: value });
+          }
         }
       }
     }
@@ -151,7 +162,15 @@ export function serializeCart(
       let s = qty === 1 ? id : `${id}*${qty}`;
       const d = discounts?.get(id);
       if (d) {
-        s += d.type === "percent" ? `~p${d.percent}` : `~d${d.cp}`;
+        if (d.type === "percent") {
+          s += `~p${d.percent}`;
+        } else if (d.type === "crafting") {
+          s += "~c";
+        } else if (d.type === "upgrade") {
+          s += `~u${d.cp}`;
+        } else {
+          s += `~d${d.cp}`;
+        }
       }
       return s;
     })

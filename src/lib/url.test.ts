@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Item } from "../types";
+import type { Discount, Item } from "../types";
 import {
   buildCustomIdMap,
   buildHashString,
@@ -102,6 +102,34 @@ describe("parseCartString", () => {
     expect(discounts).toEqual(
       new Map([["arrow-01", { type: "percent", percent: 10 }]]),
     );
+  });
+
+  it("parses upgrade discount with ~u suffix", () => {
+    const { cart, discounts } = parseCartString("rune-01~u6500");
+    expect(cart).toEqual(new Map([["rune-01", 1]]));
+    expect(discounts).toEqual(
+      new Map([["rune-01", { type: "upgrade", cp: 6500 }]]),
+    );
+  });
+
+  it("parses qty and upgrade discount together", () => {
+    const { cart, discounts } = parseCartString("rune-01*2~u6500");
+    expect(cart).toEqual(new Map([["rune-01", 2]]));
+    expect(discounts).toEqual(
+      new Map([["rune-01", { type: "upgrade", cp: 6500 }]]),
+    );
+  });
+
+  it("parses crafting discount with ~c suffix", () => {
+    const { cart, discounts } = parseCartString("sword-01~c");
+    expect(cart).toEqual(new Map([["sword-01", 1]]));
+    expect(discounts).toEqual(new Map([["sword-01", { type: "crafting" }]]));
+  });
+
+  it("parses qty and crafting discount together", () => {
+    const { cart, discounts } = parseCartString("sword-01*3~c");
+    expect(cart).toEqual(new Map([["sword-01", 3]]));
+    expect(discounts).toEqual(new Map([["sword-01", { type: "crafting" }]]));
   });
 
   it("parses mixed entries with and without discounts", () => {
@@ -221,6 +249,38 @@ describe("serializeCart", () => {
       ["other-99", { type: "flat" as const, cp: 500 }],
     ]);
     expect(serializeCart(cart, discounts)).toBe("sword-01");
+  });
+
+  it("appends ~u suffix for upgrade discounts", () => {
+    const cart = new Map([["rune-01", 1]]);
+    const discounts = new Map([
+      ["rune-01", { type: "upgrade" as const, cp: 6500 }],
+    ]);
+    expect(serializeCart(cart, discounts)).toBe("rune-01~u6500");
+  });
+
+  it("appends upgrade discount after qty", () => {
+    const cart = new Map([["rune-01", 2]]);
+    const discounts = new Map([
+      ["rune-01", { type: "upgrade" as const, cp: 6500 }],
+    ]);
+    expect(serializeCart(cart, discounts)).toBe("rune-01*2~u6500");
+  });
+
+  it("appends ~c suffix for crafting discounts", () => {
+    const cart = new Map([["sword-01", 1]]);
+    const discounts = new Map<string, Discount>([
+      ["sword-01", { type: "crafting" }],
+    ]);
+    expect(serializeCart(cart, discounts)).toBe("sword-01~c");
+  });
+
+  it("appends crafting discount after qty", () => {
+    const cart = new Map([["sword-01", 3]]);
+    const discounts = new Map<string, Discount>([
+      ["sword-01", { type: "crafting" }],
+    ]);
+    expect(serializeCart(cart, discounts)).toBe("sword-01*3~c");
   });
 });
 

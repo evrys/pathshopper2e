@@ -8,7 +8,9 @@ export interface Price {
 /** A discount applied to an item's price. */
 export type Discount =
   | { type: "flat"; cp: number }
-  | { type: "percent"; percent: number };
+  | { type: "percent"; percent: number }
+  | { type: "upgrade"; cp: number }
+  | { type: "crafting" };
 
 /** Item as stored in JSON (before runtime enrichment) */
 export type JsonItem = Omit<Item, "plainDescription">;

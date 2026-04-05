@@ -12,7 +12,9 @@ export function toCopper(price: Price): number {
 
 /** Resolve a Discount to an absolute copper value given the item's price. */
 export function resolveDiscount(discount: Discount, price: Price): number {
-  if (discount.type === "flat") return discount.cp;
+  if (discount.type === "flat" || discount.type === "upgrade")
+    return discount.cp;
+  if (discount.type === "crafting") return Math.round(0.5 * toCopper(price));
   return Math.round((discount.percent / 100) * toCopper(price));
 }
 

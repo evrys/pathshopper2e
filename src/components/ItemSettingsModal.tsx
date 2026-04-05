@@ -38,17 +38,21 @@ function initPreset(
   discount: Discount,
   upgradeOptions: UpgradeOption[],
 ): { preset: DiscountPreset; amount: string } {
+  if (discount.type === "crafting") {
+    return { preset: "crafting", amount: "" };
+  }
   if (discount.type === "percent") {
-    if (discount.percent === 50) {
-      return { preset: "crafting", amount: "" };
-    }
     return { preset: "custom-percent", amount: String(discount.percent) };
   }
-  // Check if the flat discount matches an upgrade option
-  for (let i = 0; i < upgradeOptions.length; i++) {
-    if (upgradeOptions[i].priceCp === discount.cp) {
-      return { preset: `upgrade-${i}`, amount: "" };
+  if (discount.type === "upgrade") {
+    // Match against upgrade options by copper value
+    for (let i = 0; i < upgradeOptions.length; i++) {
+      if (upgradeOptions[i].priceCp === discount.cp) {
+        return { preset: `upgrade-${i}`, amount: "" };
+      }
     }
+    // Fallback: upgrade option no longer available, show as custom
+    return { preset: "custom-gp", amount: String(cpToGp(discount.cp)) };
   }
   return { preset: "custom-gp", amount: String(cpToGp(discount.cp)) };
 }
@@ -193,9 +197,12 @@ export function ItemSettingsModal({
     let discount: Discount | undefined;
     if (discountCp === 0) {
       discount = undefined;
-    } else if (preset === "crafting" || preset === "custom-percent") {
-      const percent = preset === "crafting" ? 50 : parsed;
-      discount = { type: "percent", percent };
+    } else if (preset === "crafting") {
+      discount = { type: "crafting" };
+    } else if (preset === "custom-percent") {
+      discount = { type: "percent", percent: parsed };
+    } else if (preset.startsWith("upgrade-")) {
+      discount = { type: "upgrade", cp: discountCp };
     } else {
       discount = { type: "flat", cp: discountCp };
     }

@@ -576,7 +576,7 @@ describe("ItemSettingsModal", () => {
       expect(options).toContain("Custom (%)");
     });
 
-    it("selecting an upgrade option applies a flat discount", () => {
+    it("selecting an upgrade option applies an upgrade discount", () => {
       const onApply = vi.fn();
       render(
         <ItemSettingsModal
@@ -592,13 +592,13 @@ describe("ItemSettingsModal", () => {
       });
       fireEvent.click(screen.getByText("Apply"));
       expect(onApply).toHaveBeenCalledWith(
-        { type: "flat", cp: 6500 },
+        { type: "upgrade", cp: 6500 },
         "",
         undefined,
       );
     });
 
-    it("selecting crafting applies a 50% discount", () => {
+    it("selecting crafting applies a crafting discount", () => {
       const onApply = vi.fn();
       render(
         <ItemSettingsModal
@@ -613,11 +613,7 @@ describe("ItemSettingsModal", () => {
         target: { value: "crafting" },
       });
       fireEvent.click(screen.getByText("Apply"));
-      expect(onApply).toHaveBeenCalledWith(
-        { type: "percent", percent: 50 },
-        "",
-        undefined,
-      );
+      expect(onApply).toHaveBeenCalledWith({ type: "crafting" }, "", undefined);
     });
 
     it("selecting Custom (gp) shows the amount input", () => {
@@ -688,7 +684,7 @@ describe("ItemSettingsModal", () => {
         <ItemSettingsModal
           itemName="Longsword"
           price={BASE_PRICE}
-          currentDiscount={{ type: "percent", percent: 50 }}
+          currentDiscount={{ type: "crafting" }}
           onApply={() => {}}
           onClose={() => {}}
         />,
@@ -703,7 +699,7 @@ describe("ItemSettingsModal", () => {
           itemName="Striking (Major)"
           price={{ gp: 31065 }}
           upgradeOptions={UPGRADE_OPTIONS}
-          currentDiscount={{ type: "flat", cp: 6500 }}
+          currentDiscount={{ type: "upgrade", cp: 6500 }}
           onApply={() => {}}
           onClose={() => {}}
         />,

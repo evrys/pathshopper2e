@@ -208,4 +208,15 @@ describe("resolveDiscount", () => {
       33,
     );
   });
+
+  it("returns cp directly for upgrade discount", () => {
+    expect(resolveDiscount({ type: "upgrade", cp: 6500 }, { gp: 100 })).toBe(
+      6500,
+    );
+  });
+
+  it("calculates 50% for crafting discount", () => {
+    // 50% of 10 gp (1000 cp) = 500 cp
+    expect(resolveDiscount({ type: "crafting" }, { gp: 10 })).toBe(500);
+  });
 });
