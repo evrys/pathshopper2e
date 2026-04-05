@@ -187,13 +187,19 @@
 }
 
 .addBtn {
+  width: 28px;
+  height: 28px;
   min-width: 28px;
-  padding: 0.125rem 0.375rem;
+  padding: 0;
   font-size: 1rem;
   font-weight: 700;
   background: transparent;
   border-color: var(--color-primary);
   color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .addBtn:hover {
@@ -313,8 +319,9 @@
   }
 
   .addBtn {
+    width: 36px;
+    height: 36px;
     min-width: 36px;
-    min-height: 36px;
     font-size: 1rem;
     border-radius: 50%;
   }
