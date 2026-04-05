@@ -240,15 +240,28 @@ export function Cart({
 
   // Track which item to flash-highlight (newly added or quantity bumped)
   const [flashId, setFlashId] = useState<string | null>(null);
-  const prevEntriesRef = useRef<Map<string, number>>(new Map());
+  const prevEntriesRef = useRef<Map<string, number> | null>(null);
+  const stableRef = useRef(false);
   const itemsListRef = useRef<HTMLUListElement>(null);
+
+  // Mark the entries as stable after the initial hydration settles
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      stableRef.current = true;
+    });
+    return () => cancelAnimationFrame(id);
+  }, []);
+
   useEffect(() => {
     const prev = prevEntriesRef.current;
-    for (const { item, quantity } of entries) {
-      const prevQty = prev.get(item.id);
-      if (prevQty === undefined || quantity > prevQty) {
-        setFlashId(item.id);
-        break;
+    // Only flash after the initial hydration has settled
+    if (prev !== null && stableRef.current) {
+      for (const { item, quantity } of entries) {
+        const prevQty = prev.get(item.id);
+        if (prevQty === undefined || quantity > prevQty) {
+          setFlashId(item.id);
+          break;
+        }
       }
     }
     prevEntriesRef.current = new Map(
