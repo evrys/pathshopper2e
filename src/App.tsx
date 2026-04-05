@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useRef } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
+import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./App.module.css";
 import { Cart } from "./components/Cart";
 import { ItemTable, type FilterState } from "./components/ItemTable";
 import { VersionTag } from "./components/VersionTag";
 import { useCart, type CartEntry } from "./hooks/useCart";
 import { useItems } from "./hooks/useItems";
+import { useMediaQuery } from "./hooks/useMediaQuery";
 import {
   cartEntriesToSavedData,
   savedListToCartEntries,
@@ -60,6 +62,8 @@ function consumeSharedHash(): ShareParams | null {
 function App() {
   const { items, loading } = useItems();
   const [urlState, setUrlState] = useUrlState();
+  const isMobile = useMediaQuery("(max-width: 640px)");
+  const [mobileCartOpen, setMobileCartOpen] = useState(false);
 
   // Capture shared cart from URL before any renders clear it
   const sharedCart = useRef(consumeSharedHash());
@@ -304,6 +308,28 @@ function App() {
     );
   }
 
+  const cartProps = {
+    entries,
+    totalPrice,
+    allItems: items,
+    listName: activeList?.name ?? "My shopping list",
+    lists,
+    activeListId,
+    onListNameChange: renameActiveList,
+    onSetQuantity: setQuantity,
+    onRemoveItem: removeItem,
+    onSetPriceModifier: setDiscount,
+    onSetNotes: setNotes,
+    onUpdateItem: updateItem,
+    onAddItem: addItem,
+    onLoadList: handleLoadList,
+    onNewList: handleNewList,
+    onDeleteList: deleteList,
+    onImportCsv: handleImportCsv,
+  };
+
+  const itemCount = entries.reduce((sum, e) => sum + e.quantity, 0);
+
   return (
     <div className={styles.app}>
       <header className={styles.header}>
@@ -337,27 +363,63 @@ function App() {
           />
         </main>
         <aside className={styles.sidebar}>
-          <Cart
-            entries={entries}
-            totalPrice={totalPrice}
-            allItems={items}
-            listName={activeList?.name ?? "My shopping list"}
-            lists={lists}
-            activeListId={activeListId}
-            onListNameChange={renameActiveList}
-            onSetQuantity={setQuantity}
-            onRemoveItem={removeItem}
-            onSetPriceModifier={setDiscount}
-            onSetNotes={setNotes}
-            onUpdateItem={updateItem}
-            onAddItem={addItem}
-            onLoadList={handleLoadList}
-            onNewList={handleNewList}
-            onDeleteList={deleteList}
-            onImportCsv={handleImportCsv}
-          />
+          <Cart {...cartProps} />
         </aside>
       </div>
+
+      {/* Mobile floating cart button + drawer */}
+      {isMobile && (
+        <Dialog.Root open={mobileCartOpen} onOpenChange={setMobileCartOpen}>
+          <Dialog.Trigger asChild>
+            <button
+              type="button"
+              className={styles.cartFab}
+              aria-label="Open cart"
+            >
+              <svg
+                aria-hidden="true"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="8" cy="21" r="1" />
+                <circle cx="19" cy="21" r="1" />
+                <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
+              </svg>
+              {itemCount > 0 && (
+                <span className={styles.cartFabBadge}>{itemCount}</span>
+              )}
+            </button>
+          </Dialog.Trigger>
+          <Dialog.Portal>
+            <Dialog.Overlay className={styles.cartDrawerOverlay} />
+            <Dialog.Content
+              className={styles.cartDrawer}
+              aria-describedby={undefined}
+            >
+              <Dialog.Title className="sr-only">Shopping cart</Dialog.Title>
+              <div className={styles.cartDrawerClose}>
+                <Dialog.Close asChild>
+                  <button
+                    type="button"
+                    className={styles.cartDrawerCloseBtn}
+                    aria-label="Close cart"
+                  >
+                    ✕
+                  </button>
+                </Dialog.Close>
+              </div>
+              <Cart {...cartProps} />
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+      )}
+
       <VersionTag />
     </div>
   );

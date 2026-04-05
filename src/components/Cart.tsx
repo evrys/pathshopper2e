@@ -1,7 +1,6 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { useRef, useState } from "react";
 import type { CartEntry } from "../hooks/useCart";
-import { useMediaQuery } from "../hooks/useMediaQuery";
 import type { SavedList } from "../hooks/useSavedLists";
 import { aonUrl } from "../lib/aon";
 import { entriesToCsv } from "../lib/csv";
@@ -124,8 +123,6 @@ export function Cart({
   onDeleteList,
   onImportCsv,
 }: CartProps) {
-  const isMobile = useMediaQuery("(max-width: 640px)");
-  const [mobileCollapsed, setMobileCollapsed] = useState(true);
   const [listsOpen, setListsOpen] = useState(false);
   const [listsOpenCreating, setListsOpenCreating] = useState(false);
   const [customItemOpen, setCustomItemOpen] = useState(false);
@@ -140,7 +137,6 @@ export function Cart({
     }
   };
   const csvInputRef = useRef<HTMLInputElement>(null);
-  const expanded = !isMobile || !mobileCollapsed;
   const title = listName || "My shopping list";
 
   function commitRename() {
@@ -296,24 +292,6 @@ export function Cart({
             </DropdownMenu.Content>
           </DropdownMenu.Portal>
         </DropdownMenu.Root>
-        {isMobile && (
-          <button
-            type="button"
-            className={styles.collapseBtn}
-            onClick={() => setMobileCollapsed((c) => !c)}
-            aria-label={mobileCollapsed ? "Expand cart" : "Collapse cart"}
-          >
-            <span
-              className={styles.collapseIcon}
-              style={{
-                transform: mobileCollapsed ? "rotate(-90deg)" : undefined,
-              }}
-              aria-hidden
-            >
-              ▾
-            </span>
-          </button>
-        )}
       </div>
     </>
   );
@@ -329,151 +307,147 @@ export function Cart({
       />
       <div className={styles.header}>{headerContent}</div>
 
-      {expanded && (
-        <>
-          {listsOpen && (
-            <SavedListsModal
-              lists={lists}
-              activeListId={activeListId}
-              initialCreatingNew={listsOpenCreating}
-              onLoad={handleLoad}
-              onDelete={onDeleteList}
-              onNewList={onNewList}
-              onClose={() => {
-                setListsOpen(false);
-                setListsOpenCreating(false);
-              }}
-            />
-          )}
+      {listsOpen && (
+        <SavedListsModal
+          lists={lists}
+          activeListId={activeListId}
+          initialCreatingNew={listsOpenCreating}
+          onLoad={handleLoad}
+          onDelete={onDeleteList}
+          onNewList={onNewList}
+          onClose={() => {
+            setListsOpen(false);
+            setListsOpenCreating(false);
+          }}
+        />
+      )}
 
-          {customItemOpen && (
-            <AddCustomItemModal
-              onAdd={onAddItem}
-              onClose={() => setCustomItemOpen(false)}
-            />
-          )}
+      {customItemOpen && (
+        <AddCustomItemModal
+          onAdd={onAddItem}
+          onClose={() => setCustomItemOpen(false)}
+        />
+      )}
 
-          {settingsEntry && (
-            <ItemSettingsModal
-              itemName={settingsEntry.item.name}
-              price={settingsEntry.item.price}
-              isCustom={settingsEntry.item.id.startsWith("custom-")}
-              currentModifier={settingsEntry.priceModifier}
-              currentNotes={settingsEntry.notes}
-              upgradeOptions={getUpgradeOptions(settingsEntry.item, allItems)}
-              onApply={(priceModifier, notes, customUpdate) => {
-                onSetPriceModifier(settingsEntry.item.id, priceModifier);
-                onSetNotes(settingsEntry.item.id, notes);
-                if (customUpdate) {
-                  onUpdateItem(settingsEntry.item.id, customUpdate);
-                }
-              }}
-              onClose={() => setSettingsEntry(null)}
-            />
-          )}
+      {settingsEntry && (
+        <ItemSettingsModal
+          itemName={settingsEntry.item.name}
+          price={settingsEntry.item.price}
+          isCustom={settingsEntry.item.id.startsWith("custom-")}
+          currentModifier={settingsEntry.priceModifier}
+          currentNotes={settingsEntry.notes}
+          upgradeOptions={getUpgradeOptions(settingsEntry.item, allItems)}
+          onApply={(priceModifier, notes, customUpdate) => {
+            onSetPriceModifier(settingsEntry.item.id, priceModifier);
+            onSetNotes(settingsEntry.item.id, notes);
+            if (customUpdate) {
+              onUpdateItem(settingsEntry.item.id, customUpdate);
+            }
+          }}
+          onClose={() => setSettingsEntry(null)}
+        />
+      )}
 
-          {entries.length === 0 ? (
-            <p className={styles.empty}>
-              Add items from the table to start building your list.
-            </p>
-          ) : (
-            <ul className={styles.items}>
-              {entries.map((entry) => (
-                <li key={entry.item.id} className={styles.item}>
-                  <div className={styles.itemInfo}>
-                    {entry.item.id.startsWith("custom-") ? (
-                      <span className={styles.itemName}>{entry.item.name}</span>
-                    ) : (
-                      <ItemTooltipWrapper item={entry.item}>
-                        <a
-                          className={styles.itemName}
-                          href={aonUrl(entry.item)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          {entry.item.name}
-                        </a>
-                      </ItemTooltipWrapper>
-                    )}
-                    <span className={styles.itemPrice}>
-                      {entry.priceModifier ? (
-                        <>
-                          <span className={styles.originalPrice}>
-                            {formatPrice(entry.item.price)}
-                          </span>{" "}
-                          {formatPrice(entry.item.price, entry.priceModifier)}
-                          {modifierLabel(entry.priceModifier) &&
-                            ` ${modifierLabel(entry.priceModifier)}`}
-                        </>
-                      ) : (
-                        formatPrice(entry.item.price)
-                      )}
-                      {entry.quantity > 1 && " each"}
-                    </span>
-                    {entry.notes && (
-                      <span className={styles.itemNotes}>{entry.notes}</span>
-                    )}
-                  </div>
-                  <div className={styles.controls}>
-                    <button
-                      type="button"
-                      className={styles.settingsBtn}
-                      onClick={() => setSettingsEntry(entry)}
-                      title="Item settings"
+      {entries.length === 0 ? (
+        <p className={styles.empty}>
+          Add items from the table to start building your list.
+        </p>
+      ) : (
+        <ul className={styles.items}>
+          {entries.map((entry) => (
+            <li key={entry.item.id} className={styles.item}>
+              <div className={styles.itemInfo}>
+                {entry.item.id.startsWith("custom-") ? (
+                  <span className={styles.itemName}>{entry.item.name}</span>
+                ) : (
+                  <ItemTooltipWrapper item={entry.item}>
+                    <a
+                      className={styles.itemName}
+                      href={aonUrl(entry.item)}
+                      target="_blank"
+                      rel="noopener noreferrer"
                     >
-                      <svg
-                        aria-hidden="true"
-                        width="12"
-                        height="12"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                        <path d="m15 5 4 4" />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        onSetQuantity(entry.item.id, entry.quantity - 1)
-                      }
-                    >
-                      −
-                    </button>
-                    <span className={styles.qty}>{entry.quantity}</span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        onSetQuantity(entry.item.id, entry.quantity + 1)
-                      }
-                    >
-                      +
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.removeBtn}
-                      onClick={() => onRemoveItem(entry.item.id)}
-                      title="Remove"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+                      {entry.item.name}
+                    </a>
+                  </ItemTooltipWrapper>
+                )}
+                <span className={styles.itemPrice}>
+                  {entry.priceModifier ? (
+                    <>
+                      <span className={styles.originalPrice}>
+                        {formatPrice(entry.item.price)}
+                      </span>{" "}
+                      {formatPrice(entry.item.price, entry.priceModifier)}
+                      {modifierLabel(entry.priceModifier) &&
+                        ` ${modifierLabel(entry.priceModifier)}`}
+                    </>
+                  ) : (
+                    formatPrice(entry.item.price)
+                  )}
+                  {entry.quantity > 1 && " each"}
+                </span>
+                {entry.notes && (
+                  <span className={styles.itemNotes}>{entry.notes}</span>
+                )}
+              </div>
+              <div className={styles.controls}>
+                <button
+                  type="button"
+                  className={styles.settingsBtn}
+                  onClick={() => setSettingsEntry(entry)}
+                  title="Item settings"
+                >
+                  <svg
+                    aria-hidden="true"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                    <path d="m15 5 4 4" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onSetQuantity(entry.item.id, entry.quantity - 1)
+                  }
+                >
+                  −
+                </button>
+                <span className={styles.qty}>{entry.quantity}</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onSetQuantity(entry.item.id, entry.quantity + 1)
+                  }
+                >
+                  +
+                </button>
+                <button
+                  type="button"
+                  className={styles.removeBtn}
+                  onClick={() => onRemoveItem(entry.item.id)}
+                  title="Remove"
+                >
+                  ✕
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
 
-          {entries.length > 0 && (
-            <div className={styles.total}>
-              <span>Total:</span>
-              <strong>{formatPrice(totalPrice)}</strong>
-            </div>
-          )}
-        </>
+      {entries.length > 0 && (
+        <div className={styles.total}>
+          <span>Total:</span>
+          <strong>{formatPrice(totalPrice)}</strong>
+        </div>
       )}
     </div>
   );
