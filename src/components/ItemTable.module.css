@@ -270,6 +270,7 @@
 
   .searchWrap {
     min-width: 0;
+    flex-basis: 100%;
   }
 
   .searchInput {
