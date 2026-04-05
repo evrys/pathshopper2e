@@ -127,17 +127,15 @@ export function ItemTooltipWrapper({
   const touchedRef = useRef(false);
   const isMobile = useMediaQuery("(max-width: 640px)");
 
-  const handleClick = useCallback(
-    (e: React.MouseEvent) => {
-      // Only intercept touch-originated clicks when the tooltip isn't open yet
-      if (touchedRef.current && !open) {
-        e.preventDefault();
-        setOpen(true);
-      }
-      touchedRef.current = false;
-    },
-    [open],
-  );
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    if (touchedRef.current) {
+      // On mobile, always prevent link navigation — the tooltip header
+      // provides its own link to AoN.
+      e.preventDefault();
+      setOpen((prev) => !prev);
+    }
+    touchedRef.current = false;
+  }, []);
 
   if (isMobile) {
     return (
