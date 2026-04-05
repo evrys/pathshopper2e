@@ -8,6 +8,8 @@ Add a failing test for any new functionality you want to add. Then, implement th
 
 After making changes, run `pnpm checks` to verify everything passes (TypeScript, Biome linting, and tests). Fix any errors before considering work complete.
 
+For visual changes: assume the user is running the dev server already at port 5900, and access it with the simple browser to check your changes.
+
 ## Goal
 
 This is a small website for players of Pathfinder 2e to make shopping lists for their campaigns. Since PF2e is a tabletop RPG with a large number of items, players often struggle to keep track of what is available in the game.

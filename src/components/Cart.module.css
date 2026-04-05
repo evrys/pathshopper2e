@@ -20,11 +20,6 @@
   text-align: left;
 }
 
-button.header {
-  border: none;
-  cursor: pointer;
-}
-
 .header h2 {
   margin: 0;
   font-size: 1rem;
@@ -292,6 +287,17 @@ button.header {
   border-radius: 0;
   color: var(--color-text);
   outline: none;
+}
+
+.collapseBtn {
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  cursor: pointer;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .collapseIcon {

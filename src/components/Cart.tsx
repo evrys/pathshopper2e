@@ -329,15 +329,22 @@ export function Cart({
           )}
         </div>
         {isMobile && (
-          <span
-            className={styles.collapseIcon}
-            style={{
-              transform: mobileCollapsed ? "rotate(-90deg)" : undefined,
-            }}
-            aria-hidden
+          <button
+            type="button"
+            className={styles.collapseBtn}
+            onClick={() => setMobileCollapsed((c) => !c)}
+            aria-label={mobileCollapsed ? "Expand cart" : "Collapse cart"}
           >
-            ▾
-          </span>
+            <span
+              className={styles.collapseIcon}
+              style={{
+                transform: mobileCollapsed ? "rotate(-90deg)" : undefined,
+              }}
+              aria-hidden
+            >
+              ▾
+            </span>
+          </button>
         )}
       </div>
     </>
@@ -352,17 +359,7 @@ export function Cart({
         style={{ display: "none" }}
         onChange={handleImportCsvFile}
       />
-      {isMobile ? (
-        <button
-          type="button"
-          className={styles.header}
-          onClick={() => setMobileCollapsed((c) => !c)}
-        >
-          {headerContent}
-        </button>
-      ) : (
-        <div className={styles.header}>{headerContent}</div>
-      )}
+      <div className={styles.header}>{headerContent}</div>
 
       {expanded && (
         <>

@@ -6,6 +6,7 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  min-width: 0;
 }
 
 .filters {
@@ -58,7 +59,7 @@
 
 .tableScroll {
   flex: 1;
-  overflow-y: auto;
+  overflow: auto;
   min-height: 200px;
 }
 
