@@ -1,5 +1,6 @@
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { useCallback, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { sanitizeHtml } from "../lib/html";
 import { formatPrice } from "../lib/price";
@@ -86,7 +87,7 @@ function TooltipContent({ item }: { item: Item }) {
 }
 
 function MobileTooltip({ item, onClose }: { item: Item; onClose: () => void }) {
-  return (
+  return createPortal(
     // biome-ignore lint/a11y/useKeyWithClickEvents: tap-to-dismiss overlay
     <div className={styles.mobileOverlay} role="dialog" onClick={onClose}>
       {/* biome-ignore lint/a11y/noStaticElementInteractions: stop propagation wrapper */}
@@ -97,7 +98,8 @@ function MobileTooltip({ item, onClose }: { item: Item; onClose: () => void }) {
       >
         <TooltipContent item={item} />
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
