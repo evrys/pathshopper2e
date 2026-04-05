@@ -123,7 +123,7 @@ export function ItemSettingsModal({
   const parsedCustomPrice =
     customPriceAmount === "" ? 0 : Number(customPriceAmount);
   const effectivePrice =
-    isCustom && parsedCustomPrice > 0
+    isCustom && parsedCustomPrice !== 0
       ? ({ [customPriceDenom]: parsedCustomPrice } as Price)
       : isCustom
         ? ({} as Price)
@@ -163,7 +163,7 @@ export function ItemSettingsModal({
     return Number.isFinite(parsed) && Number.isInteger(adjustCp);
   })();
 
-  const modifiedPrice = fromCopper(Math.max(0, priceCp + adjustCp));
+  const modifiedPrice = fromCopper(priceCp + adjustCp);
 
   // Compute a user-facing error for the custom input field
   const inputError = (() => {
@@ -246,7 +246,6 @@ export function ItemSettingsModal({
                   <input
                     id="custom-item-price"
                     type="number"
-                    min="0"
                     step="any"
                     value={customPriceAmount}
                     onChange={(e) => setCustomPriceAmount(e.target.value)}

@@ -151,7 +151,7 @@ export function useCart() {
     const adjustCp = e.priceModifier
       ? resolvePriceModifier(e.priceModifier, e.item.price)
       : 0;
-    return sum + Math.max(0, toCopper(e.item.price) + adjustCp) * e.quantity;
+    return sum + (toCopper(e.item.price) + adjustCp) * e.quantity;
   }, 0);
   const totalItems = entries.reduce((sum, e) => sum + e.quantity, 0);
 

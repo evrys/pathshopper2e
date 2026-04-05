@@ -46,6 +46,19 @@ describe("fromCopper", () => {
   it("returns empty for 0", () => {
     expect(fromCopper(0)).toEqual({});
   });
+
+  it("converts negative copper to negative denominations", () => {
+    expect(fromCopper(-234)).toEqual({ gp: -2, sp: -3, cp: -4 });
+  });
+
+  it("converts small negative copper", () => {
+    expect(fromCopper(-50)).toEqual({ sp: -5 });
+  });
+
+  it("converts negative copper with single denomination", () => {
+    expect(fromCopper(-100)).toEqual({ gp: -1 });
+    expect(fromCopper(-3)).toEqual({ cp: -3 });
+  });
 });
 
 describe("formatPrice", () => {
@@ -84,6 +97,17 @@ describe("formatPrice", () => {
 
   it("formats without discount when undefined", () => {
     expect(formatPrice({ gp: 10 })).toBe("10 gp");
+  });
+
+  it("formats negative price from discount exceeding base", () => {
+    // 10 gp = 1000 cp, minus 2000 cp = -10 gp
+    expect(formatPrice({ gp: 10 }, { type: "flat", cp: -2000 })).toBe("−10 gp");
+  });
+
+  it("formats negative price with mixed denominations", () => {
+    expect(formatPrice({ gp: 1 }, { type: "flat", cp: -234 })).toBe(
+      "−1 gp 3 sp 4 cp",
+    );
   });
 });
 
@@ -187,6 +211,32 @@ describe("sumPrices", () => {
         },
       ]),
     ).toEqual({ gp: 180 });
+  });
+
+  it("allows negative per-item prices when discount exceeds base (selling)", () => {
+    // Item is 10 gp but sold (discount of 15 gp), net is -5 gp per item
+    const result = sumPrices([
+      {
+        price: { gp: 10 },
+        quantity: 2,
+        priceModifier: { type: "flat", cp: -1500 },
+      },
+    ]);
+    // 2 * -500cp = -1000cp = -10 gp
+    expect(result).toEqual({ gp: -10 });
+  });
+
+  it("sums positive and negative entries for net total", () => {
+    const result = sumPrices([
+      { price: { gp: 50 }, quantity: 1 }, // buying for 50 gp
+      {
+        price: { gp: 20 },
+        quantity: 1,
+        priceModifier: { type: "flat", cp: -4000 },
+      }, // selling for -20 gp
+    ]);
+    // 50 gp + (-20 gp) = 30 gp
+    expect(result).toEqual({ gp: 30 });
   });
 });
 

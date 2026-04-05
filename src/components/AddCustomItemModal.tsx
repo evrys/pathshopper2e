@@ -37,7 +37,7 @@ export function AddCustomItemModal({
   const parsedAmount = priceAmount === "" ? 0 : Number(priceAmount);
   const isValid =
     name.trim().length > 0 &&
-    (priceAmount === "" || parsedAmount >= 0) &&
+    (priceAmount === "" || Number.isFinite(parsedAmount)) &&
     Number.isInteger(parsedAmount * CP_PER[denomination]);
 
   function handleSubmit(e: React.FormEvent) {
@@ -45,7 +45,7 @@ export function AddCustomItemModal({
     if (!isValid) return;
 
     const price: Price =
-      parsedAmount > 0 ? { [denomination]: parsedAmount } : {};
+      parsedAmount !== 0 ? { [denomination]: parsedAmount } : {};
 
     const item: Item = {
       id: `custom-${++customItemCounter}-${Date.now()}`,
@@ -108,7 +108,6 @@ export function AddCustomItemModal({
               <input
                 id="custom-item-price"
                 type="number"
-                min="0"
                 step="any"
                 value={priceAmount}
                 onChange={(e) => setPriceAmount(e.target.value)}

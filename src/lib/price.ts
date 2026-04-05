@@ -23,37 +23,44 @@ export function resolvePriceModifier(
 
 /** Convert copper pieces to a Price with the largest denominations */
 export function fromCopper(cp: number): Price {
-  const gp = Math.floor(cp / CP_PER.gp);
-  cp -= gp * CP_PER.gp;
-  const sp = Math.floor(cp / CP_PER.sp);
-  cp -= sp * CP_PER.sp;
+  const sign = cp < 0 ? -1 : 1;
+  let remaining = Math.abs(cp);
+  const gp = Math.floor(remaining / CP_PER.gp);
+  remaining -= gp * CP_PER.gp;
+  const sp = Math.floor(remaining / CP_PER.sp);
+  remaining -= sp * CP_PER.sp;
 
   const price: Price = {};
-  if (gp) price.gp = gp;
-  if (sp) price.sp = sp;
-  if (cp) price.cp = cp;
+  if (gp) price.gp = gp * sign;
+  if (sp) price.sp = sp * sign;
+  if (remaining) price.cp = remaining * sign;
   return price;
 }
 
 /** Format a Price as a human-readable string, e.g. "12 gp 5 sp".
- *  If a price modifier is provided, it adjusts the price (discount or surcharge). */
+ *  If a price modifier is provided, it adjusts the price (discount or surcharge).
+ *  Negative totals (e.g. selling an item) display with a minus sign: "−5 gp". */
 export function formatPrice(
   price: Price,
   priceModifier?: PriceModifier,
 ): string {
   let p = price;
   if (priceModifier) {
-    const cp = Math.max(
-      0,
-      toCopper(price) + resolvePriceModifier(priceModifier, price),
-    );
+    const cp = toCopper(price) + resolvePriceModifier(priceModifier, price);
     p = fromCopper(cp);
   }
+  const isNegative = (p.gp ?? 0) < 0 || (p.sp ?? 0) < 0 || (p.cp ?? 0) < 0;
+  const abs: Price = {
+    gp: Math.abs(p.gp ?? 0) || undefined,
+    sp: Math.abs(p.sp ?? 0) || undefined,
+    cp: Math.abs(p.cp ?? 0) || undefined,
+  };
   const parts: string[] = [];
-  if (p.gp) parts.push(`${p.gp} gp`);
-  if (p.sp) parts.push(`${p.sp} sp`);
-  if (p.cp) parts.push(`${p.cp} cp`);
-  return parts.length > 0 ? parts.join(" ") : "—";
+  if (abs.gp) parts.push(`${abs.gp} gp`);
+  if (abs.sp) parts.push(`${abs.sp} sp`);
+  if (abs.cp) parts.push(`${abs.cp} cp`);
+  if (parts.length === 0) return "—";
+  return isNegative ? `−${parts.join(" ")}` : parts.join(" ");
 }
 
 /** Parse a user-entered budget string like "140gp", "12 gp 5 sp", "1500" (assumes cp) */
@@ -96,7 +103,7 @@ export function sumPrices(
     const adjustCp = priceModifier
       ? resolvePriceModifier(priceModifier, price)
       : 0;
-    totalCp += Math.max(0, toCopper(price) + adjustCp) * quantity;
+    totalCp += (toCopper(price) + adjustCp) * quantity;
   }
   return fromCopper(Math.round(totalCp));
 }
