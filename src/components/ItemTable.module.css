@@ -257,6 +257,10 @@
     min-width: 0;
   }
 
+  .searchInput {
+    font-size: 1rem;
+  }
+
   .headerRow {
     display: none;
   }
