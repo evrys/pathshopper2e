@@ -40,29 +40,27 @@ export function MultiSelect({
           <span className={styles.arrow}>{open ? "▲" : "▼"}</span>
         </button>
       </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content
-          className={styles.menu}
-          sideOffset={4}
-          align="start"
-          onOpenAutoFocus={(e) => e.preventDefault()}
-        >
-          <ul className={styles.menuList}>
-            {options.map((opt) => (
-              <li key={opt.value}>
-                <label className={styles.option}>
-                  <input
-                    type="checkbox"
-                    checked={selected.has(opt.value)}
-                    onChange={() => toggle(opt.value)}
-                  />
-                  {opt.label}
-                </label>
-              </li>
-            ))}
-          </ul>
-        </Popover.Content>
-      </Popover.Portal>
+      <Popover.Content
+        className={styles.menu}
+        sideOffset={4}
+        align="start"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
+        <ul className={styles.menuList}>
+          {options.map((opt) => (
+            <li key={opt.value}>
+              <label className={styles.option}>
+                <input
+                  type="checkbox"
+                  checked={selected.has(opt.value)}
+                  onChange={() => toggle(opt.value)}
+                />
+                {opt.label}
+              </label>
+            </li>
+          ))}
+        </ul>
+      </Popover.Content>
     </Popover.Root>
   );
 }
