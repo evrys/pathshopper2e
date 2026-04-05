@@ -349,6 +349,15 @@
     font-size: 1rem;
   }
 
+  .controls button:hover {
+    background: var(--color-surface);
+  }
+
+  .removeBtn:hover {
+    background: transparent;
+    color: var(--color-danger);
+  }
+
   .qty {
     min-width: 2rem;
     font-size: 1rem;

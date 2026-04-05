@@ -76,6 +76,12 @@ button:hover {
   background: var(--color-surface-hover);
 }
 
+@media (hover: none) {
+  button:hover {
+    background: var(--color-surface);
+  }
+}
+
 input,
 select {
   font-family: inherit;
