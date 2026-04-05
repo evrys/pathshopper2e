@@ -1,4 +1,5 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import { DotsVerticalIcon } from "@radix-ui/react-icons";
 import { useRef, useState } from "react";
 import type { CartEntry } from "../hooks/useCart";
 import type { SavedList } from "../hooks/useSavedLists";
@@ -236,7 +237,7 @@ export function Cart({
               aria-label="List options"
               title="List options"
             >
-              ⋮
+              <DotsVerticalIcon />
             </button>
           </DropdownMenu.Trigger>
           <DropdownMenu.Portal>

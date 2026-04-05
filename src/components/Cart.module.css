@@ -300,6 +300,20 @@
     position: relative;
   }
 
+  .shareBtn {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.875rem;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  .menuBtn {
+    width: 44px;
+    height: 44px;
+    font-size: 1.25rem;
+  }
+
   .menuDropdown {
     top: auto;
     bottom: calc(100% + 4px);
