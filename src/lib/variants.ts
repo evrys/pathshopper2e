@@ -4,7 +4,7 @@ import { toCopper } from "./price";
 export interface UpgradeOption {
   /** Display name of the cheaper variant */
   name: string;
-  /** Flat discount in copper pieces (the price of the cheaper variant) */
+  /** Flat price modifier in copper pieces (the price of the cheaper variant) */
   priceCp: number;
   /** Formatted price string for display */
   priceDisplay: string;
@@ -18,7 +18,7 @@ export function getVariantBaseId(id: string): string | null {
 
 /**
  * Given an item and the full items list, return cheaper variants
- * that could serve as "upgrade from" discount sources.
+ * that could serve as "upgrade from" price modifier sources.
  * Results are sorted by price descending (most expensive first).
  */
 export function getUpgradeOptions(

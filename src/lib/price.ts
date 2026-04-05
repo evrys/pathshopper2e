@@ -1,4 +1,4 @@
-import type { Discount, Price } from "../types";
+import type { Price, PriceModifier } from "../types";
 
 /** Copper pieces per denomination: 1 gp = 10 sp = 100 cp */
 export const CP_PER = { gp: 100, sp: 10, cp: 1 } as const;
@@ -10,12 +10,15 @@ export function toCopper(price: Price): number {
   );
 }
 
-/** Resolve a Discount to an absolute copper value given the item's price. */
-export function resolveDiscount(discount: Discount, price: Price): number {
-  if (discount.type === "flat" || discount.type === "upgrade")
-    return discount.cp;
-  if (discount.type === "crafting") return Math.round(0.5 * toCopper(price));
-  return Math.round((discount.percent / 100) * toCopper(price));
+/** Resolve a PriceModifier to a signed copper adjustment (positive = surcharge, negative = discount). */
+export function resolvePriceModifier(
+  modifier: PriceModifier,
+  price: Price,
+): number {
+  if (modifier.type === "flat") return modifier.cp;
+  if (modifier.type === "upgrade") return -modifier.cp;
+  if (modifier.type === "crafting") return -Math.round(0.5 * toCopper(price));
+  return Math.round((modifier.percent / 100) * toCopper(price));
 }
 
 /** Convert copper pieces to a Price with the largest denominations */
@@ -33,11 +36,17 @@ export function fromCopper(cp: number): Price {
 }
 
 /** Format a Price as a human-readable string, e.g. "12 gp 5 sp".
- *  If a discount is provided, it is subtracted from the price. */
-export function formatPrice(price: Price, discount?: Discount): string {
+ *  If a price modifier is provided, it adjusts the price (discount or surcharge). */
+export function formatPrice(
+  price: Price,
+  priceModifier?: PriceModifier,
+): string {
   let p = price;
-  if (discount) {
-    const cp = Math.max(0, toCopper(price) - resolveDiscount(discount, price));
+  if (priceModifier) {
+    const cp = Math.max(
+      0,
+      toCopper(price) + resolvePriceModifier(priceModifier, price),
+    );
     p = fromCopper(cp);
   }
   const parts: string[] = [];
@@ -74,14 +83,20 @@ export function parseBudget(input: string): Price | null {
   return null;
 }
 
-/** Sum prices across entries with quantities and optional discounts, returning the total as a Price. */
+/** Sum prices across entries with quantities and optional price modifiers, returning the total as a Price. */
 export function sumPrices(
-  entries: { price: Price; quantity: number; discount?: Discount }[],
+  entries: {
+    price: Price;
+    quantity: number;
+    priceModifier?: PriceModifier;
+  }[],
 ): Price {
   let totalCp = 0;
-  for (const { price, quantity, discount } of entries) {
-    const discountCp = discount ? resolveDiscount(discount, price) : 0;
-    totalCp += Math.max(0, toCopper(price) - discountCp) * quantity;
+  for (const { price, quantity, priceModifier } of entries) {
+    const adjustCp = priceModifier
+      ? resolvePriceModifier(priceModifier, price)
+      : 0;
+    totalCp += Math.max(0, toCopper(price) + adjustCp) * quantity;
   }
   return fromCopper(Math.round(totalCp));
 }

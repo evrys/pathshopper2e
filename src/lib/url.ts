@@ -1,4 +1,4 @@
-import type { Discount, Item, Price } from "../types";
+import type { Item, Price, PriceModifier } from "../types";
 
 /**
  * Parse a URL hash string into URLSearchParams.
@@ -31,40 +31,41 @@ export function buildHashString(params: URLSearchParams): string {
  */
 export interface ParsedCart {
   cart: Map<string, number>;
-  discounts: Map<string, Discount>;
+  priceModifiers: Map<string, PriceModifier>;
 }
 
 /**
- * Parse a `+`-separated cart string into item quantities and discounts.
+ * Parse a `+`-separated cart string into item quantities and price modifiers.
  *
  * Format: entries joined by `+`. Each entry is one of:
- *   - `id`             → qty 1, no discount
- *   - `id*qty`         → qty N, no discount
- *   - `id~dCOPPER`     → qty 1, flat discount in copper
- *   - `id*qty~dCOPPER` → qty N, flat discount in copper
- *   - `id~pPERCENT`    → qty 1, percentage discount
- *   - `id*qty~pPERCENT` → qty N, percentage discount
- *   - `id~uCOPPER`     → qty 1, upgrade discount in copper
- *   - `id*qty~uCOPPER` → qty N, upgrade discount in copper
- *   - `id~c`           → qty 1, crafting discount (50%)
- *   - `id*qty~c`       → qty N, crafting discount (50%)
+ *   - `id`             → qty 1, no modifier
+ *   - `id*qty`         → qty N, no modifier
+ *   - `id~dCOPPER`     → qty 1, flat modifier in copper (positive = surcharge, negative = discount)
+ *   - `id*qty~dCOPPER` → qty N, flat modifier in copper
+ *   - `id~pPERCENT`    → qty 1, percentage modifier (positive = surcharge, negative = discount)
+ *   - `id*qty~pPERCENT` → qty N, percentage modifier
+ *   - `id~uCOPPER`     → qty 1, upgrade modifier in copper (always a discount)
+ *   - `id*qty~uCOPPER` → qty N, upgrade modifier in copper
+ *   - `id~c`           → qty 1, crafting modifier (-50%)
+ *   - `id*qty~c`       → qty N, crafting modifier (-50%)
  *
  * The `*` separator is used for quantities because `encodeURIComponent`
- * doesn't encode it. The `~d` prefix marks a flat discount in copper;
- * `~p` marks a percentage discount; `~u` marks an upgrade discount;
- * `~c` marks a crafting discount. The legacy `:` separator is also
+ * doesn't encode it. The `~d` prefix marks a flat modifier in copper;
+ * `~p` marks a percentage modifier; `~u` marks an upgrade modifier;
+ * `~c` marks a crafting modifier. The legacy `:` separator is also
  * accepted for backwards-compatible quantity parsing.
  */
 export function parseCartString(cartStr: string): ParsedCart {
   const cart = new Map<string, number>();
-  const discounts = new Map<string, Discount>();
-  if (!cartStr) return { cart, discounts };
+  const priceModifiers = new Map<string, PriceModifier>();
+  if (!cartStr) return { cart, priceModifiers };
 
   for (const entry of cartStr.split("+")) {
-    // Split off optional discount suffix (~dNNN, ~pNNN, ~uNNN, or ~c)
-    const discountMatch = entry.match(/~([dpu])(\d+)$|~(c)$/);
-    const mainPart = discountMatch
-      ? entry.slice(0, entry.length - discountMatch[0].length)
+    // Split off optional modifier suffix (~dNNN, ~pNNN, ~uNNN, or ~c)
+    // Values may be negative for flat/percent modifiers (e.g. ~d-500 for a discount)
+    const modifierMatch = entry.match(/~([dpu])(-?\d+)$|~(c)$/);
+    const mainPart = modifierMatch
+      ? entry.slice(0, entry.length - modifierMatch[0].length)
       : entry;
 
     // Parse id and quantity from the main part
@@ -91,27 +92,27 @@ export function parseCartString(cartStr: string): ParsedCart {
     if (!id || qty <= 0) continue;
     cart.set(id, qty);
 
-    // Parse optional discount
-    if (discountMatch) {
-      if (discountMatch[3] === "c") {
-        discounts.set(id, { type: "crafting" });
+    // Parse optional price modifier
+    if (modifierMatch) {
+      if (modifierMatch[3] === "c") {
+        priceModifiers.set(id, { type: "crafting" });
       } else {
-        const kind = discountMatch[1];
-        const value = Number.parseInt(discountMatch[2], 10);
-        if (Number.isFinite(value) && value > 0) {
+        const kind = modifierMatch[1];
+        const value = Number.parseInt(modifierMatch[2], 10);
+        if (Number.isFinite(value) && value !== 0) {
           if (kind === "p") {
-            discounts.set(id, { type: "percent", percent: value });
+            priceModifiers.set(id, { type: "percent", percent: value });
           } else if (kind === "u") {
-            discounts.set(id, { type: "upgrade", cp: value });
+            priceModifiers.set(id, { type: "upgrade", cp: value });
           } else {
-            discounts.set(id, { type: "flat", cp: value });
+            priceModifiers.set(id, { type: "flat", cp: value });
           }
         }
       }
     }
   }
 
-  return { cart, discounts };
+  return { cart, priceModifiers };
 }
 
 export interface ShareParams {
@@ -120,8 +121,8 @@ export interface ShareParams {
   charName: string;
   /** Custom item definitions embedded in the share URL, if any. */
   customItems: Item[];
-  /** Per-item discounts, keyed by item id. */
-  discounts: Map<string, Discount>;
+  /** Per-item price modifiers, keyed by item id. */
+  priceModifiers: Map<string, PriceModifier>;
   /** Per-item notes, keyed by item id. */
   notes: Map<string, string>;
 }
@@ -133,34 +134,34 @@ export interface ShareParams {
  */
 export function parseShareParams(params: URLSearchParams): ShareParams {
   const charName = params.get("name") ?? params.get("char") ?? "";
-  const { cart, discounts } = parseCartString(
+  const { cart, priceModifiers } = parseCartString(
     params.get("items") ?? params.get("cart") ?? "",
   );
   const listId = params.get("lid") ?? "";
   const customItems = parseCustomItems(params.get("custom") ?? "");
   const notes = parseNotes(params.get("notes") ?? "");
-  return { listId, cart, charName, customItems, discounts, notes };
+  return { listId, cart, charName, customItems, priceModifiers, notes };
 }
 
 /**
  * Serialize a cart Map into the `+`-separated format used in share URLs.
  *
  * Each entry is one of:
- *   - `id`              — qty 1, no discount
- *   - `id*qty`          — qty > 1, no discount
- *   - `id~dCOPPER`      — qty 1, flat discount
- *   - `id*qty~dCOPPER`  — qty > 1, flat discount
- *   - `id~pPERCENT`     — qty 1, percentage discount
- *   - `id*qty~pPERCENT` — qty > 1, percentage discount
+ *   - `id`              — qty 1, no modifier
+ *   - `id*qty`          — qty > 1, no modifier
+ *   - `id~dCOPPER`      — qty 1, flat modifier
+ *   - `id*qty~dCOPPER`  — qty > 1, flat modifier
+ *   - `id~pPERCENT`     — qty 1, percentage modifier
+ *   - `id*qty~pPERCENT` — qty > 1, percentage modifier
  */
 export function serializeCart(
   cart: Map<string, number>,
-  discounts?: Map<string, Discount>,
+  priceModifiers?: Map<string, PriceModifier>,
 ): string {
   return [...cart]
     .map(([id, qty]) => {
       let s = qty === 1 ? id : `${id}*${qty}`;
-      const d = discounts?.get(id);
+      const d = priceModifiers?.get(id);
       if (d) {
         if (d.type === "percent") {
           s += `~p${d.percent}`;

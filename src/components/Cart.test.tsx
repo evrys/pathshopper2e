@@ -63,7 +63,7 @@ const defaultProps = {
   onListNameChange: vi.fn(),
   onSetQuantity: vi.fn(),
   onRemoveItem: vi.fn(),
-  onSetDiscount: vi.fn(),
+  onSetPriceModifier: vi.fn(),
   onSetNotes: vi.fn(),
   onAddItem: vi.fn(),
   onLoadList: vi.fn(),
@@ -148,7 +148,7 @@ describe("Cart", () => {
     const entries = [
       makeEntry({
         item: makeItem({ price: { gp: 10 } }),
-        discount: { type: "flat", cp: 200 },
+        priceModifier: { type: "flat", cp: -200 },
       }),
     ];
     render(<Cart {...defaultProps} entries={entries} />);

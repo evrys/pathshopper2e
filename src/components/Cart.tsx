@@ -13,7 +13,7 @@ import {
   serializeNotes,
 } from "../lib/url";
 import { getUpgradeOptions } from "../lib/variants";
-import type { Discount, Item, Price } from "../types";
+import type { Item, Price, PriceModifier } from "../types";
 import { AddCustomItemModal } from "./AddCustomItemModal";
 import styles from "./Cart.module.css";
 import { ItemSettingsModal } from "./ItemSettingsModal";
@@ -30,7 +30,10 @@ interface CartProps {
   onListNameChange: (name: string) => void;
   onSetQuantity: (itemId: string, quantity: number) => void;
   onRemoveItem: (itemId: string) => void;
-  onSetDiscount: (itemId: string, discount: Discount | undefined) => void;
+  onSetPriceModifier: (
+    itemId: string,
+    priceModifier: PriceModifier | undefined,
+  ) => void;
   onSetNotes: (itemId: string, notes: string) => void;
   onUpdateItem: (
     itemId: string,
@@ -68,11 +71,11 @@ function buildShareUrl(
       ]),
     );
 
-    // Collect per-item discounts keyed by share-URL id
-    const discountMap = new Map<string, Discount>();
-    for (const { item, discount } of entries) {
-      if (discount) {
-        discountMap.set(idMap.get(item.id) ?? item.id, discount);
+    // Collect per-item price modifiers keyed by share-URL id
+    const modifierMap = new Map<string, PriceModifier>();
+    for (const { item, priceModifier } of entries) {
+      if (priceModifier) {
+        modifierMap.set(idMap.get(item.id) ?? item.id, priceModifier);
       }
     }
 
@@ -84,7 +87,7 @@ function buildShareUrl(
       }
     }
 
-    params.set("items", serializeCart(cart, discountMap));
+    params.set("items", serializeCart(cart, modifierMap));
 
     const customEntries = entries.filter((e) =>
       e.item.id.startsWith("custom-"),
@@ -111,7 +114,7 @@ export function Cart({
   onListNameChange,
   onSetQuantity,
   onRemoveItem,
-  onSetDiscount,
+  onSetPriceModifier,
   onSetNotes,
   onUpdateItem,
   onAddItem,
@@ -125,7 +128,7 @@ export function Cart({
   const [listsOpen, setListsOpen] = useState(false);
   const [listsOpenCreating, setListsOpenCreating] = useState(false);
   const [customItemOpen, setCustomItemOpen] = useState(false);
-  const [discountEntry, setDiscountEntry] = useState<CartEntry | null>(null);
+  const [settingsEntry, setSettingsEntry] = useState<CartEntry | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
@@ -385,22 +388,22 @@ export function Cart({
             />
           )}
 
-          {discountEntry && (
+          {settingsEntry && (
             <ItemSettingsModal
-              itemName={discountEntry.item.name}
-              price={discountEntry.item.price}
-              isCustom={discountEntry.item.id.startsWith("custom-")}
-              currentDiscount={discountEntry.discount}
-              currentNotes={discountEntry.notes}
-              upgradeOptions={getUpgradeOptions(discountEntry.item, allItems)}
-              onApply={(discount, notes, customUpdate) => {
-                onSetDiscount(discountEntry.item.id, discount);
-                onSetNotes(discountEntry.item.id, notes);
+              itemName={settingsEntry.item.name}
+              price={settingsEntry.item.price}
+              isCustom={settingsEntry.item.id.startsWith("custom-")}
+              currentModifier={settingsEntry.priceModifier}
+              currentNotes={settingsEntry.notes}
+              upgradeOptions={getUpgradeOptions(settingsEntry.item, allItems)}
+              onApply={(priceModifier, notes, customUpdate) => {
+                onSetPriceModifier(settingsEntry.item.id, priceModifier);
+                onSetNotes(settingsEntry.item.id, notes);
                 if (customUpdate) {
-                  onUpdateItem(discountEntry.item.id, customUpdate);
+                  onUpdateItem(settingsEntry.item.id, customUpdate);
                 }
               }}
-              onClose={() => setDiscountEntry(null)}
+              onClose={() => setSettingsEntry(null)}
             />
           )}
 
@@ -428,12 +431,12 @@ export function Cart({
                       </ItemTooltipWrapper>
                     )}
                     <span className={styles.itemPrice}>
-                      {entry.discount ? (
+                      {entry.priceModifier ? (
                         <>
                           <span className={styles.originalPrice}>
                             {formatPrice(entry.item.price)}
                           </span>{" "}
-                          {formatPrice(entry.item.price, entry.discount)}
+                          {formatPrice(entry.item.price, entry.priceModifier)}
                         </>
                       ) : (
                         formatPrice(entry.item.price)
@@ -448,7 +451,7 @@ export function Cart({
                     <button
                       type="button"
                       className={styles.settingsBtn}
-                      onClick={() => setDiscountEntry(entry)}
+                      onClick={() => setSettingsEntry(entry)}
                       title="Item settings"
                     >
                       <svg

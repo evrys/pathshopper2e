@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Discount, Item } from "../types";
+import type { PriceModifier, Item } from "../types";
 import type { CartEntry } from "./useCart";
 import {
   cartEntriesToSavedData,
@@ -38,17 +38,17 @@ describe("cartEntriesToSavedData", () => {
     ]);
     const result = cartEntriesToSavedData(entries);
     expect(result.items).toEqual({ w1: 2 });
-    expect(result.discounts).toBeUndefined();
+    expect(result.priceModifiers).toBeUndefined();
     expect(result.customItems).toBeUndefined();
   });
 
   it("includes discounts when present", () => {
-    const discount: Discount = { type: "flat", cp: 50 };
+    const priceModifier: PriceModifier = { type: "flat", cp: 50 };
     const entries = new Map<string, CartEntry>([
-      ["w1", { item: makeItem(), quantity: 1, discount }],
+      ["w1", { item: makeItem(), quantity: 1, priceModifier }],
     ]);
     const result = cartEntriesToSavedData(entries);
-    expect(result.discounts).toEqual({ w1: { type: "flat", cp: 50 } });
+    expect(result.priceModifiers).toEqual({ w1: { type: "flat", cp: 50 } });
   });
 
   it("extracts custom items", () => {
@@ -74,7 +74,7 @@ describe("cartEntriesToSavedData", () => {
         {
           item: makeItem({ id: "a1", name: "Chain Mail", price: { gp: 6 } }),
           quantity: 1,
-          discount: { type: "percent", percent: 10 },
+          priceModifier: { type: "percent", percent: 10 },
         },
       ],
       [
@@ -91,7 +91,7 @@ describe("cartEntriesToSavedData", () => {
     ]);
     const result = cartEntriesToSavedData(entries);
     expect(result.items).toEqual({ w1: 3, a1: 1, "custom-0": 2 });
-    expect(result.discounts).toEqual({
+    expect(result.priceModifiers).toEqual({
       a1: { type: "percent", percent: 10 },
     });
     expect(result.customItems).toEqual([
@@ -102,7 +102,7 @@ describe("cartEntriesToSavedData", () => {
   it("returns empty items for empty cart", () => {
     const result = cartEntriesToSavedData(new Map());
     expect(result.items).toEqual({});
-    expect(result.discounts).toBeUndefined();
+    expect(result.priceModifiers).toBeUndefined();
     expect(result.notes).toBeUndefined();
     expect(result.customItems).toBeUndefined();
   });
@@ -134,21 +134,21 @@ describe("cartEntriesToSavedData", () => {
 describe("shareDataToSavedData", () => {
   it("converts share URL data to saved list data", () => {
     const cart = new Map([["w1", 2]]);
-    const discounts = new Map<string, Discount>([
+    const modifiers = new Map<string, PriceModifier>([
       ["w1", { type: "flat", cp: 50 }],
     ]);
     const customItems: Item[] = [];
-    const result = shareDataToSavedData(cart, discounts, customItems);
+    const result = shareDataToSavedData(cart, modifiers, customItems);
     expect(result.items).toEqual({ w1: 2 });
-    expect(result.discounts).toEqual({ w1: { type: "flat", cp: 50 } });
+    expect(result.priceModifiers).toEqual({ w1: { type: "flat", cp: 50 } });
     expect(result.customItems).toBeUndefined();
   });
 
   it("handles custom items from share URL", () => {
     const cart = new Map([["custom-0", 1]]);
-    const discounts = new Map<string, Discount>();
+    const modifiers = new Map<string, PriceModifier>();
     const customItems = [makeItem({ id: "custom-0", name: "Wand" })];
-    const result = shareDataToSavedData(cart, discounts, customItems);
+    const result = shareDataToSavedData(cart, modifiers, customItems);
     expect(result.customItems).toEqual([
       { id: "custom-0", name: "Wand", price: { gp: 1 } },
     ]);
@@ -156,7 +156,7 @@ describe("shareDataToSavedData", () => {
 
   it("omits discounts when map is empty", () => {
     const result = shareDataToSavedData(new Map([["w1", 1]]), new Map(), []);
-    expect(result.discounts).toBeUndefined();
+    expect(result.priceModifiers).toBeUndefined();
     expect(result.notes).toBeUndefined();
     expect(result.customItems).toBeUndefined();
   });
@@ -218,11 +218,11 @@ describe("savedListToCartEntries", () => {
       id: "test",
       name: "Test",
       items: { w1: 1 },
-      discounts: { w1: { type: "flat", cp: 50 } },
+      priceModifiers: { w1: { type: "flat", cp: 50 } },
       savedAt: "",
     };
     const result = savedListToCartEntries(list, itemDb);
-    expect(result?.get("w1")?.discount).toEqual({ type: "flat", cp: 50 });
+    expect(result?.get("w1")?.priceModifier).toEqual({ type: "flat", cp: 50 });
   });
 
   it("includes custom items from saved list", () => {
@@ -264,15 +264,15 @@ describe("savedListToCartEntries", () => {
       id: "test",
       name: "Test",
       items: { w1: 1, "custom-0": 2 },
-      discounts: { "custom-0": { type: "percent", percent: 25 } },
+      priceModifiers: { "custom-0": { type: "percent", percent: 25 } },
       customItems: [{ id: "custom-0", name: "Potion", price: { sp: 10 } }],
       savedAt: "",
     };
     const result = savedListToCartEntries(list, itemDb);
     expect(result).toBeDefined();
     expect(result?.size).toBe(2);
-    expect(result?.get("w1")?.discount).toBeUndefined();
-    expect(result?.get("custom-0")?.discount).toEqual({
+    expect(result?.get("w1")?.priceModifier).toBeUndefined();
+    expect(result?.get("custom-0")?.priceModifier).toEqual({
       type: "percent",
       percent: 25,
     });

@@ -118,7 +118,7 @@ function App() {
         createList(name);
         const savedData = shareDataToSavedData(
           shared.cart,
-          shared.discounts,
+          shared.priceModifiers,
           shared.customItems,
           shared.notes,
         );
@@ -249,7 +249,7 @@ function App() {
       for (const {
         name,
         quantity,
-        discount,
+        priceModifier,
         isCustom,
         price,
         notes,
@@ -281,7 +281,7 @@ function App() {
           newEntries.set(item.id, {
             item: item as CartEntry["item"],
             quantity: (existing?.quantity ?? 0) + quantity,
-            ...(discount ? { discount } : {}),
+            ...(priceModifier ? { priceModifier } : {}),
             ...(notes ? { notes } : {}),
           });
         }
@@ -347,7 +347,7 @@ function App() {
             onListNameChange={renameActiveList}
             onSetQuantity={setQuantity}
             onRemoveItem={removeItem}
-            onSetDiscount={setDiscount}
+            onSetPriceModifier={setDiscount}
             onSetNotes={setNotes}
             onUpdateItem={updateItem}
             onAddItem={addItem}

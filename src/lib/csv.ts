@@ -1,17 +1,26 @@
 import type { CartEntry } from "../hooks/useCart";
-import type { Discount } from "../types";
+import type { PriceModifier } from "../types";
 import { aonUrl } from "./aon";
 import { formatPrice } from "./price";
 
 /**
  * Export cart entries as a CSV string.
- * Columns: Name, Quantity, Level, Price, Type, Discount, Notes, URL
+ * Columns: Name, Quantity, Level, Price, Type, Price Modifier, Notes, URL
  */
 export function entriesToCsv(entries: CartEntry[]): string {
   const rows = [
-    ["Name", "Quantity", "Level", "Price", "Type", "Discount", "Notes", "URL"],
+    [
+      "Name",
+      "Quantity",
+      "Level",
+      "Price",
+      "Type",
+      "Price Modifier",
+      "Notes",
+      "URL",
+    ],
   ];
-  for (const { item, quantity, discount, notes } of entries) {
+  for (const { item, quantity, priceModifier, notes } of entries) {
     const isCustom = item.id.startsWith("custom-");
     rows.push([
       item.name,
@@ -19,7 +28,7 @@ export function entriesToCsv(entries: CartEntry[]): string {
       isCustom ? "" : String(item.level),
       formatPrice(item.price),
       isCustom ? "custom" : item.type,
-      formatDiscount(discount),
+      formatPriceModifier(priceModifier),
       notes ?? "",
       isCustom ? "" : aonUrl(item),
     ]);
@@ -27,21 +36,25 @@ export function entriesToCsv(entries: CartEntry[]): string {
   return rows.map((row) => row.map(csvEscape).join(",")).join("\n");
 }
 
-/** Format a discount for CSV export. */
-function formatDiscount(discount: Discount | undefined): string {
-  if (!discount) return "";
-  if (discount.type === "percent") return `${discount.percent}%`;
-  // Flat discount in copper — express in the most natural denomination
-  const { gp, sp, cp } = fromCopperForDiscount(discount.cp);
+/** Format a price modifier for CSV export. */
+function formatPriceModifier(modifier: PriceModifier | undefined): string {
+  if (!modifier) return "";
+  if (modifier.type === "percent") return `${modifier.percent}%`;
+  if (modifier.type === "crafting") return "-50%";
+  // Flat/upgrade modifier in copper — express in the most natural denomination
+  // Upgrade cp is always positive (discount), so negate for display
+  const displayCp = modifier.type === "upgrade" ? -modifier.cp : modifier.cp;
+  const sign = displayCp < 0 ? "-" : "";
+  const { gp, sp, cp } = fromCopperForModifier(Math.abs(displayCp));
   const parts: string[] = [];
   if (gp) parts.push(`${gp} gp`);
   if (sp) parts.push(`${sp} sp`);
   if (cp) parts.push(`${cp} cp`);
-  return parts.join(" ");
+  return parts.length > 0 ? `${sign}${parts.join(" ")}` : "";
 }
 
 /** Break copper pieces into gp/sp/cp for display. */
-function fromCopperForDiscount(totalCp: number): {
+function fromCopperForModifier(totalCp: number): {
   gp: number;
   sp: number;
   cp: number;
@@ -52,18 +65,21 @@ function fromCopperForDiscount(totalCp: number): {
   return { gp, sp, cp };
 }
 
-/** Parse a discount string from CSV back into a Discount. */
-export function parseDiscount(s: string): Discount | undefined {
+/** Parse a price modifier string from CSV back into a PriceModifier. */
+export function parsePriceModifier(s: string): PriceModifier | undefined {
   const trimmed = s.trim();
   if (!trimmed) return undefined;
 
-  // Percentage: "10%", "25 %"
-  const pctMatch = trimmed.match(/^(\d+)\s*%$/);
+  // Percentage: "10%", "-25 %", "+10%"
+  const pctMatch = trimmed.match(/^([+-]?\d+)\s*%$/);
   if (pctMatch) {
     return { type: "percent", percent: Number(pctMatch[1]) };
   }
 
-  // Flat: "1 gp", "5 sp", "1 gp 5 sp 3 cp", etc.
+  // Flat: "1 gp", "-5 gp", "1 gp 5 sp 3 cp", etc.
+  // Check for leading sign
+  const signMatch = trimmed.match(/^([+-])/);
+  const sign = signMatch?.[1] === "-" ? -1 : 1;
   const gpMatch = trimmed.match(/(\d+)\s*gp/);
   const spMatch = trimmed.match(/(\d+)\s*sp/);
   const cpMatch = trimmed.match(/(\d+)\s*cp/);
@@ -72,7 +88,7 @@ export function parseDiscount(s: string): Discount | undefined {
       (gpMatch ? Number(gpMatch[1]) * 100 : 0) +
       (spMatch ? Number(spMatch[1]) * 10 : 0) +
       (cpMatch ? Number(cpMatch[1]) : 0);
-    if (totalCp > 0) return { type: "flat", cp: totalCp };
+    if (totalCp > 0) return { type: "flat", cp: sign * totalCp };
   }
 
   return undefined;
@@ -90,8 +106,8 @@ function csvEscape(value: string): string {
 export interface CsvItem {
   name: string;
   quantity: number;
-  /** Present when the CSV row has a Discount column with a value. */
-  discount?: Discount;
+  /** Present when the CSV row has a Price Modifier/Discount column with a value. */
+  priceModifier?: PriceModifier;
   /** Price string from CSV (e.g. "5 gp"). Present for custom items. */
   price?: string;
   /** Notes text from CSV, if any. */
@@ -102,7 +118,7 @@ export interface CsvItem {
 
 /**
  * Parse a CSV string into an array of item descriptors.
- * Expects a "Name" column and optionally "Quantity", "Discount", "Type",
+ * Expects a "Name" column and optionally "Quantity", "Price Modifier" (or "Discount"), "Type",
  * and "Price" columns.
  */
 export function parseCsvItems(csv: string): CsvItem[] {
@@ -113,7 +129,10 @@ export function parseCsvItems(csv: string): CsvItem[] {
   const nameIdx = header.indexOf("name");
   if (nameIdx === -1) return [];
   const qtyIdx = header.indexOf("quantity");
-  const discountIdx = header.indexOf("discount");
+  const modifierIdx = Math.max(
+    header.indexOf("price modifier"),
+    header.indexOf("discount"),
+  );
   const typeIdx = header.indexOf("type");
   const priceIdx = header.indexOf("price");
   const notesIdx = header.indexOf("notes");
@@ -124,8 +143,8 @@ export function parseCsvItems(csv: string): CsvItem[] {
     const name = row[nameIdx]?.trim();
     if (!name) continue;
     const qty = qtyIdx >= 0 ? Number.parseInt(row[qtyIdx] ?? "1", 10) || 1 : 1;
-    const discount =
-      discountIdx >= 0 ? parseDiscount(row[discountIdx] ?? "") : undefined;
+    const priceModifier =
+      modifierIdx >= 0 ? parsePriceModifier(row[modifierIdx] ?? "") : undefined;
     const typeStr = typeIdx >= 0 ? row[typeIdx]?.trim().toLowerCase() : "";
     const priceStr = priceIdx >= 0 ? row[priceIdx]?.trim() : undefined;
     const notesStr = notesIdx >= 0 ? row[notesIdx]?.trim() : undefined;
@@ -133,7 +152,7 @@ export function parseCsvItems(csv: string): CsvItem[] {
     result.push({
       name,
       quantity: Math.max(1, qty),
-      ...(discount ? { discount } : {}),
+      ...(priceModifier ? { priceModifier } : {}),
       ...(priceStr ? { price: priceStr } : {}),
       ...(notesStr ? { notes: notesStr } : {}),
       isCustom,

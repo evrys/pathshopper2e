@@ -157,11 +157,11 @@ describe("cartReducer", () => {
       const item = makeItem();
       let state = cartReducer(emptyState, { type: "add", item });
       state = cartReducer(state, {
-        type: "set-discount",
+        type: "set-price-modifier",
         itemId: "w386",
-        discount: { type: "flat", cp: 500 },
+        priceModifier: { type: "flat", cp: 500 },
       });
-      expect(state.entries.get("w386")?.discount).toEqual({
+      expect(state.entries.get("w386")?.priceModifier).toEqual({
         type: "flat",
         cp: 500,
       });
@@ -171,11 +171,11 @@ describe("cartReducer", () => {
       const item = makeItem();
       let state = cartReducer(emptyState, { type: "add", item });
       state = cartReducer(state, {
-        type: "set-discount",
+        type: "set-price-modifier",
         itemId: "w386",
-        discount: { type: "percent", percent: 25 },
+        priceModifier: { type: "percent", percent: 25 },
       });
-      expect(state.entries.get("w386")?.discount).toEqual({
+      expect(state.entries.get("w386")?.priceModifier).toEqual({
         type: "percent",
         percent: 25,
       });
@@ -185,24 +185,24 @@ describe("cartReducer", () => {
       const item = makeItem();
       let state = cartReducer(emptyState, { type: "add", item });
       state = cartReducer(state, {
-        type: "set-discount",
+        type: "set-price-modifier",
         itemId: "w386",
-        discount: { type: "flat", cp: 250 },
+        priceModifier: { type: "flat", cp: 250 },
       });
-      expect(state.entries.get("w386")?.discount).toBeDefined();
+      expect(state.entries.get("w386")?.priceModifier).toBeDefined();
       state = cartReducer(state, {
-        type: "set-discount",
+        type: "set-price-modifier",
         itemId: "w386",
-        discount: undefined,
+        priceModifier: undefined,
       });
-      expect(state.entries.get("w386")?.discount).toBeUndefined();
+      expect(state.entries.get("w386")?.priceModifier).toBeUndefined();
     });
 
     it("does nothing for unknown item", () => {
       const state = cartReducer(emptyState, {
-        type: "set-discount",
+        type: "set-price-modifier",
         itemId: "nonexistent",
-        discount: { type: "flat", cp: 100 },
+        priceModifier: { type: "flat", cp: 100 },
       });
       expect(state.entries.size).toBe(0);
     });
@@ -216,12 +216,12 @@ describe("cartReducer", () => {
         quantity: 5,
       });
       state = cartReducer(state, {
-        type: "set-discount",
+        type: "set-price-modifier",
         itemId: "w386",
-        discount: { type: "flat", cp: 200 },
+        priceModifier: { type: "flat", cp: 200 },
       });
       expect(state.entries.get("w386")?.quantity).toBe(5);
-      expect(state.entries.get("w386")?.discount).toEqual({
+      expect(state.entries.get("w386")?.priceModifier).toEqual({
         type: "flat",
         cp: 200,
       });
@@ -275,9 +275,9 @@ describe("cartReducer", () => {
         quantity: 3,
       });
       state = cartReducer(state, {
-        type: "set-discount",
+        type: "set-price-modifier",
         itemId: "w386",
-        discount: { type: "flat", cp: 100 },
+        priceModifier: { type: "flat", cp: 100 },
       });
       state = cartReducer(state, {
         type: "set-notes",
@@ -285,7 +285,7 @@ describe("cartReducer", () => {
         notes: "For the boss fight",
       });
       expect(state.entries.get("w386")?.quantity).toBe(3);
-      expect(state.entries.get("w386")?.discount).toEqual({
+      expect(state.entries.get("w386")?.priceModifier).toEqual({
         type: "flat",
         cp: 100,
       });
@@ -357,9 +357,9 @@ describe("cartReducer", () => {
         quantity: 3,
       });
       state = cartReducer(state, {
-        type: "set-discount",
+        type: "set-price-modifier",
         itemId: "custom-1",
-        discount: { type: "flat", cp: 50 },
+        priceModifier: { type: "flat", cp: 50 },
       });
       state = cartReducer(state, {
         type: "set-notes",
@@ -372,7 +372,7 @@ describe("cartReducer", () => {
         update: { name: "Renamed" },
       });
       expect(state.entries.get("custom-1")?.quantity).toBe(3);
-      expect(state.entries.get("custom-1")?.discount).toEqual({
+      expect(state.entries.get("custom-1")?.priceModifier).toEqual({
         type: "flat",
         cp: 50,
       });

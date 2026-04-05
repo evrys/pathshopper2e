@@ -5,8 +5,8 @@ export interface Price {
   cp?: number;
 }
 
-/** A discount applied to an item's price. */
-export type Discount =
+/** A modifier applied to an item's price (positive = surcharge, negative = discount). */
+export type PriceModifier =
   | { type: "flat"; cp: number }
   | { type: "percent"; percent: number }
   | { type: "upgrade"; cp: number }

@@ -1,12 +1,12 @@
 import { useCallback, useReducer } from "react";
-import { resolveDiscount, sumPrices, toCopper } from "../lib/price";
-import type { Discount, Item, Price } from "../types";
+import { resolvePriceModifier, sumPrices, toCopper } from "../lib/price";
+import type { Item, Price, PriceModifier } from "../types";
 
 export interface CartEntry {
   item: Item;
   quantity: number;
-  /** Discount applied to each unit's price. */
-  discount?: Discount;
+  /** Price modifier applied to each unit's price. */
+  priceModifier?: PriceModifier;
   /** Free-form notes about this item (e.g. where to buy, why you need it). */
   notes?: string;
 }
@@ -19,7 +19,11 @@ export type CartAction =
   | { type: "add"; item: Item }
   | { type: "remove"; itemId: string }
   | { type: "set-quantity"; itemId: string; quantity: number }
-  | { type: "set-discount"; itemId: string; discount: Discount | undefined }
+  | {
+      type: "set-price-modifier";
+      itemId: string;
+      priceModifier: PriceModifier | undefined;
+    }
   | { type: "set-notes"; itemId: string; notes: string }
   | {
       type: "update-item";
@@ -58,10 +62,13 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
         }
       }
       break;
-    case "set-discount": {
+    case "set-price-modifier": {
       const entry = next.get(action.itemId);
       if (entry) {
-        next.set(action.itemId, { ...entry, discount: action.discount });
+        next.set(action.itemId, {
+          ...entry,
+          priceModifier: action.priceModifier,
+        });
       }
       break;
     }
@@ -111,8 +118,8 @@ export function useCart() {
     [],
   );
   const setDiscount = useCallback(
-    (itemId: string, discount: Discount | undefined) =>
-      dispatch({ type: "set-discount", itemId, discount }),
+    (itemId: string, priceModifier: PriceModifier | undefined) =>
+      dispatch({ type: "set-price-modifier", itemId, priceModifier }),
     [],
   );
   const setNotes = useCallback(
@@ -137,14 +144,14 @@ export function useCart() {
     entries.map((e) => ({
       price: e.item.price,
       quantity: e.quantity,
-      discount: e.discount,
+      priceModifier: e.priceModifier,
     })),
   );
   const totalCopper = entries.reduce((sum, e) => {
-    const discountCp = e.discount
-      ? resolveDiscount(e.discount, e.item.price)
+    const adjustCp = e.priceModifier
+      ? resolvePriceModifier(e.priceModifier, e.item.price)
       : 0;
-    return sum + Math.max(0, toCopper(e.item.price) - discountCp) * e.quantity;
+    return sum + Math.max(0, toCopper(e.item.price) + adjustCp) * e.quantity;
   }, 0);
   const totalItems = entries.reduce((sum, e) => sum + e.quantity, 0);
 

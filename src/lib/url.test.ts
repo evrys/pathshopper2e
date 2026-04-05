@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Discount, Item } from "../types";
+import type { Item, PriceModifier } from "../types";
 import {
   buildCustomIdMap,
   buildHashString,
@@ -18,15 +18,15 @@ function cartOf(s: string) {
   return parseCartString(s).cart;
 }
 
-/** Helper: extract just the discounts map from parseCartString. */
-function discountsOf(s: string) {
-  return parseCartString(s).discounts;
+/** Helper: extract just the price modifiers map from parseCartString. */
+function modifiersOf(s: string) {
+  return parseCartString(s).priceModifiers;
 }
 
 describe("parseCartString", () => {
   it("returns empty maps for empty string", () => {
     expect(cartOf("")).toEqual(new Map());
-    expect(discountsOf("")).toEqual(new Map());
+    expect(modifiersOf("")).toEqual(new Map());
   });
 
   it("parses a single item with default qty 1", () => {
@@ -73,67 +73,71 @@ describe("parseCartString", () => {
   });
 
   it("parses inline flat discount with ~d suffix", () => {
-    const { cart, discounts } = parseCartString("sword-01~d500");
+    const { cart, priceModifiers } = parseCartString("sword-01~d500");
     expect(cart).toEqual(new Map([["sword-01", 1]]));
-    expect(discounts).toEqual(
+    expect(priceModifiers).toEqual(
       new Map([["sword-01", { type: "flat", cp: 500 }]]),
     );
   });
 
   it("parses qty and flat discount together", () => {
-    const { cart, discounts } = parseCartString("arrow-01*5~d100");
+    const { cart, priceModifiers } = parseCartString("arrow-01*5~d100");
     expect(cart).toEqual(new Map([["arrow-01", 5]]));
-    expect(discounts).toEqual(
+    expect(priceModifiers).toEqual(
       new Map([["arrow-01", { type: "flat", cp: 100 }]]),
     );
   });
 
   it("parses percentage discount with ~p suffix", () => {
-    const { cart, discounts } = parseCartString("sword-01~p25");
+    const { cart, priceModifiers } = parseCartString("sword-01~p25");
     expect(cart).toEqual(new Map([["sword-01", 1]]));
-    expect(discounts).toEqual(
+    expect(priceModifiers).toEqual(
       new Map([["sword-01", { type: "percent", percent: 25 }]]),
     );
   });
 
   it("parses qty and percentage discount together", () => {
-    const { cart, discounts } = parseCartString("arrow-01*3~p10");
+    const { cart, priceModifiers } = parseCartString("arrow-01*3~p10");
     expect(cart).toEqual(new Map([["arrow-01", 3]]));
-    expect(discounts).toEqual(
+    expect(priceModifiers).toEqual(
       new Map([["arrow-01", { type: "percent", percent: 10 }]]),
     );
   });
 
   it("parses upgrade discount with ~u suffix", () => {
-    const { cart, discounts } = parseCartString("rune-01~u6500");
+    const { cart, priceModifiers } = parseCartString("rune-01~u6500");
     expect(cart).toEqual(new Map([["rune-01", 1]]));
-    expect(discounts).toEqual(
+    expect(priceModifiers).toEqual(
       new Map([["rune-01", { type: "upgrade", cp: 6500 }]]),
     );
   });
 
   it("parses qty and upgrade discount together", () => {
-    const { cart, discounts } = parseCartString("rune-01*2~u6500");
+    const { cart, priceModifiers } = parseCartString("rune-01*2~u6500");
     expect(cart).toEqual(new Map([["rune-01", 2]]));
-    expect(discounts).toEqual(
+    expect(priceModifiers).toEqual(
       new Map([["rune-01", { type: "upgrade", cp: 6500 }]]),
     );
   });
 
   it("parses crafting discount with ~c suffix", () => {
-    const { cart, discounts } = parseCartString("sword-01~c");
+    const { cart, priceModifiers } = parseCartString("sword-01~c");
     expect(cart).toEqual(new Map([["sword-01", 1]]));
-    expect(discounts).toEqual(new Map([["sword-01", { type: "crafting" }]]));
+    expect(priceModifiers).toEqual(
+      new Map([["sword-01", { type: "crafting" }]]),
+    );
   });
 
   it("parses qty and crafting discount together", () => {
-    const { cart, discounts } = parseCartString("sword-01*3~c");
+    const { cart, priceModifiers } = parseCartString("sword-01*3~c");
     expect(cart).toEqual(new Map([["sword-01", 3]]));
-    expect(discounts).toEqual(new Map([["sword-01", { type: "crafting" }]]));
+    expect(priceModifiers).toEqual(
+      new Map([["sword-01", { type: "crafting" }]]),
+    );
   });
 
   it("parses mixed entries with and without discounts", () => {
-    const { cart, discounts } = parseCartString(
+    const { cart, priceModifiers } = parseCartString(
       "sword-01*2~d500+shield-02+potion-03~p50",
     );
     expect(cart).toEqual(
@@ -143,7 +147,7 @@ describe("parseCartString", () => {
         ["potion-03", 1],
       ]),
     );
-    expect(discounts).toEqual(
+    expect(priceModifiers).toEqual(
       new Map<string, unknown>([
         ["sword-01", { type: "flat", cp: 500 }],
         ["potion-03", { type: "percent", percent: 50 }],
@@ -151,9 +155,20 @@ describe("parseCartString", () => {
     );
   });
 
-  it("ignores discount of 0 or negative", () => {
-    expect(discountsOf("sword-01~d0")).toEqual(new Map());
-    expect(discountsOf("sword-01~d-5")).toEqual(new Map());
+  it("ignores modifier of 0", () => {
+    expect(modifiersOf("sword-01~d0")).toEqual(new Map());
+  });
+
+  it("parses negative flat modifier (discount)", () => {
+    expect(modifiersOf("sword-01~d-500")).toEqual(
+      new Map([["sword-01", { type: "flat", cp: -500 }]]),
+    );
+  });
+
+  it("parses negative percent modifier (discount)", () => {
+    expect(modifiersOf("sword-01~p-25")).toEqual(
+      new Map([["sword-01", { type: "percent", percent: -25 }]]),
+    );
   });
 });
 
@@ -210,26 +225,26 @@ describe("serializeCart", () => {
 
   it("appends ~d suffix for flat discounts", () => {
     const cart = new Map([["sword-01", 1]]);
-    const discounts = new Map([
+    const priceModifiers = new Map([
       ["sword-01", { type: "flat" as const, cp: 500 }],
     ]);
-    expect(serializeCart(cart, discounts)).toBe("sword-01~d500");
+    expect(serializeCart(cart, priceModifiers)).toBe("sword-01~d500");
   });
 
   it("appends ~p suffix for percentage discounts", () => {
     const cart = new Map([["sword-01", 1]]);
-    const discounts = new Map([
+    const priceModifiers = new Map([
       ["sword-01", { type: "percent" as const, percent: 25 }],
     ]);
-    expect(serializeCart(cart, discounts)).toBe("sword-01~p25");
+    expect(serializeCart(cart, priceModifiers)).toBe("sword-01~p25");
   });
 
   it("appends discount after qty", () => {
     const cart = new Map([["arrow-01", 5]]);
-    const discounts = new Map([
+    const priceModifiers = new Map([
       ["arrow-01", { type: "flat" as const, cp: 100 }],
     ]);
-    expect(serializeCart(cart, discounts)).toBe("arrow-01*5~d100");
+    expect(serializeCart(cart, priceModifiers)).toBe("arrow-01*5~d100");
   });
 
   it("mixes discounted and non-discounted items", () => {
@@ -237,50 +252,52 @@ describe("serializeCart", () => {
       ["sword-01", 2],
       ["shield-02", 1],
     ]);
-    const discounts = new Map([
+    const priceModifiers = new Map([
       ["sword-01", { type: "percent" as const, percent: 10 }],
     ]);
-    expect(serializeCart(cart, discounts)).toBe("sword-01*2~p10+shield-02");
+    expect(serializeCart(cart, priceModifiers)).toBe(
+      "sword-01*2~p10+shield-02",
+    );
   });
 
-  it("ignores discount map for items not in cart", () => {
+  it("ignores price modifier map for items not in cart", () => {
     const cart = new Map([["sword-01", 1]]);
-    const discounts = new Map([
+    const priceModifiers = new Map([
       ["other-99", { type: "flat" as const, cp: 500 }],
     ]);
-    expect(serializeCart(cart, discounts)).toBe("sword-01");
+    expect(serializeCart(cart, priceModifiers)).toBe("sword-01");
   });
 
   it("appends ~u suffix for upgrade discounts", () => {
     const cart = new Map([["rune-01", 1]]);
-    const discounts = new Map([
+    const priceModifiers = new Map([
       ["rune-01", { type: "upgrade" as const, cp: 6500 }],
     ]);
-    expect(serializeCart(cart, discounts)).toBe("rune-01~u6500");
+    expect(serializeCart(cart, priceModifiers)).toBe("rune-01~u6500");
   });
 
   it("appends upgrade discount after qty", () => {
     const cart = new Map([["rune-01", 2]]);
-    const discounts = new Map([
+    const priceModifiers = new Map([
       ["rune-01", { type: "upgrade" as const, cp: 6500 }],
     ]);
-    expect(serializeCart(cart, discounts)).toBe("rune-01*2~u6500");
+    expect(serializeCart(cart, priceModifiers)).toBe("rune-01*2~u6500");
   });
 
   it("appends ~c suffix for crafting discounts", () => {
     const cart = new Map([["sword-01", 1]]);
-    const discounts = new Map<string, Discount>([
+    const priceModifiers = new Map<string, PriceModifier>([
       ["sword-01", { type: "crafting" }],
     ]);
-    expect(serializeCart(cart, discounts)).toBe("sword-01~c");
+    expect(serializeCart(cart, priceModifiers)).toBe("sword-01~c");
   });
 
   it("appends crafting discount after qty", () => {
     const cart = new Map([["sword-01", 3]]);
-    const discounts = new Map<string, Discount>([
+    const priceModifiers = new Map<string, PriceModifier>([
       ["sword-01", { type: "crafting" }],
     ]);
-    expect(serializeCart(cart, discounts)).toBe("sword-01*3~c");
+    expect(serializeCart(cart, priceModifiers)).toBe("sword-01*3~c");
   });
 });
 
@@ -451,7 +468,7 @@ describe("parseShareParams with custom items", () => {
   });
 });
 
-describe("parseShareParams with discounts", () => {
+describe("parseShareParams with price modifiers", () => {
   it("parses inline flat discount from the items param", () => {
     const params = new URLSearchParams();
     params.set("items", "sword-01~d500+shield-02*2");
@@ -459,11 +476,11 @@ describe("parseShareParams with discounts", () => {
     const result = parseShareParams(params);
     expect(result.cart.get("sword-01")).toBe(1);
     expect(result.cart.get("shield-02")).toBe(2);
-    expect(result.discounts.get("sword-01")).toEqual({
+    expect(result.priceModifiers.get("sword-01")).toEqual({
       type: "flat",
       cp: 500,
     });
-    expect(result.discounts.has("shield-02")).toBe(false);
+    expect(result.priceModifiers.has("shield-02")).toBe(false);
   });
 
   it("parses inline percentage discount from the items param", () => {
@@ -471,18 +488,18 @@ describe("parseShareParams with discounts", () => {
     params.set("items", "sword-01~p25");
 
     const result = parseShareParams(params);
-    expect(result.discounts.get("sword-01")).toEqual({
+    expect(result.priceModifiers.get("sword-01")).toEqual({
       type: "percent",
       percent: 25,
     });
   });
 
-  it("returns empty discount map when no discounts in items", () => {
+  it("returns empty price modifier map when no price modifiers in items", () => {
     const params = new URLSearchParams();
     params.set("items", "sword-01+shield-02*2");
 
     const result = parseShareParams(params);
-    expect(result.discounts.size).toBe(0);
+    expect(result.priceModifiers.size).toBe(0);
   });
 
   it("roundtrips cart with flat discount through serialize/parse", () => {
@@ -490,24 +507,24 @@ describe("parseShareParams with discounts", () => {
       ["sword-01", 2],
       ["potion-03", 1],
     ]);
-    const discounts = new Map([
+    const priceModifiers = new Map([
       ["sword-01", { type: "flat" as const, cp: 1000 }],
     ]);
-    const serialized = serializeCart(cart, discounts);
+    const serialized = serializeCart(cart, priceModifiers);
     const parsed = parseCartString(serialized);
     expect(parsed.cart).toEqual(cart);
-    expect(parsed.discounts).toEqual(discounts);
+    expect(parsed.priceModifiers).toEqual(priceModifiers);
   });
 
   it("roundtrips cart with percentage discount through serialize/parse", () => {
     const cart = new Map([["sword-01", 1]]);
-    const discounts = new Map([
+    const priceModifiers = new Map([
       ["sword-01", { type: "percent" as const, percent: 15 }],
     ]);
-    const serialized = serializeCart(cart, discounts);
+    const serialized = serializeCart(cart, priceModifiers);
     const parsed = parseCartString(serialized);
     expect(parsed.cart).toEqual(cart);
-    expect(parsed.discounts).toEqual(discounts);
+    expect(parsed.priceModifiers).toEqual(priceModifiers);
   });
 });
 

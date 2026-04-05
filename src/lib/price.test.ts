@@ -3,7 +3,7 @@ import {
   formatPrice,
   fromCopper,
   parseBudget,
-  resolveDiscount,
+  resolvePriceModifier,
   sumPrices,
   toCopper,
 } from "./price";
@@ -67,17 +67,17 @@ describe("formatPrice", () => {
 
   it("applies flat discount in cp to the price", () => {
     // 100 gp = 10000 cp, minus 1000 cp (10 gp) = 90 gp
-    expect(formatPrice({ gp: 100 }, { type: "flat", cp: 1000 })).toBe("90 gp");
+    expect(formatPrice({ gp: 100 }, { type: "flat", cp: -1000 })).toBe("90 gp");
   });
 
   it("applies flat discount with denomination rollup", () => {
     // 1 gp = 100 cp, minus 50 cp = 5 sp
-    expect(formatPrice({ gp: 1 }, { type: "flat", cp: 50 })).toBe("5 sp");
+    expect(formatPrice({ gp: 1 }, { type: "flat", cp: -50 })).toBe("5 sp");
   });
 
   it("applies percentage discount", () => {
     // 50% off 100 gp = 50 gp
-    expect(formatPrice({ gp: 100 }, { type: "percent", percent: 50 })).toBe(
+    expect(formatPrice({ gp: 100 }, { type: "percent", percent: -50 })).toBe(
       "50 gp",
     );
   });
@@ -156,7 +156,7 @@ describe("sumPrices", () => {
         {
           price: { gp: 100 },
           quantity: 1,
-          discount: { type: "flat", cp: 1000 },
+          priceModifier: { type: "flat", cp: -1000 },
         },
       ]),
     ).toEqual({ gp: 90 });
@@ -168,7 +168,7 @@ describe("sumPrices", () => {
       {
         price: { gp: 100 },
         quantity: 1,
-        discount: { type: "flat", cp: 5000 },
+        priceModifier: { type: "flat", cp: -5000 },
       },
       { price: { gp: 10 }, quantity: 2 },
     ]);
@@ -177,46 +177,61 @@ describe("sumPrices", () => {
   });
 
   it("applies percentage discount in sumPrices", () => {
-    // 10% off 100 gp = 90 gp
+    // 10% off 100 gp = 90 gp per item, 2 items = 180 gp
     expect(
       sumPrices([
         {
           price: { gp: 100 },
           quantity: 2,
-          discount: { type: "percent", percent: 10 },
+          priceModifier: { type: "percent", percent: -10 },
         },
       ]),
     ).toEqual({ gp: 180 });
   });
 });
 
-describe("resolveDiscount", () => {
-  it("returns cp directly for flat discount", () => {
-    expect(resolveDiscount({ type: "flat", cp: 500 }, { gp: 100 })).toBe(500);
-  });
-
-  it("calculates copper from percentage discount", () => {
-    // 25% of 100 gp (10000 cp) = 2500 cp
-    expect(resolveDiscount({ type: "percent", percent: 25 }, { gp: 100 })).toBe(
-      2500,
+describe("resolvePriceModifier", () => {
+  it("returns cp directly for flat modifier (positive = surcharge)", () => {
+    expect(resolvePriceModifier({ type: "flat", cp: 500 }, { gp: 100 })).toBe(
+      500,
     );
   });
 
-  it("rounds percentage discount to nearest copper", () => {
+  it("returns negative cp for flat discount", () => {
+    expect(resolvePriceModifier({ type: "flat", cp: -500 }, { gp: 100 })).toBe(
+      -500,
+    );
+  });
+
+  it("calculates copper from percentage modifier", () => {
+    // 25% of 100 gp (10000 cp) = 2500 cp surcharge
+    expect(
+      resolvePriceModifier({ type: "percent", percent: 25 }, { gp: 100 }),
+    ).toBe(2500);
+  });
+
+  it("calculates negative copper from negative percentage modifier", () => {
+    // -25% of 100 gp (10000 cp) = -2500 cp discount
+    expect(
+      resolvePriceModifier({ type: "percent", percent: -25 }, { gp: 100 }),
+    ).toBe(-2500);
+  });
+
+  it("rounds percentage modifier to nearest copper", () => {
     // 33% of 1 gp (100 cp) = 33 cp
-    expect(resolveDiscount({ type: "percent", percent: 33 }, { gp: 1 })).toBe(
-      33,
-    );
+    expect(
+      resolvePriceModifier({ type: "percent", percent: 33 }, { gp: 1 }),
+    ).toBe(33);
   });
 
-  it("returns cp directly for upgrade discount", () => {
-    expect(resolveDiscount({ type: "upgrade", cp: 6500 }, { gp: 100 })).toBe(
-      6500,
-    );
+  it("returns negated cp for upgrade modifier (always a discount)", () => {
+    expect(
+      resolvePriceModifier({ type: "upgrade", cp: 6500 }, { gp: 100 }),
+    ).toBe(-6500);
   });
 
-  it("calculates 50% for crafting discount", () => {
-    // 50% of 10 gp (1000 cp) = 500 cp
-    expect(resolveDiscount({ type: "crafting" }, { gp: 10 })).toBe(500);
+  it("calculates -50% for crafting modifier (always a discount)", () => {
+    // -50% of 10 gp (1000 cp) = -500 cp
+    expect(resolvePriceModifier({ type: "crafting" }, { gp: 10 })).toBe(-500);
   });
 });

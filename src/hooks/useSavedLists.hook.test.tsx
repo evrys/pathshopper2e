@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { Discount } from "../types";
+import type { PriceModifier } from "../types";
 import {
   type SavedCustomItem,
   type SavedList,
@@ -18,15 +18,15 @@ const ACTIVE_KEY = "pathshopper2e:active-list-id";
 /** Build a SavedListData from Maps, matching the old saveActiveList arg style. */
 function makeSavedData(
   items: Map<string, number>,
-  discounts?: Map<string, Discount>,
+  priceModifiers?: Map<string, PriceModifier>,
   customItems?: SavedCustomItem[],
   notes?: Map<string, string>,
 ): SavedListData {
   return {
     items: Object.fromEntries(items),
-    discounts:
-      discounts && discounts.size > 0
-        ? Object.fromEntries(discounts)
+    priceModifiers:
+      priceModifiers && priceModifiers.size > 0
+        ? Object.fromEntries(priceModifiers)
         : undefined,
     notes: notes && notes.size > 0 ? Object.fromEntries(notes) : undefined,
     customItems:
@@ -427,7 +427,7 @@ describe("useSavedLists hook", () => {
               ["sword-1", 2],
               ["potion-1", 5],
             ]),
-            new Map<string, Discount>([
+            new Map<string, PriceModifier>([
               ["sword-1", { type: "flat", cp: 200 }],
               ["potion-1", { type: "percent", percent: 10 }],
             ]),
@@ -436,7 +436,7 @@ describe("useSavedLists hook", () => {
       });
 
       await waitFor(() => {
-        expect(result.current.activeList?.discounts).toEqual({
+        expect(result.current.activeList?.priceModifiers).toEqual({
           "sword-1": { type: "flat", cp: 200 },
           "potion-1": { type: "percent", percent: 10 },
         });
@@ -444,7 +444,7 @@ describe("useSavedLists hook", () => {
 
       // Verify localStorage has the discounts
       const stored = getStoredList("list-1");
-      expect(stored?.discounts).toEqual({
+      expect(stored?.priceModifiers).toEqual({
         "sword-1": { type: "flat", cp: 200 },
         "potion-1": { type: "percent", percent: 10 },
       });
@@ -467,7 +467,9 @@ describe("useSavedLists hook", () => {
         result.current.saveActiveList(
           makeSavedData(
             new Map([["sword-1", 1]]),
-            new Map<string, Discount>([["sword-1", { type: "flat", cp: 500 }]]),
+            new Map<string, PriceModifier>([
+              ["sword-1", { type: "flat", cp: 500 }],
+            ]),
           ),
         );
       });
@@ -480,7 +482,7 @@ describe("useSavedLists hook", () => {
       const stored = getStoredList("list-1");
       expect(stored).not.toBeNull();
       expect(stored?.items).toEqual({ "sword-1": 1 });
-      expect(stored?.discounts).toEqual({
+      expect(stored?.priceModifiers).toEqual({
         "sword-1": { type: "flat", cp: 500 },
       });
     });
@@ -488,7 +490,7 @@ describe("useSavedLists hook", () => {
     it("clears discounts when saving without them", async () => {
       const list = makeList({
         items: { "sword-1": 1 },
-        discounts: { "sword-1": { type: "flat", cp: 200 } },
+        priceModifiers: { "sword-1": { type: "flat", cp: 200 } },
       });
       storeList(list);
       localStorage.setItem(ACTIVE_KEY, "list-1");
@@ -498,7 +500,7 @@ describe("useSavedLists hook", () => {
       });
 
       await waitFor(() => {
-        expect(result.current.activeList?.discounts).toEqual({
+        expect(result.current.activeList?.priceModifiers).toEqual({
           "sword-1": { type: "flat", cp: 200 },
         });
       });
@@ -509,11 +511,11 @@ describe("useSavedLists hook", () => {
       });
 
       await waitFor(() => {
-        expect(result.current.activeList?.discounts).toBeUndefined();
+        expect(result.current.activeList?.priceModifiers).toBeUndefined();
       });
 
       const stored = getStoredList("list-1");
-      expect(stored?.discounts).toBeUndefined();
+      expect(stored?.priceModifiers).toBeUndefined();
     });
 
     it("saves custom items alongside regular items", async () => {
@@ -577,7 +579,7 @@ describe("useSavedLists hook", () => {
         result.current.saveActiveList(
           makeSavedData(
             new Map([["custom-1-456", 3]]),
-            new Map<string, Discount>([
+            new Map<string, PriceModifier>([
               ["custom-1-456", { type: "percent", percent: 10 }],
             ]),
             [
@@ -604,7 +606,7 @@ describe("useSavedLists hook", () => {
       expect(stored?.customItems).toEqual([
         { id: "custom-1-456", name: "Potion of Speed", price: { gp: 12 } },
       ]);
-      expect(stored?.discounts).toEqual({
+      expect(stored?.priceModifiers).toEqual({
         "custom-1-456": { type: "percent", percent: 10 },
       });
     });

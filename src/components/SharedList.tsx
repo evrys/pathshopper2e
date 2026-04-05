@@ -9,7 +9,7 @@ import {
 import { aonUrl } from "../lib/aon";
 import { formatPrice, sumPrices } from "../lib/price";
 import { parseHashParams, parseShareParams } from "../lib/url";
-import type { Discount, Item } from "../types";
+import type { Item, PriceModifier } from "../types";
 import { ItemTooltipWrapper } from "./ItemTooltip";
 import styles from "./SharedList.module.css";
 import { VersionTag } from "./VersionTag";
@@ -17,16 +17,14 @@ import { VersionTag } from "./VersionTag";
 interface ListEntry {
   item: Item;
   quantity: number;
-  discount?: Discount;
+  priceModifier?: PriceModifier;
   notes?: string;
 }
 
 export function SharedList() {
   const { items, loading } = useItems();
-  const { cart, charName, listId, customItems, discounts, notes } = useMemo(
-    () => parseShareParams(parseHashParams(window.location.hash)),
-    [],
-  );
+  const { cart, charName, listId, customItems, priceModifiers, notes } =
+    useMemo(() => parseShareParams(parseHashParams(window.location.hash)), []);
 
   const entries = useMemo(() => {
     if (loading || cart.size === 0) return [];
@@ -38,13 +36,13 @@ export function SharedList() {
     for (const [id, qty] of cart) {
       const item = itemMap.get(id);
       if (item) {
-        const discount = discounts.get(id);
+        const priceModifier = priceModifiers.get(id);
         const note = notes.get(id);
-        result.push({ item, quantity: qty, discount, notes: note });
+        result.push({ item, quantity: qty, priceModifier, notes: note });
       }
     }
     return result;
-  }, [items, loading, cart, customItems, discounts, notes]);
+  }, [items, loading, cart, customItems, priceModifiers, notes]);
 
   const totalPrice = useMemo(
     () =>
@@ -52,7 +50,7 @@ export function SharedList() {
         entries.map((e) => ({
           price: e.item.price,
           quantity: e.quantity,
-          discount: e.discount,
+          priceModifier: e.priceModifier,
         })),
       ),
     [entries],
@@ -64,7 +62,12 @@ export function SharedList() {
   /** Save the shared list to localStorage and navigate to the editor. */
   const handleEdit = useCallback(() => {
     const id = listId || generateListId();
-    const savedData = shareDataToSavedData(cart, discounts, customItems, notes);
+    const savedData = shareDataToSavedData(
+      cart,
+      priceModifiers,
+      customItems,
+      notes,
+    );
     const list: SavedList = {
       id,
       name: charName || "Shared List",
@@ -75,7 +78,7 @@ export function SharedList() {
 
     const base = import.meta.env.BASE_URL.replace(/\/$/, "");
     window.location.href = `${window.location.origin}${base}/#lid=${encodeURIComponent(id)}`;
-  }, [cart, charName, listId, discounts, customItems, notes]);
+  }, [cart, charName, listId, priceModifiers, customItems, notes]);
 
   if (loading) {
     return (
@@ -99,46 +102,49 @@ export function SharedList() {
       ) : (
         <>
           <ul className={styles.items}>
-            {entries.map(({ item, quantity, discount, notes: itemNotes }) => (
-              <li key={item.id} className={styles.item}>
-                <div className={styles.itemInfo}>
-                  {item.id.startsWith("custom-") ? (
-                    <span className={styles.itemName}>{item.name}</span>
-                  ) : (
-                    <ItemTooltipWrapper item={item}>
-                      <a
-                        className={styles.itemName}
-                        href={aonUrl(item)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {item.name}
-                      </a>
-                    </ItemTooltipWrapper>
-                  )}
-                  <span className={styles.itemMeta}>
-                    {!item.id.startsWith("custom-") && `Level ${item.level} · `}
-                    {discount ? (
-                      <>
-                        <span className={styles.originalPrice}>
-                          {formatPrice(item.price)}
-                        </span>{" "}
-                        {formatPrice(item.price, discount)}
-                      </>
+            {entries.map(
+              ({ item, quantity, priceModifier, notes: itemNotes }) => (
+                <li key={item.id} className={styles.item}>
+                  <div className={styles.itemInfo}>
+                    {item.id.startsWith("custom-") ? (
+                      <span className={styles.itemName}>{item.name}</span>
                     ) : (
-                      formatPrice(item.price)
+                      <ItemTooltipWrapper item={item}>
+                        <a
+                          className={styles.itemName}
+                          href={aonUrl(item)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {item.name}
+                        </a>
+                      </ItemTooltipWrapper>
                     )}
-                    {quantity > 1 && " each"}
-                  </span>
-                  {itemNotes && (
-                    <span className={styles.itemNotes}>{itemNotes}</span>
+                    <span className={styles.itemMeta}>
+                      {!item.id.startsWith("custom-") &&
+                        `Level ${item.level} · `}
+                      {priceModifier ? (
+                        <>
+                          <span className={styles.originalPrice}>
+                            {formatPrice(item.price)}
+                          </span>{" "}
+                          {formatPrice(item.price, priceModifier)}
+                        </>
+                      ) : (
+                        formatPrice(item.price)
+                      )}
+                      {quantity > 1 && " each"}
+                    </span>
+                    {itemNotes && (
+                      <span className={styles.itemNotes}>{itemNotes}</span>
+                    )}
+                  </div>
+                  {quantity > 1 && (
+                    <span className={styles.qty}>&times;{quantity}</span>
                   )}
-                </div>
-                {quantity > 1 && (
-                  <span className={styles.qty}>&times;{quantity}</span>
-                )}
-              </li>
-            ))}
+                </li>
+              ),
+            )}
           </ul>
 
           <div className={styles.total}>

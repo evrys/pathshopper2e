@@ -111,8 +111,8 @@ describe("SharedList", () => {
   });
 
   it("shows discounted prices when discount is in URL", () => {
-    // w1 at 1gp with 50cp (0.5gp) flat discount
-    window.location.hash = "#items=w1~d50";
+    // w1 at 1gp with -50cp flat discount
+    window.location.hash = "#items=w1~d-50";
     render(<SharedList />);
     // Should show both original (1 gp) and discounted price (5 sp)
     const gpElements = screen.getAllByText("1 gp");
@@ -121,8 +121,8 @@ describe("SharedList", () => {
   });
 
   it("saves discounts when editing a shared list", () => {
-    // w1 with a 50cp flat discount
-    window.location.hash = "#items=w1~d50&name=Tester";
+    // w1 with a -50cp flat discount
+    window.location.hash = "#items=w1~d-50&name=Tester";
     render(<SharedList />);
 
     const editBtn = screen.getByText("Edit this list");
@@ -143,7 +143,7 @@ describe("SharedList", () => {
       localStorage.getItem(keys[0]) ?? "{}",
     ) as SavedList;
     expect(saved.items).toEqual({ w1: 1 });
-    expect(saved.discounts).toEqual({ w1: { type: "flat", cp: 50 } });
+    expect(saved.priceModifiers).toEqual({ w1: { type: "flat", cp: -50 } });
     expect(saved.name).toBe("Tester");
   });
 

@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Discount, Item, Price } from "../types";
+import type { Item, Price, PriceModifier } from "../types";
 import type { CartEntry } from "./useCart";
 
 const LIST_PREFIX = "pathshopper2e:list:";
@@ -24,8 +24,8 @@ export interface SavedList {
   name: string;
   /** Map of item id → quantity. */
   items: Record<string, number>;
-  /** Per-item discounts, keyed by item id. */
-  discounts?: Record<string, Discount>;
+  /** Per-item price modifiers, keyed by item id. */
+  priceModifiers?: Record<string, PriceModifier>;
   /** Per-item notes, keyed by item id. */
   notes?: Record<string, string>;
   /** Custom items (user-created, not from the game database). */
@@ -135,7 +135,7 @@ export function saveListToStorage(list: SavedList): void {
 /** Data extracted from cart entries for persistence in a SavedList. */
 export interface SavedListData {
   items: Record<string, number>;
-  discounts: Record<string, Discount> | undefined;
+  priceModifiers: Record<string, PriceModifier> | undefined;
   notes: Record<string, string> | undefined;
   customItems: SavedCustomItem[] | undefined;
 }
@@ -151,17 +151,17 @@ export function cartEntriesToSavedData(
   entries: ReadonlyMap<string, CartEntry>,
 ): SavedListData {
   const items: Record<string, number> = {};
-  const discounts: Record<string, Discount> = {};
+  const priceModifiers: Record<string, PriceModifier> = {};
   const notes: Record<string, string> = {};
   const customItems: SavedCustomItem[] = [];
-  let hasDiscounts = false;
+  let hasModifiers = false;
   let hasNotes = false;
 
   for (const [id, entry] of entries) {
     items[id] = entry.quantity;
-    if (entry.discount) {
-      discounts[id] = entry.discount;
-      hasDiscounts = true;
+    if (entry.priceModifier) {
+      priceModifiers[id] = entry.priceModifier;
+      hasModifiers = true;
     }
     if (entry.notes) {
       notes[id] = entry.notes;
@@ -178,7 +178,7 @@ export function cartEntriesToSavedData(
 
   return {
     items,
-    discounts: hasDiscounts ? discounts : undefined,
+    priceModifiers: hasModifiers ? priceModifiers : undefined,
     notes: hasNotes ? notes : undefined,
     customItems: customItems.length > 0 ? customItems : undefined,
   };
@@ -186,16 +186,16 @@ export function cartEntriesToSavedData(
 
 /**
  * Build persistable data from the raw maps typically available in a
- * share URL context (item quantities, discounts, and parsed custom items).
+ * share URL context (item quantities, price modifiers, and parsed custom items).
  */
 export function shareDataToSavedData(
   cart: ReadonlyMap<string, number>,
-  discounts: ReadonlyMap<string, Discount>,
+  priceModifiers: ReadonlyMap<string, PriceModifier>,
   customItems: Item[],
   notesMap?: ReadonlyMap<string, string>,
 ): SavedListData {
-  const discountRecord =
-    discounts.size > 0 ? Object.fromEntries(discounts) : undefined;
+  const modifierRecord =
+    priceModifiers.size > 0 ? Object.fromEntries(priceModifiers) : undefined;
   const notesRecord =
     notesMap && notesMap.size > 0 ? Object.fromEntries(notesMap) : undefined;
   const savedCustom: SavedCustomItem[] | undefined =
@@ -204,7 +204,7 @@ export function shareDataToSavedData(
       : undefined;
   return {
     items: Object.fromEntries(cart),
-    discounts: discountRecord,
+    priceModifiers: modifierRecord,
     notes: notesRecord,
     customItems: savedCustom,
   };
@@ -245,8 +245,8 @@ export function savedListToCartEntries(
   if (itemQuantities.size === 0) return undefined;
 
   const customItems = expandCustomItems(savedList.customItems);
-  const discounts: Map<string, Discount> = savedList.discounts
-    ? new Map(Object.entries(savedList.discounts))
+  const priceModifiers: Map<string, PriceModifier> = savedList.priceModifiers
+    ? new Map(Object.entries(savedList.priceModifiers))
     : new Map();
   const notesMap: Map<string, string> = savedList.notes
     ? new Map(Object.entries(savedList.notes))
@@ -261,12 +261,12 @@ export function savedListToCartEntries(
   for (const [id, qty] of itemQuantities) {
     const item = itemMap.get(id);
     if (item) {
-      const discount = discounts.get(id);
+      const priceModifier = priceModifiers.get(id);
       const notes = notesMap.get(id);
       map.set(id, {
         item: item as CartEntry["item"],
         quantity: qty,
-        ...(discount ? { discount } : {}),
+        ...(priceModifier ? { priceModifier } : {}),
         ...(notes ? { notes } : {}),
       });
     }
