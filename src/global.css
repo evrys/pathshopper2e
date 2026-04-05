@@ -60,7 +60,7 @@ body {
 
 @media (max-width: 640px) {
   html {
-    height: 100%;
+    height: 100dvh;
     overflow: hidden;
   }
 
@@ -74,10 +74,9 @@ body {
     min-height: 0;
   }
 
-  /* iOS Safari: -webkit-fill-available accounts for browser chrome */
-  @supports (height: -webkit-fill-available) {
-    html,
-    body {
+  /* iOS Safari <15.4: -webkit-fill-available accounts for browser chrome */
+  @supports not (height: 100dvh) {
+    html {
       height: -webkit-fill-available;
     }
   }
