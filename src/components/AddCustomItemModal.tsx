@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { CP_PER } from "../lib/price";
 import type { Item, Price } from "../types";
 import styles from "./AddCustomItemModal.module.css";
 
@@ -35,7 +36,9 @@ export function AddCustomItemModal({
 
   const parsedAmount = priceAmount === "" ? 0 : Number(priceAmount);
   const isValid =
-    name.trim().length > 0 && (priceAmount === "" || parsedAmount >= 0);
+    name.trim().length > 0 &&
+    (priceAmount === "" || parsedAmount >= 0) &&
+    Number.isInteger(parsedAmount * CP_PER[denomination]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -106,6 +109,7 @@ export function AddCustomItemModal({
                 id="custom-item-price"
                 type="number"
                 min="0"
+                step="any"
                 value={priceAmount}
                 onChange={(e) => setPriceAmount(e.target.value)}
                 placeholder="0"

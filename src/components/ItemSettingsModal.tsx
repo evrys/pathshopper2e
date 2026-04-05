@@ -1,22 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { formatPrice, fromCopper, toCopper } from "../lib/price";
+import { CP_PER, formatPrice, fromCopper, toCopper } from "../lib/price";
 import type { Discount, Price } from "../types";
 import styles from "./ItemSettingsModal.module.css";
 
-type Denomination = "gp" | "sp" | "cp" | "%";
+type Denomination = "gp" | "%";
 
-const CP_PER: Record<"gp" | "sp" | "cp", number> = {
-  gp: 100,
-  sp: 10,
-  cp: 1,
-};
-
-/** Convert a flat copper discount into the best-fit denomination + amount. */
-function cpToDenom(cp: number): { amount: number; denom: Denomination } {
-  if (cp >= 100 && cp % 100 === 0) return { amount: cp / 100, denom: "gp" };
-  if (cp >= 10 && cp % 10 === 0) return { amount: cp / 10, denom: "sp" };
-  return { amount: cp, denom: "cp" };
+/** Convert a flat copper discount into a gp amount. */
+function cpToGp(cp: number): number {
+  return cp / CP_PER.gp;
 }
 
 /** Determine the initial amount + denomination from an existing Discount. */
@@ -27,8 +19,7 @@ function initFromDiscount(d: Discount): {
   if (d.type === "percent") {
     return { amount: String(d.percent), denom: "%" };
   }
-  const { amount, denom } = cpToDenom(d.cp);
-  return { amount: String(amount), denom };
+  return { amount: String(cpToGp(d.cp)), denom: "gp" };
 }
 
 type PriceDenomination = "gp" | "sp" | "cp";
@@ -118,15 +109,30 @@ export function ItemSettingsModal({
     ? 0
     : isPercent
       ? Math.round((parsed / 100) * toCopper(effectivePrice))
-      : parsed * CP_PER[denomination];
+      : parsed * CP_PER.gp;
   const priceCp = toCopper(effectivePrice);
+  const customPriceCp = parsedCustomPrice * CP_PER[customPriceDenom];
   const isValid =
     Number.isFinite(parsed) &&
     parsed >= 0 &&
     discountCp <= priceCp &&
     (!isPercent || parsed <= 100) &&
-    (!isCustom || customName.trim().length > 0);
+    Number.isInteger(discountCp) &&
+    (!isCustom || customName.trim().length > 0) &&
+    (!isCustom || Number.isInteger(customPriceCp));
   const discountedPrice = fromCopper(Math.max(0, priceCp - discountCp));
+
+  // Compute a user-facing error for the discount field
+  const discountError = (() => {
+    if (amount === "" || parsed === 0) return undefined;
+    if (!Number.isFinite(parsed) || parsed < 0)
+      return "Discount must be a positive number";
+    if (isPercent && parsed > 100) return "Percentage cannot exceed 100%";
+    if (!isPercent && !Number.isInteger(discountCp))
+      return "Discount must be a whole number of copper pieces";
+    if (discountCp > priceCp) return "Discount cannot exceed the item price";
+    return undefined;
+  })();
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -189,6 +195,7 @@ export function ItemSettingsModal({
                     id="custom-item-price"
                     type="number"
                     min="0"
+                    step="any"
                     value={customPriceAmount}
                     onChange={(e) => setCustomPriceAmount(e.target.value)}
                     placeholder="0"
@@ -216,6 +223,7 @@ export function ItemSettingsModal({
                 id="discount-amount"
                 type="number"
                 min="0"
+                step="any"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0"
@@ -229,12 +237,15 @@ export function ItemSettingsModal({
                 aria-label="Currency denomination"
               >
                 <option value="gp">gp</option>
-                <option value="sp">sp</option>
-                <option value="cp">cp</option>
                 <option value="%">%</option>
               </select>
             </div>
           </div>
+          {discountError && (
+            <p className={styles.fieldError} role="alert">
+              {discountError}
+            </p>
+          )}
           {isValid && discountCp > 0 && (
             <p className={styles.preview}>
               {formatPrice(effectivePrice)} →{" "}

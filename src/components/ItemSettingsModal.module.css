@@ -137,6 +137,12 @@
   color: var(--color-text-muted);
 }
 
+.fieldError {
+  font-size: 0.75rem;
+  color: var(--color-danger);
+  margin: -0.25rem 0 0;
+}
+
 .previewPrice {
   font-weight: 600;
   color: var(--color-text);

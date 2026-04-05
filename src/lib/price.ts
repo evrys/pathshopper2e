@@ -1,13 +1,12 @@
 import type { Discount, Price } from "../types";
 
-/** 1 gp = 10 sp = 100 cp */
-const CP_PER_SP = 10;
-const CP_PER_GP = 100;
+/** Copper pieces per denomination: 1 gp = 10 sp = 100 cp */
+export const CP_PER = { gp: 100, sp: 10, cp: 1 } as const;
 
 /** Convert a Price to its total value in copper pieces */
 export function toCopper(price: Price): number {
   return (
-    (price.gp ?? 0) * CP_PER_GP + (price.sp ?? 0) * CP_PER_SP + (price.cp ?? 0)
+    (price.gp ?? 0) * CP_PER.gp + (price.sp ?? 0) * CP_PER.sp + (price.cp ?? 0)
   );
 }
 
@@ -19,10 +18,10 @@ export function resolveDiscount(discount: Discount, price: Price): number {
 
 /** Convert copper pieces to a Price with the largest denominations */
 export function fromCopper(cp: number): Price {
-  const gp = Math.floor(cp / CP_PER_GP);
-  cp -= gp * CP_PER_GP;
-  const sp = Math.floor(cp / CP_PER_SP);
-  cp -= sp * CP_PER_SP;
+  const gp = Math.floor(cp / CP_PER.gp);
+  cp -= gp * CP_PER.gp;
+  const sp = Math.floor(cp / CP_PER.sp);
+  cp -= sp * CP_PER.sp;
 
   const price: Price = {};
   if (gp) price.gp = gp;
@@ -67,7 +66,7 @@ export function parseBudget(input: string): Price | null {
   // Plain number: assume gp
   const num = Number.parseFloat(trimmed);
   if (!Number.isNaN(num) && num >= 0) {
-    return fromCopper(Math.round(num * CP_PER_GP));
+    return fromCopper(Math.round(num * CP_PER.gp));
   }
 
   return null;

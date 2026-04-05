@@ -47,7 +47,7 @@ describe("ItemSettingsModal", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it("applies a flat sp discount", () => {
+  it("applies a fractional gp discount equivalent to sp", () => {
     const onApply = vi.fn();
     render(
       <ItemSettingsModal
@@ -59,10 +59,7 @@ describe("ItemSettingsModal", () => {
     );
 
     fireEvent.change(screen.getByLabelText("Discount per item"), {
-      target: { value: "5" },
-    });
-    fireEvent.change(screen.getByLabelText("Currency denomination"), {
-      target: { value: "sp" },
+      target: { value: "0.5" },
     });
     fireEvent.click(screen.getByText("Apply"));
 
@@ -70,6 +67,51 @@ describe("ItemSettingsModal", () => {
       { type: "flat", cp: 50 },
       "",
       undefined,
+    );
+  });
+
+  it("applies a fractional gp discount (whole copper)", () => {
+    const onApply = vi.fn();
+    render(
+      <ItemSettingsModal
+        itemName="Longsword"
+        price={BASE_PRICE}
+        onApply={onApply}
+        onClose={() => {}}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Discount per item"), {
+      target: { value: "2.5" },
+    });
+    fireEvent.click(screen.getByText("Apply"));
+
+    expect(onApply).toHaveBeenCalledWith(
+      { type: "flat", cp: 250 },
+      "",
+      undefined,
+    );
+  });
+
+  it("disables Apply when fractional discount is not whole copper", () => {
+    render(
+      <ItemSettingsModal
+        itemName="Longsword"
+        price={BASE_PRICE}
+        onApply={() => {}}
+        onClose={() => {}}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Discount per item"), {
+      target: { value: "2.555" },
+    });
+
+    expect((screen.getByText("Apply") as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+    expect(screen.getByRole("alert").textContent).toBe(
+      "Discount must be a whole number of copper pieces",
     );
   });
 
@@ -135,6 +177,9 @@ describe("ItemSettingsModal", () => {
 
     const applyBtn = screen.getByText("Apply") as HTMLButtonElement;
     expect(applyBtn.disabled).toBe(true);
+    expect(screen.getByRole("alert").textContent).toBe(
+      "Discount cannot exceed the item price",
+    );
   });
 
   it("disables Apply when percent exceeds 100", () => {
@@ -156,6 +201,9 @@ describe("ItemSettingsModal", () => {
 
     const applyBtn = screen.getByText("Apply") as HTMLButtonElement;
     expect(applyBtn.disabled).toBe(true);
+    expect(screen.getByRole("alert").textContent).toBe(
+      "Percentage cannot exceed 100%",
+    );
   });
 
   it("shows a preview of the discounted price", () => {
