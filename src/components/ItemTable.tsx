@@ -307,7 +307,7 @@ export function ItemTable({
 
   return (
     <div className={styles.container}>
-      <div className={styles.filters}>
+      <div className={styles.toolbar}>
         <span className={styles.searchWrap}>
           <input
             type="text"
@@ -332,45 +332,47 @@ export function ItemTable({
             </button>
           )}
         </span>
-        <FilterModal
-          items={items}
-          typeFilter={typeFilter}
-          rarityFilter={rarityFilter}
-          remasterFilter={remasterFilter}
-          traitFilter={traitFilter}
-          minLevel={minLevel}
-          maxLevel={maxLevel}
-          onFiltersChange={onFiltersChange}
-        />
-        {isMobile && (
-          <select
-            className={styles.sortSelect}
-            value={sortField ? `${sortField}-${sortDir}` : ""}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (!val) {
-                onFiltersChange({ sortField: "", sortDir: "asc" });
-              } else {
-                const [field, dir] = val.split("-") as [SortField, SortDir];
-                onFiltersChange({ sortField: field, sortDir: dir });
-              }
-            }}
-            aria-label="Sort order"
-          >
-            <option value="">Sort: Relevance</option>
-            <option value="name-asc">Name ▲</option>
-            <option value="name-desc">Name ▼</option>
-            <option value="level-asc">Level ▲</option>
-            <option value="level-desc">Level ▼</option>
-            <option value="price-asc">Price ▲</option>
-            <option value="price-desc">Price ▼</option>
-            <option value="type-asc">Type ▲</option>
-            <option value="type-desc">Type ▼</option>
-            <option value="rarity-asc">Rarity ▲</option>
-            <option value="rarity-desc">Rarity ▼</option>
-          </select>
-        )}
-        <span className={styles.resultCount}>{sorted.length} items</span>
+        <div className={styles.filters}>
+          <FilterModal
+            items={items}
+            typeFilter={typeFilter}
+            rarityFilter={rarityFilter}
+            remasterFilter={remasterFilter}
+            traitFilter={traitFilter}
+            minLevel={minLevel}
+            maxLevel={maxLevel}
+            onFiltersChange={onFiltersChange}
+          />
+          {isMobile && (
+            <select
+              className={styles.sortSelect}
+              value={sortField ? `${sortField}-${sortDir}` : ""}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (!val) {
+                  onFiltersChange({ sortField: "", sortDir: "asc" });
+                } else {
+                  const [field, dir] = val.split("-") as [SortField, SortDir];
+                  onFiltersChange({ sortField: field, sortDir: dir });
+                }
+              }}
+              aria-label="Sort order"
+            >
+              <option value="">Sort: Relevance</option>
+              <option value="name-asc">Name ▲</option>
+              <option value="name-desc">Name ▼</option>
+              <option value="level-asc">Level ▲</option>
+              <option value="level-desc">Level ▼</option>
+              <option value="price-asc">Price ▲</option>
+              <option value="price-desc">Price ▼</option>
+              <option value="type-asc">Type ▲</option>
+              <option value="type-desc">Type ▼</option>
+              <option value="rarity-asc">Rarity ▲</option>
+              <option value="rarity-desc">Rarity ▼</option>
+            </select>
+          )}
+          <span className={styles.resultCount}>{sorted.length} items</span>
+        </div>
       </div>
 
       <div className={styles.tableScroll} ref={scrollRef}>
