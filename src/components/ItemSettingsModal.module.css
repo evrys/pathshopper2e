@@ -221,3 +221,12 @@
 .applyBtn:hover {
   opacity: 0.9;
 }
+
+@media (max-width: 640px) {
+  .inputRow input,
+  .textInput,
+  .denomSelect,
+  .presetSelect {
+    font-size: 1rem;
+  }
+}
