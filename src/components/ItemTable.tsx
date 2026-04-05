@@ -1,7 +1,7 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { type ReactNode, useCallback, useMemo, useRef } from "react";
 import { useFuzzySearch } from "../hooks/useFuzzySearch";
-import { useMediaQuery } from "../hooks/useMediaQuery";
+import { useIsMobile } from "../hooks/useMediaQuery";
 import { aonUrl } from "../lib/aon";
 import { TYPE_LABELS } from "../lib/constants";
 import { formatPrice, toCopper } from "../lib/price";
@@ -87,7 +87,7 @@ export function ItemTable({
   onFiltersChange,
   onAddItem,
 }: ItemTableProps) {
-  const isMobile = useMediaQuery("(max-width: 640px)");
+  const isMobile = useIsMobile();
   const {
     search,
     typeFilter,

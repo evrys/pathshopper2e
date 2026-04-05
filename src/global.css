@@ -112,34 +112,6 @@ select:focus {
   border-color: var(--color-primary);
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th,
-td {
-  text-align: left;
-  padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid var(--color-border);
-}
-
-th {
-  font-weight: 600;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-text-muted);
-  position: sticky;
-  top: 0;
-  background: var(--color-surface);
-  z-index: 1;
-}
-
-tr:hover td {
-  background: var(--color-surface-hover);
-}
-
 .sr-only {
   position: absolute;
   width: 1px;

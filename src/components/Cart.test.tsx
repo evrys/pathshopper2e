@@ -3,6 +3,7 @@ import * as Tooltip from "@radix-ui/react-tooltip";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CartEntry } from "../hooks/useCart";
+import { stubMatchMedia } from "../test-utils";
 import type { Item } from "../types";
 import { Cart } from "./Cart";
 
@@ -13,14 +14,7 @@ function renderWithProviders(ui: React.ReactElement) {
 }
 
 // Stub matchMedia for useMediaQuery (desktop by default)
-vi.stubGlobal(
-  "matchMedia",
-  vi.fn().mockReturnValue({
-    matches: false,
-    addEventListener: () => {},
-    removeEventListener: () => {},
-  }),
-);
+stubMatchMedia();
 
 // Stub import.meta.env.BASE_URL
 vi.stubGlobal("__COMMIT_HASH__", "test123");

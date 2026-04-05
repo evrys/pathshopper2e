@@ -6,7 +6,7 @@ import { ItemTable, type FilterState } from "./components/ItemTable";
 import { VersionTag } from "./components/VersionTag";
 import { useCart, type CartEntry } from "./hooks/useCart";
 import { useItems } from "./hooks/useItems";
-import { useMediaQuery } from "./hooks/useMediaQuery";
+import { useIsMobile } from "./hooks/useMediaQuery";
 import {
   cartEntriesToSavedData,
   savedListToCartEntries,
@@ -62,7 +62,7 @@ function consumeSharedHash(): ShareParams | null {
 function App() {
   const { items, loading } = useItems();
   const [urlState, setUrlState] = useUrlState();
-  const isMobile = useMediaQuery("(max-width: 640px)");
+  const isMobile = useIsMobile();
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
 
   // Capture shared cart from URL before any renders clear it

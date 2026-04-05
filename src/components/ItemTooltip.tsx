@@ -1,7 +1,7 @@
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { useMediaQuery } from "../hooks/useMediaQuery";
+import { useIsMobile } from "../hooks/useMediaQuery";
 import { aonUrl } from "../lib/aon";
 import { sanitizeHtml } from "../lib/html";
 import { formatPrice } from "../lib/price";
@@ -125,7 +125,7 @@ export function ItemTooltipWrapper({
 }) {
   const [open, setOpen] = useState(false);
   const touchedRef = useRef(false);
-  const isMobile = useMediaQuery("(max-width: 640px)");
+  const isMobile = useIsMobile();
 
   const handleClick = useCallback((e: React.MouseEvent) => {
     if (touchedRef.current) {

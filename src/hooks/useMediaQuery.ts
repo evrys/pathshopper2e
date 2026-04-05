@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { MOBILE_QUERY } from "../lib/constants";
 
 /**
  * Subscribe to a CSS media query and reactively return whether it matches.
@@ -14,4 +15,9 @@ export function useMediaQuery(query: string): boolean {
     () => window.matchMedia(query).matches,
     () => false,
   );
+}
+
+/** Shorthand for `useMediaQuery(MOBILE_QUERY)`. */
+export function useIsMobile(): boolean {
+  return useMediaQuery(MOBILE_QUERY);
 }

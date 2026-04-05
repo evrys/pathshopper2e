@@ -1,6 +1,6 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { useRef, useState } from "react";
-import { useMediaQuery } from "../hooks/useMediaQuery";
+import { useIsMobile } from "../hooks/useMediaQuery";
 import { CP_PER, formatPrice, fromCopper, toCopper } from "../lib/price";
 import type { UpgradeOption } from "../lib/variants";
 import type { Price, PriceModifier } from "../types";
@@ -98,7 +98,7 @@ export function ItemSettingsModal({
   const [amount, setAmount] = useState(init?.amount ?? "");
   const [notes, setNotes] = useState(currentNotes ?? "");
   const notesRef = useRef<HTMLInputElement>(null);
-  const isMobile = useMediaQuery("(max-width: 640px)");
+  const isMobile = useIsMobile();
 
   // Custom item fields
   const priceInit = priceToDenom(price);

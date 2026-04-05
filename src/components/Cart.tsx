@@ -2,7 +2,7 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { DotsVerticalIcon } from "@radix-ui/react-icons";
 import { useRef, useState } from "react";
 import type { CartEntry } from "../hooks/useCart";
-import { useMediaQuery } from "../hooks/useMediaQuery";
+import { useIsMobile } from "../hooks/useMediaQuery";
 import type { SavedList } from "../hooks/useSavedLists";
 import { aonUrl } from "../lib/aon";
 import { entriesToCsv } from "../lib/csv";
@@ -125,7 +125,7 @@ export function Cart({
   onDeleteList,
   onImportCsv,
 }: CartProps) {
-  const isMobile = useMediaQuery("(max-width: 640px)");
+  const isMobile = useIsMobile();
   const [listsOpen, setListsOpen] = useState(false);
   const [listsOpenCreating, setListsOpenCreating] = useState(false);
   const [customItemOpen, setCustomItemOpen] = useState(false);

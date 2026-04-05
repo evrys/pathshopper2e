@@ -1,20 +1,15 @@
 // @vitest-environment jsdom
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { cleanup, render } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+import { stubMatchMedia } from "../test-utils";
 import type { Item } from "../types";
 import { ItemTooltipWrapper } from "./ItemTooltip";
 
 afterEach(cleanup);
 
-vi.stubGlobal(
-  "matchMedia",
-  vi.fn().mockReturnValue({
-    matches: false,
-    addEventListener: () => {},
-    removeEventListener: () => {},
-  }),
-);
+// Stub matchMedia for useMediaQuery (desktop by default)
+stubMatchMedia();
 
 function renderWithProvider(ui: React.ReactElement) {
   return render(<Tooltip.Provider>{ui}</Tooltip.Provider>);

@@ -2,6 +2,7 @@
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { stubMatchMedia } from "../test-utils";
 import type { Item } from "../types";
 import type { FilterState } from "./ItemTable";
 import { ItemTable } from "./ItemTable";
@@ -9,14 +10,7 @@ import { ItemTable } from "./ItemTable";
 afterEach(cleanup);
 
 // Stub matchMedia for useMediaQuery (desktop by default)
-vi.stubGlobal(
-  "matchMedia",
-  vi.fn().mockReturnValue({
-    matches: false,
-    addEventListener: () => {},
-    removeEventListener: () => {},
-  }),
-);
+stubMatchMedia();
 
 function renderWithProviders(ui: React.ReactElement) {
   return render(<Tooltip.Provider>{ui}</Tooltip.Provider>);

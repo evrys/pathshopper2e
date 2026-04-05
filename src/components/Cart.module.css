@@ -40,11 +40,6 @@
   flex-shrink: 0;
 }
 
-.menuWrapper {
-  position: relative;
-  flex-shrink: 0;
-}
-
 .menuBtn {
   display: flex;
   align-items: center;
@@ -128,18 +123,6 @@
   background: var(--color-border);
   color: var(--color-text);
   border-color: var(--color-text-muted);
-}
-
-.clearBtn {
-  font-size: 0.75rem;
-  color: var(--color-danger);
-  border-color: var(--color-danger);
-  background: transparent;
-}
-
-.clearBtn:hover {
-  background: var(--color-danger);
-  color: white;
 }
 
 .empty {

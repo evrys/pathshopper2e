@@ -3,6 +3,7 @@ import * as Tooltip from "@radix-ui/react-tooltip";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SavedList } from "../hooks/useSavedLists";
+import { stubMatchMedia } from "../test-utils";
 import { SharedList } from "./SharedList";
 
 afterEach(cleanup);
@@ -13,14 +14,8 @@ function renderWithProviders(ui: React.ReactElement) {
 
 // Stub globals
 vi.stubGlobal("__COMMIT_HASH__", "test123");
-vi.stubGlobal(
-  "matchMedia",
-  vi.fn().mockReturnValue({
-    matches: false,
-    addEventListener: () => {},
-    removeEventListener: () => {},
-  }),
-);
+// Stub matchMedia for useMediaQuery (desktop by default)
+stubMatchMedia();
 
 vi.mock("../hooks/useItems", () => ({
   useItems: () => ({
