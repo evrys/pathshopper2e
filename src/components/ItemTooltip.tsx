@@ -1,5 +1,6 @@
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { useCallback, useRef, useState, type ReactNode } from "react";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 import { sanitizeHtml } from "../lib/html";
 import { formatPrice } from "../lib/price";
 import { formatTrait, traitUrl } from "../lib/traits";
@@ -84,6 +85,22 @@ function TooltipContent({ item }: { item: Item }) {
   );
 }
 
+function MobileTooltip({ item, onClose }: { item: Item; onClose: () => void }) {
+  return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: tap-to-dismiss overlay
+    <div className={styles.mobileOverlay} role="dialog" onClick={onClose}>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: stop propagation wrapper */}
+      <div
+        className={styles.mobileContent}
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
+        <TooltipContent item={item} />
+      </div>
+    </div>
+  );
+}
+
 export function ItemTooltipWrapper({
   item,
   children,
@@ -93,6 +110,7 @@ export function ItemTooltipWrapper({
 }) {
   const [open, setOpen] = useState(false);
   const touchedRef = useRef(false);
+  const isMobile = useMediaQuery("(max-width: 640px)");
 
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
@@ -105,6 +123,22 @@ export function ItemTooltipWrapper({
     },
     [open],
   );
+
+  if (isMobile) {
+    return (
+      <>
+        <span
+          onTouchStart={() => {
+            touchedRef.current = true;
+          }}
+          onClickCapture={handleClick}
+        >
+          {children}
+        </span>
+        {open && <MobileTooltip item={item} onClose={() => setOpen(false)} />}
+      </>
+    );
+  }
 
   return (
     <Tooltip.Root open={open} onOpenChange={setOpen}>

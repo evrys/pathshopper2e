@@ -13,6 +13,14 @@ function renderWithProviders(ui: React.ReactElement) {
 
 // Stub globals
 vi.stubGlobal("__COMMIT_HASH__", "test123");
+vi.stubGlobal(
+  "matchMedia",
+  vi.fn().mockReturnValue({
+    matches: false,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }),
+);
 
 vi.mock("../hooks/useItems", () => ({
   useItems: () => ({
