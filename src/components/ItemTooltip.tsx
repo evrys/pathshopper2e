@@ -1,8 +1,5 @@
+import * as Tooltip from "@radix-ui/react-tooltip";
 import type { ReactNode } from "react";
-import { useEffect, useRef } from "react";
-import { createRoot } from "react-dom/client";
-import tippy from "tippy.js";
-import "tippy.js/dist/tippy.css";
 import { sanitizeHtml } from "../lib/html";
 import { formatPrice } from "../lib/price";
 import { formatTrait, traitUrl } from "../lib/traits";
@@ -94,33 +91,21 @@ export function ItemTooltipWrapper({
   item: Item;
   children: ReactNode;
 }) {
-  const anchorRef = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    const el = anchorRef.current;
-    if (!el) return;
-
-    // Create a detached container for React to render the tooltip content into
-    const container = document.createElement("div");
-    const root = createRoot(container);
-    root.render(<TooltipContent item={item} />);
-
-    const instance = tippy(el, {
-      content: container,
-      delay: [300, 100],
-      maxWidth: 480,
-      placement: "right",
-      allowHTML: true,
-      interactive: true,
-      appendTo: () => document.body,
-    });
-
-    return () => {
-      instance.destroy();
-      // Defer unmount to avoid "synchronously unmount while rendering" warning
-      queueMicrotask(() => root.unmount());
-    };
-  }, [item]);
-
-  return <span ref={anchorRef}>{children}</span>;
+  return (
+    <Tooltip.Root>
+      <Tooltip.Trigger asChild>
+        <span>{children}</span>
+      </Tooltip.Trigger>
+      <Tooltip.Portal>
+        <Tooltip.Content
+          side="right"
+          sideOffset={8}
+          className={styles.content}
+          onPointerDownOutside={(e) => e.preventDefault()}
+        >
+          <TooltipContent item={item} />
+        </Tooltip.Content>
+      </Tooltip.Portal>
+    </Tooltip.Root>
+  );
 }

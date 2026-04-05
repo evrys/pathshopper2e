@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
+import { useMemo, useState } from "react";
 import {
   DEFAULT_RARITIES,
   DEFAULT_REMASTER,
@@ -55,7 +56,6 @@ export function FilterModal({
   onFiltersChange,
 }: FilterModalProps) {
   const [open, setOpen] = useState(false);
-  const panelRef = useRef<HTMLDivElement>(null);
 
   const traitOptions = useMemo(() => {
     const counts = new Map<string, number>();
@@ -76,16 +76,6 @@ export function FilterModal({
     (traitFilter.size > 0 ? 1 : 0) +
     (minLevel ? 1 : 0) +
     (maxLevel ? 1 : 0);
-
-  // Close on Escape
-  useEffect(() => {
-    if (!open) return;
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
-  }, [open]);
 
   function handleClear() {
     onFiltersChange({
@@ -110,139 +100,128 @@ export function FilterModal({
   }
 
   return (
-    <>
-      <button
-        type="button"
-        className={styles.filterBtn}
-        onClick={() => setOpen(true)}
-      >
-        <span className={styles.filterIcon}>⚙</span>
-        Filters
-        {activeCount > 0 && <span className={styles.badge}>{activeCount}</span>}
-      </button>
+    <Dialog.Root open={open} onOpenChange={setOpen}>
+      <Dialog.Trigger asChild>
+        <button type="button" className={styles.filterBtn}>
+          <span className={styles.filterIcon}>⚙</span>
+          Filters
+          {activeCount > 0 && (
+            <span className={styles.badge}>{activeCount}</span>
+          )}
+        </button>
+      </Dialog.Trigger>
 
-      {open && (
-        <div
-          className={styles.overlay}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Filters"
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) setOpen(false);
-          }}
-        >
-          <div className={styles.panel} ref={panelRef}>
-            <div className={styles.panelHeader}>
+      <Dialog.Portal>
+        <Dialog.Overlay className={styles.overlay} />
+        <Dialog.Content className={styles.panel} aria-describedby={undefined}>
+          <div className={styles.panelHeader}>
+            <Dialog.Title asChild>
               <h2>Filters</h2>
-              <button
-                type="button"
-                className={styles.closeBtn}
-                onClick={() => setOpen(false)}
-                aria-label="Close filters"
-              >
-                ✕
-              </button>
+            </Dialog.Title>
+            <Dialog.Close
+              className={styles.closeBtn}
+              aria-label="Close filters"
+            >
+              ✕
+            </Dialog.Close>
+          </div>
+
+          <div className={styles.panelBody}>
+            <div className={styles.filterGroup}>
+              <span className={styles.groupLabel}>Item Type</span>
+              <MultiSelect
+                placeholder="All Types"
+                options={TYPE_OPTIONS}
+                selected={typeFilter}
+                onChange={(next) => onFiltersChange({ typeFilter: next })}
+              />
             </div>
 
-            <div className={styles.panelBody}>
-              <div className={styles.filterGroup}>
-                <span className={styles.groupLabel}>Item Type</span>
-                <MultiSelect
-                  placeholder="All Types"
-                  options={TYPE_OPTIONS}
-                  selected={typeFilter}
-                  onChange={(next) => onFiltersChange({ typeFilter: next })}
-                />
-              </div>
-
-              <div className={styles.filterGroup}>
-                <span className={styles.groupLabel}>Rarity</span>
-                <MultiSelect
-                  placeholder="All Rarities"
-                  options={RARITY_OPTIONS}
-                  selected={rarityFilter}
-                  onChange={(next) => onFiltersChange({ rarityFilter: next })}
-                />
-              </div>
-
-              <div className={styles.filterGroup}>
-                <span className={styles.groupLabel}>Content</span>
-                <MultiSelect
-                  placeholder="All Content"
-                  options={REMASTER_OPTIONS}
-                  selected={remasterFilter}
-                  onChange={(next) => onFiltersChange({ remasterFilter: next })}
-                />
-              </div>
-
-              <div className={styles.filterGroup}>
-                <span className={styles.groupLabel}>Traits</span>
-                <MultiSelect
-                  placeholder="All Traits"
-                  options={traitOptions}
-                  selected={traitFilter}
-                  onChange={(next) => onFiltersChange({ traitFilter: next })}
-                />
-              </div>
-
-              <div className={styles.filterGroup}>
-                <span className={styles.groupLabel}>Level Range</span>
-                <div className={styles.levelRow}>
-                  <input
-                    type="number"
-                    placeholder="Min"
-                    aria-label="Minimum level"
-                    value={minLevel}
-                    onChange={(e) =>
-                      onFiltersChange({ minLevel: e.target.value })
-                    }
-                    min={0}
-                    max={30}
-                  />
-                  <span className={styles.levelSeparator}>–</span>
-                  <input
-                    type="number"
-                    placeholder="Max"
-                    aria-label="Maximum level"
-                    value={maxLevel}
-                    onChange={(e) =>
-                      onFiltersChange({ maxLevel: e.target.value })
-                    }
-                    min={0}
-                    max={30}
-                  />
-                </div>
-              </div>
+            <div className={styles.filterGroup}>
+              <span className={styles.groupLabel}>Rarity</span>
+              <MultiSelect
+                placeholder="All Rarities"
+                options={RARITY_OPTIONS}
+                selected={rarityFilter}
+                onChange={(next) => onFiltersChange({ rarityFilter: next })}
+              />
             </div>
 
-            <div className={styles.panelFooter}>
-              {activeCount > 0 && (
-                <button
-                  type="button"
-                  className={styles.clearBtn}
-                  onClick={handleClear}
-                >
-                  Clear
-                </button>
-              )}
+            <div className={styles.filterGroup}>
+              <span className={styles.groupLabel}>Content</span>
+              <MultiSelect
+                placeholder="All Content"
+                options={REMASTER_OPTIONS}
+                selected={remasterFilter}
+                onChange={(next) => onFiltersChange({ remasterFilter: next })}
+              />
+            </div>
+
+            <div className={styles.filterGroup}>
+              <span className={styles.groupLabel}>Traits</span>
+              <MultiSelect
+                placeholder="All Traits"
+                options={traitOptions}
+                selected={traitFilter}
+                onChange={(next) => onFiltersChange({ traitFilter: next })}
+              />
+            </div>
+
+            <div className={styles.filterGroup}>
+              <span className={styles.groupLabel}>Level Range</span>
+              <div className={styles.levelRow}>
+                <input
+                  type="number"
+                  placeholder="Min"
+                  aria-label="Minimum level"
+                  value={minLevel}
+                  onChange={(e) =>
+                    onFiltersChange({ minLevel: e.target.value })
+                  }
+                  min={0}
+                  max={30}
+                />
+                <span className={styles.levelSeparator}>–</span>
+                <input
+                  type="number"
+                  placeholder="Max"
+                  aria-label="Maximum level"
+                  value={maxLevel}
+                  onChange={(e) =>
+                    onFiltersChange({ maxLevel: e.target.value })
+                  }
+                  min={0}
+                  max={30}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.panelFooter}>
+            {activeCount > 0 && (
               <button
                 type="button"
                 className={styles.clearBtn}
-                onClick={handleReset}
+                onClick={handleClear}
               >
-                Reset
+                Clear
               </button>
-              <button
-                type="button"
-                className={styles.doneBtn}
-                onClick={() => setOpen(false)}
-              >
+            )}
+            <button
+              type="button"
+              className={styles.clearBtn}
+              onClick={handleReset}
+            >
+              Reset
+            </button>
+            <Dialog.Close asChild>
+              <button type="button" className={styles.doneBtn}>
                 Done
               </button>
-            </div>
+            </Dialog.Close>
           </div>
-        </div>
-      )}
-    </>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

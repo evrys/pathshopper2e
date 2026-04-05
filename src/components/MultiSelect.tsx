@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import * as Popover from "@radix-ui/react-popover";
+import { useState } from "react";
 import styles from "./MultiSelect.module.css";
 
 interface MultiSelectProps {
@@ -15,19 +16,6 @@ export function MultiSelect({
   placeholder = "All",
 }: MultiSelectProps) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  // Close on outside click
-  useEffect(() => {
-    if (!open) return;
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
 
   function toggle(value: string) {
     const next = new Set(selected);
@@ -45,31 +33,36 @@ export function MultiSelect({
           .join(", ");
 
   return (
-    <div className={styles.multiselect} ref={ref}>
-      <button
-        type="button"
-        className={styles.trigger}
-        onClick={() => setOpen((o) => !o)}
-      >
-        <span className={styles.label}>{label}</span>
-        <span className={styles.arrow}>{open ? "▲" : "▼"}</span>
-      </button>
-      {open && (
-        <ul className={styles.menu}>
-          {options.map((opt) => (
-            <li key={opt.value}>
-              <label className={styles.option}>
-                <input
-                  type="checkbox"
-                  checked={selected.has(opt.value)}
-                  onChange={() => toggle(opt.value)}
-                />
-                {opt.label}
-              </label>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Trigger asChild>
+        <button type="button" className={styles.trigger}>
+          <span className={styles.label}>{label}</span>
+          <span className={styles.arrow}>{open ? "▲" : "▼"}</span>
+        </button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          className={styles.menu}
+          sideOffset={4}
+          align="start"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
+          <ul className={styles.menuList}>
+            {options.map((opt) => (
+              <li key={opt.value}>
+                <label className={styles.option}>
+                  <input
+                    type="checkbox"
+                    checked={selected.has(opt.value)}
+                    onChange={() => toggle(opt.value)}
+                  />
+                  {opt.label}
+                </label>
+              </li>
+            ))}
+          </ul>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }

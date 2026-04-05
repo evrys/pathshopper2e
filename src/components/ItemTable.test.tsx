@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import * as Tooltip from "@radix-ui/react-tooltip";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Item } from "../types";
@@ -7,11 +8,9 @@ import { ItemTable } from "./ItemTable";
 
 afterEach(cleanup);
 
-// tippy.js doesn't work in jsdom
-vi.mock("tippy.js", () => ({
-  default: () => ({ destroy: () => {} }),
-}));
-vi.mock("tippy.js/dist/tippy.css", () => ({}));
+function renderWithProviders(ui: React.ReactElement) {
+  return render(<Tooltip.Provider>{ui}</Tooltip.Provider>);
+}
 
 function makeItem(overrides: Partial<Item> = {}): Item {
   return {
@@ -114,7 +113,7 @@ function mockScrollContainer() {
 }
 describe("ItemTable", () => {
   it("renders the search input", () => {
-    render(
+    renderWithProviders(
       <ItemTable
         items={ITEMS}
         filters={defaultFilters()}
@@ -126,7 +125,7 @@ describe("ItemTable", () => {
   });
 
   it("shows the item count", () => {
-    render(
+    renderWithProviders(
       <ItemTable
         items={ITEMS}
         filters={defaultFilters()}
@@ -139,7 +138,7 @@ describe("ItemTable", () => {
 
   it("calls onFiltersChange when search input changes", () => {
     const onFiltersChange = vi.fn();
-    render(
+    renderWithProviders(
       <ItemTable
         items={ITEMS}
         filters={defaultFilters()}
@@ -155,7 +154,7 @@ describe("ItemTable", () => {
   });
 
   it("renders sort column headers", () => {
-    render(
+    renderWithProviders(
       <ItemTable
         items={ITEMS}
         filters={defaultFilters()}
@@ -170,7 +169,7 @@ describe("ItemTable", () => {
 
   it("calls onFiltersChange with sort field when header is clicked", () => {
     const onFiltersChange = vi.fn();
-    render(
+    renderWithProviders(
       <ItemTable
         items={ITEMS}
         filters={defaultFilters()}
@@ -193,7 +192,7 @@ describe("ItemTable", () => {
       sortField: "name" as const,
       sortDir: "asc" as const,
     };
-    render(
+    renderWithProviders(
       <ItemTable
         items={ITEMS}
         filters={filters}
@@ -207,7 +206,7 @@ describe("ItemTable", () => {
   });
 
   it("shows no results message when items are empty", () => {
-    render(
+    renderWithProviders(
       <ItemTable
         items={[]}
         filters={defaultFilters()}
@@ -221,7 +220,7 @@ describe("ItemTable", () => {
   it("renders items when the virtualizer has space", () => {
     const restore = mockScrollContainer();
     try {
-      const { container } = render(
+      const { container } = renderWithProviders(
         <ItemTable
           items={ITEMS}
           filters={defaultFilters()}
@@ -249,7 +248,7 @@ describe("ItemTable", () => {
     const restore = mockScrollContainer();
     const onAddItem = vi.fn();
     try {
-      const { container } = render(
+      const { container } = renderWithProviders(
         <ItemTable
           items={[ITEMS[0]]}
           filters={defaultFilters()}
@@ -271,7 +270,7 @@ describe("ItemTable", () => {
     }
   });
   it("shows the clear search button when search is active", () => {
-    render(
+    renderWithProviders(
       <ItemTable
         items={ITEMS}
         filters={{ ...defaultFilters(), search: "sword" }}
@@ -284,7 +283,7 @@ describe("ItemTable", () => {
 
   it("clears search when the clear button is clicked", () => {
     const onFiltersChange = vi.fn();
-    render(
+    renderWithProviders(
       <ItemTable
         items={ITEMS}
         filters={{ ...defaultFilters(), search: "sword" }}
@@ -297,7 +296,7 @@ describe("ItemTable", () => {
   });
 
   it("filters items by type", () => {
-    render(
+    renderWithProviders(
       <ItemTable
         items={ITEMS}
         filters={{ ...defaultFilters(), typeFilter: new Set(["armor"]) }}

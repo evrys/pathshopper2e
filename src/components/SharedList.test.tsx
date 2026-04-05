@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import * as Tooltip from "@radix-ui/react-tooltip";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SavedList } from "../hooks/useSavedLists";
@@ -6,14 +7,12 @@ import { SharedList } from "./SharedList";
 
 afterEach(cleanup);
 
+function renderWithProviders(ui: React.ReactElement) {
+  return render(<Tooltip.Provider>{ui}</Tooltip.Provider>);
+}
+
 // Stub globals
 vi.stubGlobal("__COMMIT_HASH__", "test123");
-
-// tippy.js doesn't work in jsdom
-vi.mock("tippy.js", () => ({
-  default: () => ({ destroy: () => {} }),
-}));
-vi.mock("tippy.js/dist/tippy.css", () => ({}));
 
 vi.mock("../hooks/useItems", () => ({
   useItems: () => ({
@@ -69,24 +68,24 @@ describe("SharedList", () => {
 
   it("shows empty state when no items in URL", () => {
     window.location.hash = "";
-    render(<SharedList />);
+    renderWithProviders(<SharedList />);
     expect(screen.getByText("This shopping list is empty.")).toBeDefined();
   });
 
   it("shows the default title when no name is provided", () => {
     window.location.hash = "";
-    render(<SharedList />);
+    renderWithProviders(<SharedList />);
     expect(screen.getByText("My shopping list")).toBeDefined();
   });
 
   it("shows the character name as title", () => {
     window.location.hash = "#name=Sir%20Reginald&items=w1";
-    render(<SharedList />);
+    renderWithProviders(<SharedList />);
     expect(screen.getByText("Sir Reginald")).toBeDefined();
   });
   it("renders items from URL hash", () => {
     window.location.hash = "#items=w1*2+a1";
-    render(<SharedList />);
+    renderWithProviders(<SharedList />);
     expect(screen.getByText("Longsword")).toBeDefined();
     expect(screen.getByText("Chain Mail")).toBeDefined();
     expect(screen.getByText("×2")).toBeDefined();
@@ -94,26 +93,26 @@ describe("SharedList", () => {
 
   it("shows item count subtitle", () => {
     window.location.hash = "#items=w1*3";
-    render(<SharedList />);
+    renderWithProviders(<SharedList />);
     expect(screen.getByText("3 items")).toBeDefined();
   });
 
   it("displays total price", () => {
     window.location.hash = "#items=w1*2+a1";
-    render(<SharedList />);
+    renderWithProviders(<SharedList />);
     expect(screen.getByText("Total")).toBeDefined();
   });
 
   it("shows the Edit this list button", () => {
     window.location.hash = "#items=w1";
-    render(<SharedList />);
+    renderWithProviders(<SharedList />);
     expect(screen.getByText("Edit this list")).toBeDefined();
   });
 
   it("shows discounted prices when discount is in URL", () => {
     // w1 at 1gp with -50cp flat discount
     window.location.hash = "#items=w1~d-50";
-    render(<SharedList />);
+    renderWithProviders(<SharedList />);
     // Should show both original (1 gp) and discounted price (5 sp)
     const gpElements = screen.getAllByText("1 gp");
     expect(gpElements.length).toBeGreaterThan(0);
@@ -123,7 +122,7 @@ describe("SharedList", () => {
   it("saves discounts when editing a shared list", () => {
     // w1 with a -50cp flat discount
     window.location.hash = "#items=w1~d-50&name=Tester";
-    render(<SharedList />);
+    renderWithProviders(<SharedList />);
 
     const editBtn = screen.getByText("Edit this list");
 
@@ -150,7 +149,7 @@ describe("SharedList", () => {
   it("saves custom items when editing a shared list", () => {
     // w1 + a custom item "Wand" costing 50gp
     window.location.hash = "#items=w1+custom-0*2&custom=Wand~50gp";
-    render(<SharedList />);
+    renderWithProviders(<SharedList />);
 
     const editBtn = screen.getByText("Edit this list");
 
@@ -175,7 +174,7 @@ describe("SharedList", () => {
 
   it("saves notes when editing a shared list", () => {
     window.location.hash = "#items=w1&notes=w1%3ABuy%20from%20smith";
-    render(<SharedList />);
+    renderWithProviders(<SharedList />);
 
     const editBtn = screen.getByText("Edit this list");
     try {
@@ -196,7 +195,7 @@ describe("SharedList", () => {
 
   it("displays notes on the shared list", () => {
     window.location.hash = "#items=w1&notes=w1%3AMy%20note";
-    render(<SharedList />);
+    renderWithProviders(<SharedList />);
     expect(screen.getByText("My note")).toBeDefined();
   });
 });

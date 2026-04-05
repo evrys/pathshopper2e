@@ -62,9 +62,6 @@
 }
 
 .menuDropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
   z-index: 50;
   min-width: 140px;
   background: var(--color-surface);
@@ -96,9 +93,11 @@
   font-size: 0.8125rem;
   text-align: left;
   cursor: pointer;
+  outline: none;
 }
 
-.menuItem:hover {
+.menuItem:hover,
+.menuItem[data-highlighted] {
   background: var(--color-surface-hover);
 }
 

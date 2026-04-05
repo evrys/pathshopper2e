@@ -106,7 +106,7 @@ describe("MultiSelect", () => {
     expect(screen.getByText("▲")).toBeDefined();
   });
 
-  it("closes when clicking outside", () => {
+  it("closes when clicking the trigger again", () => {
     render(
       <MultiSelect
         options={OPTIONS}
@@ -114,11 +114,12 @@ describe("MultiSelect", () => {
         onChange={() => {}}
       />,
     );
-    fireEvent.click(screen.getByRole("button"));
+    const trigger = screen.getByRole("button");
+    fireEvent.click(trigger);
     expect(screen.getByText("Alpha")).toBeDefined();
 
-    // simulate an outside click
-    fireEvent.mouseDown(document.body);
+    // Clicking the trigger again closes the popover
+    fireEvent.click(trigger);
 
     expect(screen.queryByText("Alpha")).toBeNull();
   });

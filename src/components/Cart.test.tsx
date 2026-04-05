@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import * as Tooltip from "@radix-ui/react-tooltip";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CartEntry } from "../hooks/useCart";
@@ -7,11 +8,9 @@ import { Cart } from "./Cart";
 
 afterEach(cleanup);
 
-// tippy.js doesn't work in jsdom
-vi.mock("tippy.js", () => ({
-  default: () => ({ destroy: () => {} }),
-}));
-vi.mock("tippy.js/dist/tippy.css", () => ({}));
+function renderWithProviders(ui: React.ReactElement) {
+  return render(<Tooltip.Provider>{ui}</Tooltip.Provider>);
+}
 
 // Stub matchMedia for useMediaQuery (desktop by default)
 vi.stubGlobal(
@@ -76,12 +75,12 @@ const defaultProps = {
 
 describe("Cart", () => {
   it("renders the list name", () => {
-    render(<Cart {...defaultProps} />);
+    renderWithProviders(<Cart {...defaultProps} />);
     expect(screen.getByText("My List")).toBeDefined();
   });
 
   it("shows empty state when cart is empty", () => {
-    render(<Cart {...defaultProps} />);
+    renderWithProviders(<Cart {...defaultProps} />);
     expect(
       screen.getByText("Add items from the table to start building your list."),
     ).toBeDefined();
@@ -95,7 +94,7 @@ describe("Cart", () => {
         quantity: 3,
       }),
     ];
-    render(<Cart {...defaultProps} entries={entries} />);
+    renderWithProviders(<Cart {...defaultProps} entries={entries} />);
 
     expect(screen.getByText("Longsword")).toBeDefined();
     expect(screen.getByText("Shortsword")).toBeDefined();
@@ -105,7 +104,7 @@ describe("Cart", () => {
   it("calls onSetQuantity when + is clicked", () => {
     const onSetQuantity = vi.fn();
     const entries = [makeEntry()];
-    render(
+    renderWithProviders(
       <Cart
         {...defaultProps}
         entries={entries}
@@ -123,7 +122,7 @@ describe("Cart", () => {
   it("calls onSetQuantity when − is clicked", () => {
     const onSetQuantity = vi.fn();
     const entries = [makeEntry({ quantity: 3 })];
-    render(
+    renderWithProviders(
       <Cart
         {...defaultProps}
         entries={entries}
@@ -138,7 +137,7 @@ describe("Cart", () => {
   it("calls onRemoveItem when ✕ remove button is clicked", () => {
     const onRemoveItem = vi.fn();
     const entries = [makeEntry()];
-    render(
+    renderWithProviders(
       <Cart {...defaultProps} entries={entries} onRemoveItem={onRemoveItem} />,
     );
 
@@ -153,7 +152,7 @@ describe("Cart", () => {
         priceModifier: { type: "flat", cp: -200 },
       }),
     ];
-    render(<Cart {...defaultProps} entries={entries} />);
+    renderWithProviders(<Cart {...defaultProps} entries={entries} />);
 
     // Should show both original and discounted price
     expect(screen.getByText("10 gp")).toBeDefined();
@@ -167,7 +166,7 @@ describe("Cart", () => {
         priceModifier: { type: "crafting" },
       }),
     ];
-    render(<Cart {...defaultProps} entries={entries} />);
+    renderWithProviders(<Cart {...defaultProps} entries={entries} />);
 
     expect(screen.getByText(/\(crafting\)/)).toBeDefined();
   });
@@ -179,7 +178,7 @@ describe("Cart", () => {
         priceModifier: { type: "flat", cp: -200 },
       }),
     ];
-    render(<Cart {...defaultProps} entries={entries} />);
+    renderWithProviders(<Cart {...defaultProps} entries={entries} />);
 
     expect(
       screen.queryByText(/\(crafting\)|\(selling\)|\(upgrading\)/),
@@ -188,7 +187,9 @@ describe("Cart", () => {
 
   it("shows the total price when items exist", () => {
     const entries = [makeEntry()];
-    render(<Cart {...defaultProps} entries={entries} totalPrice={{ gp: 5 }} />);
+    renderWithProviders(
+      <Cart {...defaultProps} entries={entries} totalPrice={{ gp: 5 }} />,
+    );
 
     expect(screen.getByText("Total:")).toBeDefined();
     expect(screen.getByText("5 gp")).toBeDefined();
@@ -196,18 +197,22 @@ describe("Cart", () => {
 
   it("shows Share link when entries exist", () => {
     const entries = [makeEntry()];
-    render(<Cart {...defaultProps} entries={entries} />);
+    renderWithProviders(<Cart {...defaultProps} entries={entries} />);
     expect(screen.getByText("Share")).toBeDefined();
   });
 
   it("does not show Share link when cart is empty", () => {
-    render(<Cart {...defaultProps} />);
+    renderWithProviders(<Cart {...defaultProps} />);
     expect(screen.queryByText("Share")).toBeNull();
   });
 
   it("opens the menu dropdown", () => {
-    render(<Cart {...defaultProps} />);
-    fireEvent.click(screen.getByLabelText("List options"));
+    renderWithProviders(<Cart {...defaultProps} />);
+    const trigger = screen.getByLabelText("List options");
+    // Radix DropdownMenu requires pointer events to open
+    fireEvent.pointerDown(trigger, { button: 0, pointerType: "mouse" });
+    fireEvent.pointerUp(trigger, { button: 0, pointerType: "mouse" });
+    fireEvent.click(trigger);
 
     expect(screen.getByText("Rename")).toBeDefined();
     expect(screen.getByText("Open list")).toBeDefined();
@@ -221,7 +226,7 @@ describe("Cart", () => {
         item: makeItem({ id: "custom-1-123", name: "My Custom Item" }),
       }),
     ];
-    render(<Cart {...defaultProps} entries={entries} />);
+    renderWithProviders(<Cart {...defaultProps} entries={entries} />);
 
     const el = screen.getByText("My Custom Item");
     // custom items should be a span, not a link
@@ -230,7 +235,7 @@ describe("Cart", () => {
 
   it("shows settings button for each entry", () => {
     const entries = [makeEntry()];
-    render(<Cart {...defaultProps} entries={entries} />);
+    renderWithProviders(<Cart {...defaultProps} entries={entries} />);
     expect(screen.getByTitle("Item settings")).toBeDefined();
   });
 });

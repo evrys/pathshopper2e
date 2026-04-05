@@ -1,17 +1,15 @@
 // @vitest-environment jsdom
+import * as Tooltip from "@radix-ui/react-tooltip";
 import { cleanup, render } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import type { Item } from "../types";
 import { ItemTooltipWrapper } from "./ItemTooltip";
 
 afterEach(cleanup);
 
-// Mock tippy.js since it relies on DOM positioning not available in jsdom
-vi.mock("tippy.js", () => ({
-  default: () => ({ destroy: () => {} }),
-}));
-
-vi.mock("tippy.js/dist/tippy.css", () => ({}));
+function renderWithProvider(ui: React.ReactElement) {
+  return render(<Tooltip.Provider>{ui}</Tooltip.Provider>);
+}
 
 const ITEM: Item = {
   id: "w1",
@@ -32,7 +30,7 @@ const ITEM: Item = {
 
 describe("ItemTooltipWrapper", () => {
   it("renders children inside a span", () => {
-    const { container } = render(
+    const { container } = renderWithProvider(
       <ItemTooltipWrapper item={ITEM}>
         <a href="/test">Longsword</a>
       </ItemTooltipWrapper>,
@@ -45,7 +43,7 @@ describe("ItemTooltipWrapper", () => {
   });
 
   it("wraps children without breaking them", () => {
-    const { container } = render(
+    const { container } = renderWithProvider(
       <ItemTooltipWrapper item={ITEM}>
         <span data-testid="child">Hello</span>
       </ItemTooltipWrapper>,

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import { useRef, useState } from "react";
 import type { CartEntry } from "../hooks/useCart";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import type { SavedList } from "../hooks/useSavedLists";
@@ -132,31 +133,15 @@ export function Cart({
   const [menuOpen, setMenuOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
-  const menuRef = useRef<HTMLDivElement>(null);
-  const renameInputRef = useRef<HTMLInputElement>(null);
+  const renameCallbackRef = (el: HTMLInputElement | null) => {
+    if (el) {
+      el.focus();
+      el.select();
+    }
+  };
   const csvInputRef = useRef<HTMLInputElement>(null);
   const expanded = !isMobile || !mobileCollapsed;
   const title = listName || "My shopping list";
-
-  // Close the dropdown when clicking outside
-  useEffect(() => {
-    if (!menuOpen) return;
-    function handleClick(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [menuOpen]);
-
-  // Focus rename input when entering rename mode
-  useEffect(() => {
-    if (renaming) {
-      renameInputRef.current?.focus();
-      renameInputRef.current?.select();
-    }
-  }, [renaming]);
 
   function commitRename() {
     const trimmed = renameValue.trim();
@@ -217,7 +202,7 @@ export function Cart({
           }}
         >
           <input
-            ref={renameInputRef}
+            ref={renameCallbackRef}
             className={styles.renameInput}
             type="text"
             value={renameValue}
@@ -246,88 +231,71 @@ export function Cart({
             Share
           </a>
         )}
-        <div className={styles.menuWrapper} ref={menuRef}>
-          <button
-            type="button"
-            className={styles.menuBtn}
-            onClick={(e) => {
-              e.stopPropagation();
-              setMenuOpen((o) => !o);
-            }}
-            aria-label="List options"
-            title="List options"
-          >
-            ⋮
-          </button>
-          {menuOpen && (
-            <div className={styles.menuDropdown}>
-              <button
-                type="button"
+        <DropdownMenu.Root open={menuOpen} onOpenChange={setMenuOpen}>
+          <DropdownMenu.Trigger asChild>
+            <button
+              type="button"
+              className={styles.menuBtn}
+              onClick={(e) => e.stopPropagation()}
+              aria-label="List options"
+              title="List options"
+            >
+              ⋮
+            </button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Portal>
+            <DropdownMenu.Content
+              className={styles.menuDropdown}
+              sideOffset={4}
+              align="end"
+            >
+              <DropdownMenu.Item
                 className={styles.menuItem}
-                onClick={() => {
-                  setMenuOpen(false);
+                onSelect={() => {
                   setRenameValue(listName);
                   setRenaming(true);
                 }}
               >
                 Rename
-              </button>
-              <button
-                type="button"
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
                 className={styles.menuItem}
-                onClick={() => {
-                  setMenuOpen(false);
-                  setListsOpen(true);
-                }}
+                onSelect={() => setListsOpen(true)}
               >
                 Open list
-              </button>
-              <button
-                type="button"
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
                 className={styles.menuItem}
-                onClick={() => {
-                  setMenuOpen(false);
+                onSelect={() => {
                   setListsOpenCreating(true);
                   setListsOpen(true);
                 }}
               >
                 New list
-              </button>
-              <hr className={styles.menuDivider} />
-              <button
-                type="button"
+              </DropdownMenu.Item>
+              <DropdownMenu.Separator className={styles.menuDivider} />
+              <DropdownMenu.Item
                 className={styles.menuItem}
-                onClick={() => {
-                  setMenuOpen(false);
-                  setCustomItemOpen(true);
-                }}
+                onSelect={() => setCustomItemOpen(true)}
               >
                 Add custom item
-              </button>
-              <hr className={styles.menuDivider} />
-              <button
-                type="button"
+              </DropdownMenu.Item>
+              <DropdownMenu.Separator className={styles.menuDivider} />
+              <DropdownMenu.Item
                 className={styles.menuItem}
-                onClick={() => {
-                  setMenuOpen(false);
-                  handleExportCsv();
-                }}
+                onSelect={handleExportCsv}
               >
                 Export CSV
-              </button>
-              <button
-                type="button"
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
                 className={styles.menuItem}
-                onClick={() => {
-                  setMenuOpen(false);
-                  csvInputRef.current?.click();
-                }}
+                onSelect={() => csvInputRef.current?.click()}
               >
                 Import CSV
-              </button>
-            </div>
-          )}
-        </div>
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Portal>
+        </DropdownMenu.Root>
         {isMobile && (
           <button
             type="button"

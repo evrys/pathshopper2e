@@ -286,7 +286,7 @@ describe("ItemSettingsModal", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it("calls onClose when clicking the overlay background", () => {
+  it("calls onClose when pressing Escape", () => {
     const onClose = vi.fn();
     render(
       <ItemSettingsModal
@@ -297,8 +297,7 @@ describe("ItemSettingsModal", () => {
       />,
     );
 
-    const overlay = screen.getByRole("dialog");
-    fireEvent.mouseDown(overlay);
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
     expect(onClose).toHaveBeenCalledOnce();
   });
 
