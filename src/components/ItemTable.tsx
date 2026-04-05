@@ -1,6 +1,7 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { type ReactNode, useCallback, useMemo, useRef } from "react";
 import { useFuzzySearch } from "../hooks/useFuzzySearch";
+import { useIsMobile } from "../hooks/useMediaQuery";
 import { aonUrl } from "../lib/aon";
 import { TYPE_LABELS } from "../lib/constants";
 import { formatPrice, toCopper } from "../lib/price";
@@ -8,7 +9,7 @@ import { formatTrait, traitUrl } from "../lib/traits";
 import type { Item } from "../types";
 import { FilterModal } from "./FilterModal";
 import styles from "./ItemTable.module.css";
-import { ItemTooltipWrapper } from "./ItemTooltip";
+import { ItemTooltipWrapper, useMobileTooltip } from "./ItemTooltip";
 
 type SortField = "name" | "level" | "price" | "type" | "rarity" | "";
 type SortDir = "asc" | "desc";
@@ -80,12 +81,66 @@ function TraitBadges({
   );
 }
 
+/** Row wrapper that opens the item tooltip on any tap (mobile only). */
+function MobileItemRow({
+  item,
+  highlighted,
+  snippet,
+  matchedTraits,
+  onAddItem,
+  style,
+}: {
+  item: Item;
+  highlighted: ReactNode | null;
+  snippet: ReactNode | null;
+  matchedTraits: Set<string> | undefined;
+  onAddItem: (item: Item) => void;
+  style: React.CSSProperties;
+}) {
+  const { rowProps, portal } = useMobileTooltip(item);
+
+  return (
+    <div className={styles.row} style={style} {...rowProps}>
+      <span className={styles.name}>
+        <span>{highlighted ?? item.name}</span>
+        {snippet && <span className={styles.snippet}>{snippet}</span>}
+        {matchedTraits && matchedTraits.size > 0 && (
+          <TraitBadges traits={item.traits} matchedTraits={matchedTraits} />
+        )}
+      </span>
+      <span className={styles.colType}>
+        {TYPE_LABELS[item.type] ?? item.type}
+      </span>
+      <span className={styles.level}>{item.level}</span>
+      <span className={styles.price}>{formatPrice(item.price)}</span>
+      <span
+        className={styles.colRarity}
+        style={{ color: RARITY_COLORS[item.rarity] ?? "inherit" }}
+      >
+        {item.rarity}
+      </span>
+      <span className={styles.actions}>
+        <button
+          type="button"
+          className={styles.addBtn}
+          onClick={() => onAddItem(item)}
+          title={`Add ${item.name} to list`}
+        >
+          +
+        </button>
+      </span>
+      {portal}
+    </div>
+  );
+}
+
 export function ItemTable({
   items,
   filters,
   onFiltersChange,
   onAddItem,
 }: ItemTableProps) {
+  const isMobile = useIsMobile();
   const {
     search,
     typeFilter,
@@ -237,6 +292,12 @@ export function ItemTable({
       const data = fuzzyDataMap.get(item.id);
       const hasSnippet = !!data?.snippet;
       const hasTraits = !!data?.matchedTraits?.size;
+      if (isMobile) {
+        // Two-line card layout on mobile (name + level/price row)
+        if (hasSnippet && hasTraits) return 96;
+        if (hasSnippet || hasTraits) return 78;
+        return 54;
+      }
       if (hasSnippet && hasTraits) return 72;
       if (hasSnippet || hasTraits) return 56;
       return 36;
@@ -246,7 +307,7 @@ export function ItemTable({
 
   return (
     <div className={styles.container}>
-      <div className={styles.filters}>
+      <div className={styles.toolbar}>
         <span className={styles.searchWrap}>
           <input
             type="text"
@@ -254,6 +315,9 @@ export function ItemTable({
             value={search}
             onChange={(e) => {
               onFiltersChange({ search: e.target.value });
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
             }}
             className={styles.searchInput}
           />
@@ -268,17 +332,47 @@ export function ItemTable({
             </button>
           )}
         </span>
-        <FilterModal
-          items={items}
-          typeFilter={typeFilter}
-          rarityFilter={rarityFilter}
-          remasterFilter={remasterFilter}
-          traitFilter={traitFilter}
-          minLevel={minLevel}
-          maxLevel={maxLevel}
-          onFiltersChange={onFiltersChange}
-        />
-        <span className={styles.resultCount}>{sorted.length} items</span>
+        <div className={styles.filters}>
+          <FilterModal
+            items={items}
+            typeFilter={typeFilter}
+            rarityFilter={rarityFilter}
+            remasterFilter={remasterFilter}
+            traitFilter={traitFilter}
+            minLevel={minLevel}
+            maxLevel={maxLevel}
+            onFiltersChange={onFiltersChange}
+          />
+          {isMobile && (
+            <select
+              className={styles.sortSelect}
+              value={sortField ? `${sortField}-${sortDir}` : ""}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (!val) {
+                  onFiltersChange({ sortField: "", sortDir: "asc" });
+                } else {
+                  const [field, dir] = val.split("-") as [SortField, SortDir];
+                  onFiltersChange({ sortField: field, sortDir: dir });
+                }
+              }}
+              aria-label="Sort order"
+            >
+              <option value="">Sort: Relevance</option>
+              <option value="name-asc">Name ▲</option>
+              <option value="name-desc">Name ▼</option>
+              <option value="level-asc">Level ▲</option>
+              <option value="level-desc">Level ▼</option>
+              <option value="price-asc">Price ▲</option>
+              <option value="price-desc">Price ▼</option>
+              <option value="type-asc">Type ▲</option>
+              <option value="type-desc">Type ▼</option>
+              <option value="rarity-asc">Rarity ▲</option>
+              <option value="rarity-desc">Rarity ▼</option>
+            </select>
+          )}
+          <span className={styles.resultCount}>{sorted.length} items</span>
+        </div>
       </div>
 
       <div className={styles.tableScroll} ref={scrollRef}>
@@ -330,21 +424,33 @@ export function ItemTable({
             {virtualizer.getVirtualItems().map((virtualRow) => {
               const item = sorted[virtualRow.index];
               const fuzzyData = fuzzyDataMap.get(item.id);
-              const snippet = fuzzyData?.snippet;
+              const snippet = fuzzyData?.snippet ?? null;
               const matchedTraits = fuzzyData?.matchedTraits;
+              const rowStyle: React.CSSProperties = {
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: virtualRow.size,
+                transform: `translateY(${virtualRow.start}px)`,
+              };
+
+              if (isMobile) {
+                return (
+                  <MobileItemRow
+                    key={item.id}
+                    item={item}
+                    highlighted={fuzzyData?.highlighted ?? null}
+                    snippet={snippet}
+                    matchedTraits={matchedTraits}
+                    onAddItem={onAddItem}
+                    style={rowStyle}
+                  />
+                );
+              }
+
               return (
-                <div
-                  key={item.id}
-                  className={styles.row}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: virtualRow.size,
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
+                <div key={item.id} className={styles.row} style={rowStyle}>
                   <span className={styles.name}>
                     <ItemTooltipWrapper item={item}>
                       <a

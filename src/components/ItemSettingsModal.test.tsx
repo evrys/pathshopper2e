@@ -2,9 +2,13 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { UpgradeOption } from "../lib/variants";
+import { stubMatchMedia } from "../test-utils";
 import { ItemSettingsModal } from "./ItemSettingsModal";
 
 afterEach(cleanup);
+
+// Stub matchMedia for useMediaQuery (desktop by default)
+stubMatchMedia();
 
 const BASE_PRICE = { gp: 10 };
 
@@ -286,7 +290,7 @@ describe("ItemSettingsModal", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it("calls onClose when clicking the overlay background", () => {
+  it("calls onClose when pressing Escape", () => {
     const onClose = vi.fn();
     render(
       <ItemSettingsModal
@@ -297,8 +301,7 @@ describe("ItemSettingsModal", () => {
       />,
     );
 
-    const overlay = screen.getByRole("dialog");
-    fireEvent.mouseDown(overlay);
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
     expect(onClose).toHaveBeenCalledOnce();
   });
 

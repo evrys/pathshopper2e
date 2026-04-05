@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import * as Dialog from "@radix-ui/react-dialog";
+import { useRef, useState } from "react";
+import { useIsMobile } from "../hooks/useMediaQuery";
 import { CP_PER, formatPrice, fromCopper, toCopper } from "../lib/price";
 import type { UpgradeOption } from "../lib/variants";
 import type { Price, PriceModifier } from "../types";
@@ -97,6 +98,7 @@ export function ItemSettingsModal({
   const [amount, setAmount] = useState(init?.amount ?? "");
   const [notes, setNotes] = useState(currentNotes ?? "");
   const notesRef = useRef<HTMLInputElement>(null);
+  const isMobile = useIsMobile();
 
   // Custom item fields
   const priceInit = priceToDenom(price);
@@ -107,18 +109,6 @@ export function ItemSettingsModal({
   const [customPriceDenom, setCustomPriceDenom] = useState<PriceDenomination>(
     priceInit.denom,
   );
-
-  useEffect(() => {
-    notesRef.current?.focus();
-  }, []);
-
-  useEffect(() => {
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
-  }, [onClose]);
 
   const isCustomInput = preset === "custom-gp" || preset === "custom-percent";
 
@@ -212,147 +202,145 @@ export function ItemSettingsModal({
     onClose();
   }
 
-  return createPortal(
-    <div
-      className={styles.overlay}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Item settings"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className={styles.panel}>
-        <div className={styles.panelHeader}>
-          <h2>{itemName}</h2>
-          <button
-            type="button"
-            className={styles.closeBtn}
-            onClick={onClose}
-            aria-label="Close"
-          >
-            ✕
-          </button>
-        </div>
-        <form className={styles.body} onSubmit={handleSubmit}>
-          {isCustom && (
-            <>
+  return (
+    <Dialog.Root open onOpenChange={(open) => !open && onClose()}>
+      <Dialog.Portal>
+        <Dialog.Overlay className={styles.overlay} />
+        <Dialog.Content
+          className={styles.panel}
+          aria-describedby={undefined}
+          onOpenAutoFocus={(e) => {
+            e.preventDefault();
+            if (!isMobile) notesRef.current?.focus();
+          }}
+        >
+          <div className={styles.panelHeader}>
+            <Dialog.Title asChild>
+              <h2>{itemName}</h2>
+            </Dialog.Title>
+            <Dialog.Close className={styles.closeBtn} aria-label="Close">
+              ✕
+            </Dialog.Close>
+          </div>
+          <form className={styles.body} onSubmit={handleSubmit}>
+            {isCustom && (
+              <>
+                <div className={styles.field}>
+                  <label htmlFor="custom-item-name">Name</label>
+                  <input
+                    id="custom-item-name"
+                    className={styles.textInput}
+                    type="text"
+                    value={customName}
+                    onChange={(e) => setCustomName(e.target.value)}
+                    placeholder="e.g. Magic Sword"
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="custom-item-price">Price</label>
+                  <div className={styles.inputRow}>
+                    <input
+                      id="custom-item-price"
+                      type="number"
+                      step="any"
+                      value={customPriceAmount}
+                      onChange={(e) => setCustomPriceAmount(e.target.value)}
+                      placeholder="0"
+                    />
+                    <select
+                      className={styles.denomSelect}
+                      value={customPriceDenom}
+                      onChange={(e) =>
+                        setCustomPriceDenom(e.target.value as PriceDenomination)
+                      }
+                      aria-label="Price denomination"
+                    >
+                      <option value="gp">gp</option>
+                      <option value="sp">sp</option>
+                      <option value="cp">cp</option>
+                    </select>
+                  </div>
+                </div>
+              </>
+            )}
+            <div className={styles.field}>
+              <label htmlFor="modifier-preset">Price modifier</label>
+              <select
+                id="modifier-preset"
+                className={styles.presetSelect}
+                value={preset}
+                onChange={(e) => handlePresetChange(e.target.value)}
+              >
+                <option value="none">None</option>
+                {upgradeOptions.map((opt, i) => (
+                  <option key={opt.name} value={`upgrade-${i}`}>
+                    Upgrade from {opt.name} (-{opt.priceDisplay})
+                  </option>
+                ))}
+                <option value="crafting">Crafting (-50%)</option>
+                <option value="sell">Selling (-150%)</option>
+                <option value="custom-gp">Custom (gp)</option>
+                <option value="custom-percent">Custom (%)</option>
+              </select>
+            </div>
+            {isCustomInput && (
               <div className={styles.field}>
-                <label htmlFor="custom-item-name">Name</label>
+                <label htmlFor="modifier-amount">Amount per item</label>
                 <input
-                  id="custom-item-name"
+                  id="modifier-amount"
                   className={styles.textInput}
-                  type="text"
-                  value={customName}
-                  onChange={(e) => setCustomName(e.target.value)}
-                  placeholder="e.g. Magic Sword"
+                  type="number"
+                  step="any"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0"
                 />
               </div>
-              <div className={styles.field}>
-                <label htmlFor="custom-item-price">Price</label>
-                <div className={styles.inputRow}>
-                  <input
-                    id="custom-item-price"
-                    type="number"
-                    step="any"
-                    value={customPriceAmount}
-                    onChange={(e) => setCustomPriceAmount(e.target.value)}
-                    placeholder="0"
-                  />
-                  <select
-                    className={styles.denomSelect}
-                    value={customPriceDenom}
-                    onChange={(e) =>
-                      setCustomPriceDenom(e.target.value as PriceDenomination)
-                    }
-                    aria-label="Price denomination"
-                  >
-                    <option value="gp">gp</option>
-                    <option value="sp">sp</option>
-                    <option value="cp">cp</option>
-                  </select>
-                </div>
-              </div>
-            </>
-          )}
-          <div className={styles.field}>
-            <label htmlFor="modifier-preset">Price modifier</label>
-            <select
-              id="modifier-preset"
-              className={styles.presetSelect}
-              value={preset}
-              onChange={(e) => handlePresetChange(e.target.value)}
-            >
-              <option value="none">None</option>
-              {upgradeOptions.map((opt, i) => (
-                <option key={opt.name} value={`upgrade-${i}`}>
-                  Upgrade from {opt.name} (-{opt.priceDisplay})
-                </option>
-              ))}
-              <option value="crafting">Crafting (-50%)</option>
-              <option value="sell">Selling (-150%)</option>
-              <option value="custom-gp">Custom (gp)</option>
-              <option value="custom-percent">Custom (%)</option>
-            </select>
-          </div>
-          {isCustomInput && (
+            )}
+            {inputError && (
+              <p className={styles.fieldError} role="alert">
+                {inputError}
+              </p>
+            )}
+            {isValid && adjustCp !== 0 && (
+              <p className={styles.preview}>
+                {formatPrice(effectivePrice)} →{" "}
+                <span className={styles.previewPrice}>
+                  {formatPrice(modifiedPrice)}
+                </span>
+              </p>
+            )}
             <div className={styles.field}>
-              <label htmlFor="modifier-amount">Amount per item</label>
+              <label htmlFor="item-notes">Notes</label>
               <input
-                id="modifier-amount"
+                ref={notesRef}
+                id="item-notes"
                 className={styles.textInput}
-                type="number"
-                step="any"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0"
+                type="text"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="e.g. why this is a cool item for your character"
               />
             </div>
-          )}
-          {inputError && (
-            <p className={styles.fieldError} role="alert">
-              {inputError}
-            </p>
-          )}
-          {isValid && adjustCp !== 0 && (
-            <p className={styles.preview}>
-              {formatPrice(effectivePrice)} →{" "}
-              <span className={styles.previewPrice}>
-                {formatPrice(modifiedPrice)}
-              </span>
-            </p>
-          )}
-          <div className={styles.field}>
-            <label htmlFor="item-notes">Notes</label>
-            <input
-              ref={notesRef}
-              id="item-notes"
-              className={styles.textInput}
-              type="text"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. why this is a cool item for your character"
-            />
-          </div>
-          <div className={styles.actions}>
-            <button
-              type="button"
-              className={styles.cancelBtn}
-              onClick={onClose}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className={styles.applyBtn}
-              disabled={!isValid}
-            >
-              Apply
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>,
-    document.body,
+            <div className={styles.actions}>
+              <button
+                type="button"
+                className={styles.cancelBtn}
+                onClick={onClose}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className={styles.applyBtn}
+                disabled={!isValid}
+              >
+                Apply
+              </button>
+            </div>
+          </form>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

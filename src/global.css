@@ -3,7 +3,7 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
+  color-scheme: dark;
   color: #d8d8da;
   background-color: #1a1d24;
 
@@ -30,6 +30,7 @@
 
 @media (prefers-color-scheme: light) {
   :root {
+    color-scheme: light;
     color: #1a1d24;
     background-color: #f5f3ef;
 
@@ -42,19 +43,36 @@
   }
 }
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
 body {
-  margin: 0;
   min-height: 100vh;
 }
 
 #root {
   min-height: 100vh;
+}
+
+@media (max-width: 640px) {
+  html {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  body {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  #root {
+    height: 100%;
+    min-height: 0;
+  }
+
+  /* iOS Safari <15.4: -webkit-fill-available accounts for browser chrome */
+  @supports not (height: 100dvh) {
+    html {
+      height: -webkit-fill-available;
+    }
+  }
 }
 
 button {
@@ -76,6 +94,12 @@ button:hover {
   background: var(--color-surface-hover);
 }
 
+@media (hover: none) {
+  button:hover {
+    background: var(--color-surface);
+  }
+}
+
 input,
 select {
   font-family: inherit;
@@ -94,47 +118,14 @@ select:focus {
   border-color: var(--color-primary);
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th,
-td {
-  text-align: left;
-  padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid var(--color-border);
-}
-
-th {
-  font-weight: 600;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-text-muted);
-  position: sticky;
-  top: 0;
-  background: var(--color-surface);
-  z-index: 1;
-}
-
-tr:hover td {
-  background: var(--color-surface-hover);
-}
-
-/* ── Third-party overrides (Tippy) ── */
-
-.tippy-box {
-  background: none;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-}
-
-.tippy-box > .tippy-content {
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
   padding: 0;
-}
-
-.tippy-box > .tippy-arrow {
-  display: none;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }

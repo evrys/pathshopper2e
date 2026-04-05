@@ -1,8 +1,8 @@
-import type { ReactNode } from "react";
-import { useEffect, useRef } from "react";
-import { createRoot } from "react-dom/client";
-import tippy from "tippy.js";
-import "tippy.js/dist/tippy.css";
+import * as Tooltip from "@radix-ui/react-tooltip";
+import { useCallback, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { useIsMobile } from "../hooks/useMediaQuery";
+import { aonUrl } from "../lib/aon";
 import { sanitizeHtml } from "../lib/html";
 import { formatPrice } from "../lib/price";
 import { formatTrait, traitUrl } from "../lib/traits";
@@ -16,17 +16,47 @@ const RARITY_HEADER_COLORS: Record<string, string> = {
   unique: "#54166e",
 };
 
-function TooltipContent({ item }: { item: Item }) {
+function TooltipContent({
+  item,
+  onClose,
+}: {
+  item: Item;
+  onClose?: () => void;
+}) {
   const price = formatPrice(item.price);
   const description = item.description ? sanitizeHtml(item.description) : null;
   const headerBg =
     RARITY_HEADER_COLORS[item.rarity] ?? RARITY_HEADER_COLORS.common;
+  const href = aonUrl(item);
 
   return (
     <div className={styles.tooltip}>
       <div className={styles.header} style={{ background: headerBg }}>
-        <span className={styles.name}>{item.name}</span>
-        <span className={styles.level}>Item {item.level}</span>
+        {href ? (
+          <a
+            className={styles.name}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {item.name}
+          </a>
+        ) : (
+          <span className={styles.name}>{item.name}</span>
+        )}
+        <span className={styles.headerRight}>
+          <span className={styles.level}>Item {item.level}</span>
+          {onClose && (
+            <button
+              type="button"
+              className={styles.closeBtn}
+              onClick={onClose}
+              aria-label="Close"
+            >
+              ✕
+            </button>
+          )}
+        </span>
       </div>
       <div className={styles.body}>
         <div className={styles.meta}>
@@ -87,6 +117,71 @@ function TooltipContent({ item }: { item: Item }) {
   );
 }
 
+function MobileTooltip({ item, onClose }: { item: Item; onClose: () => void }) {
+  const handleDismiss = useCallback(
+    (e: React.SyntheticEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      onClose();
+    },
+    [onClose],
+  );
+
+  return createPortal(
+    // biome-ignore lint/a11y/useKeyWithClickEvents: tap-to-dismiss overlay
+    <div
+      className={styles.mobileOverlay}
+      role="dialog"
+      onClick={handleDismiss}
+      onPointerDown={handleDismiss}
+    >
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: stop propagation wrapper */}
+      <div
+        className={styles.mobileContent}
+        onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
+        <TooltipContent item={item} onClose={onClose} />
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+/**
+ * Hook for managing mobile tooltip state at the row level.
+ * Returns props to spread on the row element plus the portal to render.
+ * Uses onClick which the browser only fires for real taps, not scroll gestures.
+ */
+export function useMobileTooltip(item: Item) {
+  const [open, setOpen] = useState(false);
+  const closedAtRef = useRef(0);
+
+  const rowProps = {
+    onClick: (e: React.MouseEvent) => {
+      // Don't open tooltip when tapping buttons (add, etc.)
+      const target = e.target as HTMLElement;
+      if (target.closest("button")) return;
+      // Ignore clicks that arrive right after the overlay was dismissed,
+      // which can happen when the tap passes through to the row.
+      if (Date.now() - closedAtRef.current < 300) return;
+      setOpen((prev) => !prev);
+    },
+  };
+
+  const handleClose = useCallback(() => {
+    closedAtRef.current = Date.now();
+    setOpen(false);
+  }, []);
+
+  const portal = open ? (
+    <MobileTooltip item={item} onClose={handleClose} />
+  ) : null;
+
+  return { rowProps, portal };
+}
+
 export function ItemTooltipWrapper({
   item,
   children,
@@ -94,33 +189,58 @@ export function ItemTooltipWrapper({
   item: Item;
   children: ReactNode;
 }) {
-  const anchorRef = useRef<HTMLSpanElement>(null);
+  const [open, setOpen] = useState(false);
+  const touchedRef = useRef(false);
+  const isMobile = useIsMobile();
 
-  useEffect(() => {
-    const el = anchorRef.current;
-    if (!el) return;
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    if (touchedRef.current) {
+      // On mobile, always prevent link navigation — the tooltip header
+      // provides its own link to AoN.
+      e.preventDefault();
+      setOpen((prev) => !prev);
+    }
+    touchedRef.current = false;
+  }, []);
 
-    // Create a detached container for React to render the tooltip content into
-    const container = document.createElement("div");
-    const root = createRoot(container);
-    root.render(<TooltipContent item={item} />);
+  if (isMobile) {
+    return (
+      <>
+        <span
+          onTouchStart={() => {
+            touchedRef.current = true;
+          }}
+          onClickCapture={handleClick}
+        >
+          {children}
+        </span>
+        {open && <MobileTooltip item={item} onClose={() => setOpen(false)} />}
+      </>
+    );
+  }
 
-    const instance = tippy(el, {
-      content: container,
-      delay: [300, 100],
-      maxWidth: 480,
-      placement: "right",
-      allowHTML: true,
-      interactive: true,
-      appendTo: () => document.body,
-    });
-
-    return () => {
-      instance.destroy();
-      // Defer unmount to avoid "synchronously unmount while rendering" warning
-      queueMicrotask(() => root.unmount());
-    };
-  }, [item]);
-
-  return <span ref={anchorRef}>{children}</span>;
+  return (
+    <Tooltip.Root open={open} onOpenChange={setOpen}>
+      <Tooltip.Trigger asChild>
+        <span
+          onTouchStart={() => {
+            touchedRef.current = true;
+          }}
+          onClickCapture={handleClick}
+        >
+          {children}
+        </span>
+      </Tooltip.Trigger>
+      <Tooltip.Portal>
+        <Tooltip.Content
+          side="right"
+          sideOffset={8}
+          className={styles.content}
+          onPointerDownOutside={(e) => e.preventDefault()}
+        >
+          <TooltipContent item={item} />
+        </Tooltip.Content>
+      </Tooltip.Portal>
+    </Tooltip.Root>
+  );
 }

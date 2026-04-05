@@ -51,6 +51,7 @@ a.badge:hover {
 
 .body > main {
   min-height: 0;
+  min-width: 0;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -58,6 +59,7 @@ a.badge:hover {
 
 .sidebar {
   align-self: start;
+  max-height: 100%;
 }
 
 .loading {
@@ -84,11 +86,27 @@ a.badge:hover {
 
 @media (max-width: 640px) {
   .app {
-    padding: 0.75rem 0.5rem 2rem;
+    padding: 0.75rem 0.75rem calc(env(safe-area-inset-bottom, 0px) + 6rem);
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  @supports not (height: 100dvh) {
+    .app {
+      height: -webkit-fill-available;
+    }
   }
 
   .body {
     gap: 0.75rem;
+    flex: 1;
+    min-height: 0;
+    grid-template-rows: 1fr;
+  }
+
+  .body > main {
+    min-height: 0;
+    overflow: hidden;
   }
 
   .header h1 {
@@ -97,5 +115,150 @@ a.badge:hover {
 
   .subtitle {
     font-size: 0.8125rem;
+  }
+
+  .sidebar {
+    display: none;
+  }
+}
+
+/* Floating cart button (mobile only) */
+.cartFab {
+  display: none;
+}
+
+.cartFabPrice {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .cartFab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 1.25rem);
+    right: 1.25rem;
+    z-index: 60;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    color: #fff;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    transition:
+      transform 0.15s,
+      box-shadow 0.15s,
+      background 0.15s;
+  }
+
+  .cartFab:hover,
+  .cartFab:focus {
+    background: var(--color-primary);
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  }
+
+  .cartFab:active {
+    background: var(--color-primary);
+    transform: scale(0.95);
+  }
+
+  .cartFabOpen,
+  .cartFabOpen:hover,
+  .cartFabOpen:focus,
+  .cartFabOpen:active {
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    right: auto;
+    left: 1.25rem;
+  }
+
+  .cartFabBadge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border-radius: 10px;
+    background: var(--color-danger, #e53e3e);
+    color: #fff;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .cartFabPrice {
+    position: fixed;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 1.25rem);
+    right: calc(1.25rem + 56px + 0.625rem);
+    z-index: 60;
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--color-primary);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    height: 56px;
+    display: flex;
+    align-items: center;
+  }
+
+  .cartDrawerOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.15s ease-out;
+  }
+
+  .cartDrawer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 6rem);
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-bg);
+    overflow-y: auto;
+    border-radius: 0 0 var(--radius) var(--radius);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.cartFabBump {
+  animation: fabBump 0.35s ease-out;
+}
+
+@keyframes fabBump {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
   }
 }

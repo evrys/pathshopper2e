@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useRef } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
+import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./App.module.css";
 import { Cart } from "./components/Cart";
 import { ItemTable, type FilterState } from "./components/ItemTable";
 import { VersionTag } from "./components/VersionTag";
 import { useCart, type CartEntry } from "./hooks/useCart";
 import { useItems } from "./hooks/useItems";
+import { useIsMobile } from "./hooks/useMediaQuery";
 import {
   cartEntriesToSavedData,
   savedListToCartEntries,
@@ -14,7 +16,7 @@ import {
 } from "./hooks/useSavedLists";
 import { useUrlState } from "./hooks/useUrlState";
 import { parseCsvItems } from "./lib/csv";
-import { parseBudget } from "./lib/price";
+import { formatPrice, parseBudget } from "./lib/price";
 import { parseHashParams, parseShareParams, type ShareParams } from "./lib/url";
 import type { Item } from "./types";
 
@@ -60,6 +62,9 @@ function consumeSharedHash(): ShareParams | null {
 function App() {
   const { items, loading } = useItems();
   const [urlState, setUrlState] = useUrlState();
+  const isMobile = useIsMobile();
+  const [mobileCartOpen, setMobileCartOpen] = useState(false);
+  const [fabBump, setFabBump] = useState(false);
 
   // Capture shared cart from URL before any renders clear it
   const sharedCart = useRef(consumeSharedHash());
@@ -296,6 +301,16 @@ function App() {
     [items, replaceCart],
   );
 
+  const handleAddItem = useCallback(
+    (item: CartEntry["item"]) => {
+      addItem(item);
+      if (isMobile && !mobileCartOpen) {
+        setFabBump(true);
+      }
+    },
+    [addItem, isMobile, mobileCartOpen],
+  );
+
   if (loading) {
     return (
       <div className={styles.loading}>
@@ -303,6 +318,28 @@ function App() {
       </div>
     );
   }
+
+  const cartProps = {
+    entries,
+    totalPrice,
+    allItems: items,
+    listName: activeList?.name ?? "My shopping list",
+    lists,
+    activeListId,
+    onListNameChange: renameActiveList,
+    onSetQuantity: setQuantity,
+    onRemoveItem: removeItem,
+    onSetPriceModifier: setDiscount,
+    onSetNotes: setNotes,
+    onUpdateItem: updateItem,
+    onAddItem: handleAddItem,
+    onLoadList: handleLoadList,
+    onNewList: handleNewList,
+    onDeleteList: deleteList,
+    onImportCsv: handleImportCsv,
+  };
+
+  const itemCount = entries.reduce((sum, e) => sum + e.quantity, 0);
 
   return (
     <div className={styles.app}>
@@ -333,31 +370,81 @@ function App() {
             items={items}
             filters={filters}
             onFiltersChange={handleFiltersChange}
-            onAddItem={addItem}
+            onAddItem={handleAddItem}
           />
         </main>
         <aside className={styles.sidebar}>
-          <Cart
-            entries={entries}
-            totalPrice={totalPrice}
-            allItems={items}
-            listName={activeList?.name ?? "My shopping list"}
-            lists={lists}
-            activeListId={activeListId}
-            onListNameChange={renameActiveList}
-            onSetQuantity={setQuantity}
-            onRemoveItem={removeItem}
-            onSetPriceModifier={setDiscount}
-            onSetNotes={setNotes}
-            onUpdateItem={updateItem}
-            onAddItem={addItem}
-            onLoadList={handleLoadList}
-            onNewList={handleNewList}
-            onDeleteList={deleteList}
-            onImportCsv={handleImportCsv}
-          />
+          <Cart {...cartProps} />
         </aside>
       </div>
+
+      {/* Mobile floating cart button + drawer */}
+      {isMobile && (
+        <Dialog.Root open={mobileCartOpen} onOpenChange={setMobileCartOpen}>
+          {!mobileCartOpen && itemCount > 0 && (
+            <span className={styles.cartFabPrice}>
+              {formatPrice(totalPrice)}
+            </span>
+          )}
+          <Dialog.Trigger asChild>
+            <button
+              type="button"
+              className={`${styles.cartFab} ${mobileCartOpen ? styles.cartFabOpen : ""}${fabBump ? ` ${styles.cartFabBump}` : ""}`}
+              aria-label={mobileCartOpen ? "Close cart" : "Open cart"}
+              onAnimationEnd={() => setFabBump(false)}
+            >
+              {mobileCartOpen ? (
+                <svg
+                  aria-hidden="true"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
+                </svg>
+              ) : (
+                <>
+                  <svg
+                    aria-hidden="true"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="8" cy="21" r="1" />
+                    <circle cx="19" cy="21" r="1" />
+                    <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
+                  </svg>
+                  {itemCount > 0 && (
+                    <span className={styles.cartFabBadge}>{itemCount}</span>
+                  )}
+                </>
+              )}
+            </button>
+          </Dialog.Trigger>
+          <Dialog.Portal>
+            <Dialog.Overlay className={styles.cartDrawerOverlay} />
+            <Dialog.Content
+              className={styles.cartDrawer}
+              aria-describedby={undefined}
+            >
+              <Dialog.Title className="sr-only">Shopping cart</Dialog.Title>
+              <Cart {...cartProps} />
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+      )}
+
       <VersionTag />
     </div>
   );

@@ -1,4 +1,6 @@
+import * as Tooltip from "@radix-ui/react-tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import "modern-normalize/modern-normalize.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
@@ -20,7 +22,9 @@ const Page = isSharedList ? SharedList : App;
 createRoot(root).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <Page />
+      <Tooltip.Provider delayDuration={300} skipDelayDuration={100}>
+        <Page />
+      </Tooltip.Provider>
     </QueryClientProvider>
   </StrictMode>,
 );

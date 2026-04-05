@@ -153,11 +153,13 @@ describe("SavedListsModal", () => {
     );
 
     fireEvent.click(screen.getByLabelText('Delete "Doomed List"'));
-    // Confirm dialog should appear
-    expect(screen.getByLabelText("Confirm delete")).toBeDefined();
-    // The confirm dialog text contains the list name in a <strong> tag
-    const confirmDialog = screen.getByLabelText("Confirm delete");
-    expect(confirmDialog.textContent).toContain("Doomed List");
+    // Confirm dialog should appear with Delete/Cancel buttons
+    // "Doomed List" appears in both the list and the confirmation
+    expect(screen.getAllByText("Doomed List").length).toBeGreaterThanOrEqual(2);
+    // The confirmation has its own Delete and Cancel buttons
+    const deleteButtons = screen.getAllByText("Delete");
+    expect(deleteButtons.length).toBe(1);
+    expect(screen.getByText("Cancel")).toBeDefined();
   });
   it("calls onDelete after confirming delete", () => {
     const list = makeList({ id: "a", name: "Doomed List" });
@@ -179,7 +181,7 @@ describe("SavedListsModal", () => {
     expect(onDelete).toHaveBeenCalledWith("a");
   });
 
-  it("calls onClose when clicking the overlay background", () => {
+  it("calls onClose when pressing Escape", () => {
     const onClose = vi.fn();
     render(
       <SavedListsModal
@@ -192,8 +194,7 @@ describe("SavedListsModal", () => {
       />,
     );
 
-    const overlay = screen.getByLabelText("Saved lists");
-    fireEvent.mouseDown(overlay);
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
     expect(onClose).toHaveBeenCalledOnce();
   });
 

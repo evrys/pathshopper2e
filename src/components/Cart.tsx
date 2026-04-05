@@ -1,6 +1,8 @@
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import { DotsVerticalIcon } from "@radix-ui/react-icons";
 import { useEffect, useRef, useState } from "react";
 import type { CartEntry } from "../hooks/useCart";
-import { useMediaQuery } from "../hooks/useMediaQuery";
+import { useIsMobile } from "../hooks/useMediaQuery";
 import type { SavedList } from "../hooks/useSavedLists";
 import { aonUrl } from "../lib/aon";
 import { entriesToCsv } from "../lib/csv";
@@ -17,7 +19,7 @@ import type { Item, Price, PriceModifier } from "../types";
 import { AddCustomItemModal } from "./AddCustomItemModal";
 import styles from "./Cart.module.css";
 import { ItemSettingsModal } from "./ItemSettingsModal";
-import { ItemTooltipWrapper } from "./ItemTooltip";
+import { ItemTooltipWrapper, useMobileTooltip } from "./ItemTooltip";
 import { SavedListsModal } from "./SavedListsModal";
 
 interface CartProps {
@@ -104,6 +106,101 @@ function buildShareUrl(
   return `${window.location.origin}${base}/?view=list${buildHashString(params)}`;
 }
 
+/** Cart list item that opens the tooltip on any tap in the info area (mobile). */
+function MobileCartItem({
+  entry,
+  onSetSettingsEntry,
+  onSetQuantity,
+  onRemoveItem,
+  isFlashing,
+  onFlashEnd,
+}: {
+  entry: CartEntry;
+  onSetSettingsEntry: (entry: CartEntry) => void;
+  onSetQuantity: (id: string, qty: number) => void;
+  onRemoveItem: (id: string) => void;
+  isFlashing: boolean;
+  onFlashEnd: () => void;
+}) {
+  const { rowProps, portal } = useMobileTooltip(entry.item);
+
+  return (
+    <li
+      data-item-id={entry.item.id}
+      className={`${styles.item}${isFlashing ? ` ${styles.flash}` : ""}`}
+      onAnimationEnd={onFlashEnd}
+    >
+      <div
+        className={styles.itemInfo}
+        {...(entry.item.id.startsWith("custom-") ? {} : rowProps)}
+      >
+        <span className={styles.itemName}>{entry.item.name}</span>
+        <span className={styles.itemPrice}>
+          {entry.priceModifier ? (
+            <>
+              <span className={styles.originalPrice}>
+                {formatPrice(entry.item.price)}
+              </span>{" "}
+              {formatPrice(entry.item.price, entry.priceModifier)}
+              {modifierLabel(entry.priceModifier) &&
+                ` ${modifierLabel(entry.priceModifier)}`}
+            </>
+          ) : (
+            formatPrice(entry.item.price)
+          )}
+          {entry.quantity > 1 && " each"}
+        </span>
+        {entry.notes && <span className={styles.itemNotes}>{entry.notes}</span>}
+      </div>
+      <div className={styles.controls}>
+        <button
+          type="button"
+          className={styles.settingsBtn}
+          onClick={() => onSetSettingsEntry(entry)}
+          title="Item settings"
+        >
+          <svg
+            aria-hidden="true"
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+            <path d="m15 5 4 4" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          onClick={() => onSetQuantity(entry.item.id, entry.quantity - 1)}
+        >
+          −
+        </button>
+        <span className={styles.qty}>{entry.quantity}</span>
+        <button
+          type="button"
+          onClick={() => onSetQuantity(entry.item.id, entry.quantity + 1)}
+        >
+          +
+        </button>
+        <button
+          type="button"
+          className={styles.removeBtn}
+          onClick={() => onRemoveItem(entry.item.id)}
+          title="Remove"
+        >
+          ✕
+        </button>
+      </div>
+      {portal}
+    </li>
+  );
+}
+
 export function Cart({
   entries,
   totalPrice,
@@ -123,43 +220,68 @@ export function Cart({
   onDeleteList,
   onImportCsv,
 }: CartProps) {
-  const isMobile = useMediaQuery("(max-width: 640px)");
-  const [mobileCollapsed, setMobileCollapsed] = useState(true);
+  const isMobile = useIsMobile();
   const [listsOpen, setListsOpen] = useState(false);
   const [listsOpenCreating, setListsOpenCreating] = useState(false);
   const [customItemOpen, setCustomItemOpen] = useState(false);
   const [settingsEntry, setSettingsEntry] = useState<CartEntry | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
-  const [renameValue, setRenameValue] = useState("");
-  const menuRef = useRef<HTMLDivElement>(null);
-  const renameInputRef = useRef<HTMLInputElement>(null);
+  const renameRef = useRef<HTMLInputElement>(null);
+  const renameCallbackRef = (el: HTMLInputElement | null) => {
+    (renameRef as React.MutableRefObject<HTMLInputElement | null>).current = el;
+    if (el) {
+      el.focus();
+      el.select();
+    }
+  };
   const csvInputRef = useRef<HTMLInputElement>(null);
-  const expanded = !isMobile || !mobileCollapsed;
   const title = listName || "My shopping list";
 
-  // Close the dropdown when clicking outside
+  // Track which item to flash-highlight (newly added or quantity bumped)
+  const [flashId, setFlashId] = useState<string | null>(null);
+  const prevEntriesRef = useRef<Map<string, number> | null>(null);
+  const stableRef = useRef(false);
+  const itemsListRef = useRef<HTMLUListElement>(null);
+
+  // Mark the entries as stable after the initial hydration settles
   useEffect(() => {
-    if (!menuOpen) return;
-    function handleClick(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
+    const id = requestAnimationFrame(() => {
+      stableRef.current = true;
+    });
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  useEffect(() => {
+    const prev = prevEntriesRef.current;
+    // Only flash after the initial hydration has settled
+    if (prev !== null && stableRef.current) {
+      for (const { item, quantity } of entries) {
+        const prevQty = prev.get(item.id);
+        if (prevQty === undefined || quantity > prevQty) {
+          setFlashId(item.id);
+          break;
+        }
       }
     }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [menuOpen]);
+    prevEntriesRef.current = new Map(
+      entries.map(({ item, quantity }) => [item.id, quantity]),
+    );
+  }, [entries]);
 
-  // Focus rename input when entering rename mode
+  // Scroll the flashed item into view
   useEffect(() => {
-    if (renaming) {
-      renameInputRef.current?.focus();
-      renameInputRef.current?.select();
+    if (!flashId || !itemsListRef.current) return;
+    const el = itemsListRef.current.querySelector<HTMLElement>(
+      `[data-item-id="${flashId}"]`,
+    );
+    if (typeof el?.scrollIntoView === "function") {
+      el.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
-  }, [renaming]);
+  }, [flashId]);
 
   function commitRename() {
-    const trimmed = renameValue.trim();
+    const trimmed = renameRef.current?.value.trim() ?? "";
     if (trimmed && trimmed !== listName) {
       onListNameChange(trimmed);
     }
@@ -217,11 +339,10 @@ export function Cart({
           }}
         >
           <input
-            ref={renameInputRef}
+            ref={renameCallbackRef}
             className={styles.renameInput}
             type="text"
-            value={renameValue}
-            onChange={(e) => setRenameValue(e.target.value)}
+            defaultValue={listName}
             onBlur={commitRename}
             onKeyDown={(e) => {
               if (e.key === "Escape") {
@@ -246,99 +367,71 @@ export function Cart({
             Share
           </a>
         )}
-        <div className={styles.menuWrapper} ref={menuRef}>
-          <button
-            type="button"
-            className={styles.menuBtn}
-            onClick={(e) => {
-              e.stopPropagation();
-              setMenuOpen((o) => !o);
-            }}
-            aria-label="List options"
-            title="List options"
-          >
-            ⋮
-          </button>
-          {menuOpen && (
-            <div className={styles.menuDropdown}>
-              <button
-                type="button"
+        <DropdownMenu.Root open={menuOpen} onOpenChange={setMenuOpen}>
+          <DropdownMenu.Trigger asChild>
+            <button
+              type="button"
+              className={styles.menuBtn}
+              onClick={(e) => e.stopPropagation()}
+              aria-label="List options"
+              title="List options"
+            >
+              <DotsVerticalIcon />
+            </button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Portal>
+            <DropdownMenu.Content
+              className={styles.menuDropdown}
+              side={isMobile ? "top" : undefined}
+              sideOffset={4}
+              align="end"
+            >
+              <DropdownMenu.Item
                 className={styles.menuItem}
-                onClick={() => {
-                  setMenuOpen(false);
-                  setRenameValue(listName);
+                onSelect={() => {
                   setRenaming(true);
                 }}
               >
                 Rename
-              </button>
-              <button
-                type="button"
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
                 className={styles.menuItem}
-                onClick={() => {
-                  setMenuOpen(false);
-                  setListsOpen(true);
-                }}
+                onSelect={() => setListsOpen(true)}
               >
                 Open list
-              </button>
-              <button
-                type="button"
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
                 className={styles.menuItem}
-                onClick={() => {
-                  setMenuOpen(false);
+                onSelect={() => {
                   setListsOpenCreating(true);
                   setListsOpen(true);
                 }}
               >
                 New list
-              </button>
-              <hr className={styles.menuDivider} />
-              <button
-                type="button"
+              </DropdownMenu.Item>
+              <DropdownMenu.Separator className={styles.menuDivider} />
+              <DropdownMenu.Item
                 className={styles.menuItem}
-                onClick={() => {
-                  setMenuOpen(false);
-                  setCustomItemOpen(true);
-                }}
+                onSelect={() => setCustomItemOpen(true)}
               >
                 Add custom item
-              </button>
-              <hr className={styles.menuDivider} />
-              <button
-                type="button"
+              </DropdownMenu.Item>
+              <DropdownMenu.Separator className={styles.menuDivider} />
+              <DropdownMenu.Item
                 className={styles.menuItem}
-                onClick={() => {
-                  setMenuOpen(false);
-                  handleExportCsv();
-                }}
+                onSelect={handleExportCsv}
               >
                 Export CSV
-              </button>
-              <button
-                type="button"
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
                 className={styles.menuItem}
-                onClick={() => {
-                  setMenuOpen(false);
-                  csvInputRef.current?.click();
-                }}
+                onSelect={() => csvInputRef.current?.click()}
               >
                 Import CSV
-              </button>
-            </div>
-          )}
-        </div>
-        {isMobile && (
-          <span
-            className={styles.collapseIcon}
-            style={{
-              transform: mobileCollapsed ? "rotate(-90deg)" : undefined,
-            }}
-            aria-hidden
-          >
-            ▾
-          </span>
-        )}
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Portal>
+        </DropdownMenu.Root>
       </div>
     </>
   );
@@ -352,163 +445,167 @@ export function Cart({
         style={{ display: "none" }}
         onChange={handleImportCsvFile}
       />
-      {isMobile ? (
-        <button
-          type="button"
-          className={styles.header}
-          onClick={() => setMobileCollapsed((c) => !c)}
-        >
-          {headerContent}
-        </button>
-      ) : (
-        <div className={styles.header}>{headerContent}</div>
+      <div className={styles.header}>{headerContent}</div>
+
+      {listsOpen && (
+        <SavedListsModal
+          lists={lists}
+          activeListId={activeListId}
+          initialCreatingNew={listsOpenCreating}
+          onLoad={handleLoad}
+          onDelete={onDeleteList}
+          onNewList={onNewList}
+          onClose={() => {
+            setListsOpen(false);
+            setListsOpenCreating(false);
+          }}
+        />
       )}
 
-      {expanded && (
-        <>
-          {listsOpen && (
-            <SavedListsModal
-              lists={lists}
-              activeListId={activeListId}
-              initialCreatingNew={listsOpenCreating}
-              onLoad={handleLoad}
-              onDelete={onDeleteList}
-              onNewList={onNewList}
-              onClose={() => {
-                setListsOpen(false);
-                setListsOpenCreating(false);
-              }}
-            />
-          )}
+      {customItemOpen && (
+        <AddCustomItemModal
+          onAdd={onAddItem}
+          onClose={() => setCustomItemOpen(false)}
+        />
+      )}
 
-          {customItemOpen && (
-            <AddCustomItemModal
-              onAdd={onAddItem}
-              onClose={() => setCustomItemOpen(false)}
-            />
-          )}
+      {settingsEntry && (
+        <ItemSettingsModal
+          itemName={settingsEntry.item.name}
+          price={settingsEntry.item.price}
+          isCustom={settingsEntry.item.id.startsWith("custom-")}
+          currentModifier={settingsEntry.priceModifier}
+          currentNotes={settingsEntry.notes}
+          upgradeOptions={getUpgradeOptions(settingsEntry.item, allItems)}
+          onApply={(priceModifier, notes, customUpdate) => {
+            onSetPriceModifier(settingsEntry.item.id, priceModifier);
+            onSetNotes(settingsEntry.item.id, notes);
+            if (customUpdate) {
+              onUpdateItem(settingsEntry.item.id, customUpdate);
+            }
+          }}
+          onClose={() => setSettingsEntry(null)}
+        />
+      )}
 
-          {settingsEntry && (
-            <ItemSettingsModal
-              itemName={settingsEntry.item.name}
-              price={settingsEntry.item.price}
-              isCustom={settingsEntry.item.id.startsWith("custom-")}
-              currentModifier={settingsEntry.priceModifier}
-              currentNotes={settingsEntry.notes}
-              upgradeOptions={getUpgradeOptions(settingsEntry.item, allItems)}
-              onApply={(priceModifier, notes, customUpdate) => {
-                onSetPriceModifier(settingsEntry.item.id, priceModifier);
-                onSetNotes(settingsEntry.item.id, notes);
-                if (customUpdate) {
-                  onUpdateItem(settingsEntry.item.id, customUpdate);
-                }
-              }}
-              onClose={() => setSettingsEntry(null)}
-            />
-          )}
-
-          {entries.length === 0 ? (
-            <p className={styles.empty}>
-              Add items from the table to start building your list.
-            </p>
-          ) : (
-            <ul className={styles.items}>
-              {entries.map((entry) => (
-                <li key={entry.item.id} className={styles.item}>
-                  <div className={styles.itemInfo}>
-                    {entry.item.id.startsWith("custom-") ? (
-                      <span className={styles.itemName}>{entry.item.name}</span>
-                    ) : (
-                      <ItemTooltipWrapper item={entry.item}>
-                        <a
-                          className={styles.itemName}
-                          href={aonUrl(entry.item)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          {entry.item.name}
-                        </a>
-                      </ItemTooltipWrapper>
-                    )}
-                    <span className={styles.itemPrice}>
-                      {entry.priceModifier ? (
-                        <>
-                          <span className={styles.originalPrice}>
-                            {formatPrice(entry.item.price)}
-                          </span>{" "}
-                          {formatPrice(entry.item.price, entry.priceModifier)}
-                          {modifierLabel(entry.priceModifier) &&
-                            ` ${modifierLabel(entry.priceModifier)}`}
-                        </>
-                      ) : (
-                        formatPrice(entry.item.price)
-                      )}
-                      {entry.quantity > 1 && " each"}
-                    </span>
-                    {entry.notes && (
-                      <span className={styles.itemNotes}>{entry.notes}</span>
-                    )}
-                  </div>
-                  <div className={styles.controls}>
-                    <button
-                      type="button"
-                      className={styles.settingsBtn}
-                      onClick={() => setSettingsEntry(entry)}
-                      title="Item settings"
-                    >
-                      <svg
-                        aria-hidden="true"
-                        width="12"
-                        height="12"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
+      {entries.length === 0 ? (
+        <p className={styles.empty}>
+          Add items from the table to start building your list.
+        </p>
+      ) : (
+        <ul className={styles.items} ref={itemsListRef}>
+          {entries.map((entry) =>
+            isMobile ? (
+              <MobileCartItem
+                key={entry.item.id}
+                entry={entry}
+                onSetSettingsEntry={setSettingsEntry}
+                onSetQuantity={onSetQuantity}
+                onRemoveItem={onRemoveItem}
+                isFlashing={flashId === entry.item.id}
+                onFlashEnd={() => setFlashId(null)}
+              />
+            ) : (
+              <li
+                key={entry.item.id}
+                data-item-id={entry.item.id}
+                className={`${styles.item}${flashId === entry.item.id ? ` ${styles.flash}` : ""}`}
+                onAnimationEnd={() => setFlashId(null)}
+              >
+                {" "}
+                <div className={styles.itemInfo}>
+                  {entry.item.id.startsWith("custom-") ? (
+                    <span className={styles.itemName}>{entry.item.name}</span>
+                  ) : (
+                    <ItemTooltipWrapper item={entry.item}>
+                      <a
+                        className={styles.itemName}
+                        href={aonUrl(entry.item)}
+                        target="_blank"
+                        rel="noopener noreferrer"
                       >
-                        <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                        <path d="m15 5 4 4" />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        onSetQuantity(entry.item.id, entry.quantity - 1)
-                      }
+                        {entry.item.name}
+                      </a>
+                    </ItemTooltipWrapper>
+                  )}
+                  <span className={styles.itemPrice}>
+                    {entry.priceModifier ? (
+                      <>
+                        <span className={styles.originalPrice}>
+                          {formatPrice(entry.item.price)}
+                        </span>{" "}
+                        {formatPrice(entry.item.price, entry.priceModifier)}
+                        {modifierLabel(entry.priceModifier) &&
+                          ` ${modifierLabel(entry.priceModifier)}`}
+                      </>
+                    ) : (
+                      formatPrice(entry.item.price)
+                    )}
+                    {entry.quantity > 1 && " each"}
+                  </span>
+                  {entry.notes && (
+                    <span className={styles.itemNotes}>{entry.notes}</span>
+                  )}
+                </div>
+                <div className={styles.controls}>
+                  <button
+                    type="button"
+                    className={styles.settingsBtn}
+                    onClick={() => setSettingsEntry(entry)}
+                    title="Item settings"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                     >
-                      −
-                    </button>
-                    <span className={styles.qty}>{entry.quantity}</span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        onSetQuantity(entry.item.id, entry.quantity + 1)
-                      }
-                    >
-                      +
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.removeBtn}
-                      onClick={() => onRemoveItem(entry.item.id)}
-                      title="Remove"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                      <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                      <path d="m15 5 4 4" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onSetQuantity(entry.item.id, entry.quantity - 1)
+                    }
+                  >
+                    −
+                  </button>
+                  <span className={styles.qty}>{entry.quantity}</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onSetQuantity(entry.item.id, entry.quantity + 1)
+                    }
+                  >
+                    +
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.removeBtn}
+                    onClick={() => onRemoveItem(entry.item.id)}
+                    title="Remove"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </li>
+            ),
           )}
+        </ul>
+      )}
 
-          {entries.length > 0 && (
-            <div className={styles.total}>
-              <span>Total:</span>
-              <strong>{formatPrice(totalPrice)}</strong>
-            </div>
-          )}
-        </>
+      {entries.length > 0 && (
+        <div className={styles.total}>
+          <span>Total:</span>
+          <strong>{formatPrice(totalPrice)}</strong>
+        </div>
       )}
     </div>
   );

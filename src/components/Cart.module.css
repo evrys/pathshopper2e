@@ -4,6 +4,10 @@
   border-radius: var(--radius);
   position: sticky;
   top: 1rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: calc(100vh - 10rem);
 }
 
 .header {
@@ -20,11 +24,6 @@
   text-align: left;
 }
 
-button.header {
-  border: none;
-  cursor: pointer;
-}
-
 .header h2 {
   margin: 0;
   font-size: 1rem;
@@ -38,10 +37,7 @@ button.header {
   display: flex;
   align-items: center;
   gap: 0.375rem;
-}
-
-.menuWrapper {
-  position: relative;
+  margin-left: 0.75rem;
   flex-shrink: 0;
 }
 
@@ -52,24 +48,22 @@ button.header {
   width: 28px;
   height: 28px;
   padding: 0;
-  background: transparent;
+  background: var(--color-surface-hover);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  color: var(--color-text-muted);
+  color: var(--color-text);
   font-size: 1rem;
   line-height: 1;
   cursor: pointer;
 }
 
 .menuBtn:hover {
+  background: var(--color-border);
   color: var(--color-text);
   border-color: var(--color-text-muted);
 }
 
 .menuDropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
   z-index: 50;
   min-width: 140px;
   background: var(--color-surface);
@@ -101,9 +95,11 @@ button.header {
   font-size: 0.8125rem;
   text-align: left;
   cursor: pointer;
+  outline: none;
 }
 
-.menuItem:hover {
+.menuItem:hover,
+.menuItem[data-highlighted] {
   background: var(--color-surface-hover);
 }
 
@@ -115,30 +111,19 @@ button.header {
 
 .shareBtn {
   font-size: 0.75rem;
-  background: transparent;
+  background: var(--color-surface-hover);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   padding: 0.375rem 0.75rem;
-  color: var(--color-text-muted);
+  color: var(--color-text);
   text-decoration: none;
   cursor: pointer;
 }
 
 .shareBtn:hover {
+  background: var(--color-border);
   color: var(--color-text);
   border-color: var(--color-text-muted);
-}
-
-.clearBtn {
-  font-size: 0.75rem;
-  color: var(--color-danger);
-  border-color: var(--color-danger);
-  background: transparent;
-}
-
-.clearBtn:hover {
-  background: var(--color-danger);
-  color: white;
 }
 
 .empty {
@@ -147,13 +132,15 @@ button.header {
   color: var(--color-text-muted);
   font-size: 0.875rem;
   margin: 0;
+  flex: 1;
 }
 
 .items {
   list-style: none;
   margin: 0;
   padding: 0;
-  max-height: calc(100vh - 400px);
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 
@@ -219,9 +206,15 @@ button.header {
 }
 
 .controls button {
+  width: 24px;
+  height: 24px;
   min-width: 24px;
-  padding: 0.125rem;
+  padding: 0;
   font-size: 0.8125rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .qty {
@@ -294,24 +287,51 @@ button.header {
   outline: none;
 }
 
-.collapseIcon {
-  color: var(--color-text-muted);
-  font-size: 1rem;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.15s;
-}
-
 @media (max-width: 640px) {
   .cart {
     position: static;
     overflow: visible;
+    border: none;
+    border-radius: 0;
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+  }
+
+  .items {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
   }
 
   .header {
     position: relative;
+  }
+
+  .shareBtn {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.875rem;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  .menuBtn {
+    position: fixed;
+    bottom: 1.25rem;
+    right: 1.25rem;
+    z-index: 60;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    font-size: 1.5rem;
+  }
+
+  .menuBtn:hover {
+    background: var(--color-surface-hover);
   }
 
   .menuDropdown {
@@ -320,8 +340,39 @@ button.header {
     animation-name: menuFadeInUp;
   }
 
-  .items {
-    max-height: 40vh;
+  .item {
+    padding: 0.625rem 1rem;
+    border-top: 1px solid var(--color-border);
+    border-bottom: none;
+  }
+
+  .controls {
+    gap: 0.125rem;
+  }
+
+  .controls button {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    font-size: 1rem;
+  }
+
+  .controls button:hover {
+    background: var(--color-surface);
+  }
+
+  .removeBtn:hover {
+    background: transparent;
+    color: var(--color-danger);
+  }
+
+  .qty {
+    min-width: 2rem;
+    font-size: 1rem;
+  }
+
+  .settingsBtn {
+    opacity: 0.5;
   }
 }
 
@@ -333,5 +384,18 @@ button.header {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+.flash {
+  animation: flashHighlight 0.6s ease-out;
+}
+
+@keyframes flashHighlight {
+  0% {
+    background: color-mix(in srgb, var(--color-primary) 30%, transparent);
+  }
+  100% {
+    background: transparent;
   }
 }
