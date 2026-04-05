@@ -4,7 +4,7 @@ import { useMediaQuery } from "../hooks/useMediaQuery";
 import type { SavedList } from "../hooks/useSavedLists";
 import { aonUrl } from "../lib/aon";
 import { entriesToCsv } from "../lib/csv";
-import { formatPrice } from "../lib/price";
+import { formatPrice, modifierLabel } from "../lib/price";
 import {
   buildCustomIdMap,
   buildHashString,
@@ -437,6 +437,8 @@ export function Cart({
                             {formatPrice(entry.item.price)}
                           </span>{" "}
                           {formatPrice(entry.item.price, entry.priceModifier)}
+                          {modifierLabel(entry.priceModifier) &&
+                            ` ${modifierLabel(entry.priceModifier)}`}
                         </>
                       ) : (
                         formatPrice(entry.item.price)

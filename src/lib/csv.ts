@@ -5,7 +5,7 @@ import { formatPrice } from "./price";
 
 /**
  * Export cart entries as a CSV string.
- * Columns: Name, Quantity, Level, Price, Type, Price Modifier, Notes, URL
+ * Columns: Name, Quantity, Level, Base Price, Type, Price Modifier, Notes, URL
  */
 export function entriesToCsv(entries: CartEntry[]): string {
   const rows = [
@@ -13,7 +13,7 @@ export function entriesToCsv(entries: CartEntry[]): string {
       "Name",
       "Quantity",
       "Level",
-      "Price",
+      "Base Price",
       "Type",
       "Price Modifier",
       "Notes",
@@ -125,7 +125,7 @@ export interface CsvItem {
 /**
  * Parse a CSV string into an array of item descriptors.
  * Expects a "Name" column and optionally "Quantity", "Price Modifier" (or "Discount"), "Type",
- * and "Price" columns.
+ * and "Base Price" (or "Price") columns.
  */
 export function parseCsvItems(csv: string): CsvItem[] {
   const lines = parseCsvRows(csv);
@@ -140,7 +140,10 @@ export function parseCsvItems(csv: string): CsvItem[] {
     header.indexOf("discount"),
   );
   const typeIdx = header.indexOf("type");
-  const priceIdx = header.indexOf("price");
+  const priceIdx = Math.max(
+    header.indexOf("base price"),
+    header.indexOf("price"),
+  );
   const notesIdx = header.indexOf("notes");
 
   const result: CsvItem[] = [];

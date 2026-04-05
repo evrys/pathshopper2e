@@ -50,7 +50,7 @@ describe("entriesToCsv", () => {
     const csv = entriesToCsv(entries);
     const lines = csv.split("\n");
     expect(lines[0]).toBe(
-      "Name,Quantity,Level,Price,Type,Price Modifier,Notes,URL",
+      "Name,Quantity,Level,Base Price,Type,Price Modifier,Notes,URL",
     );
     expect(lines[1]).toBe(
       "Longsword,2,1,1 gp,weapon,,,https://2e.aonprd.com/Search.aspx?q=Longsword",
@@ -73,7 +73,9 @@ describe("entriesToCsv", () => {
 
   it("returns only header for empty list", () => {
     const csv = entriesToCsv([]);
-    expect(csv).toBe("Name,Quantity,Level,Price,Type,Price Modifier,Notes,URL");
+    expect(csv).toBe(
+      "Name,Quantity,Level,Base Price,Type,Price Modifier,Notes,URL",
+    );
   });
 });
 

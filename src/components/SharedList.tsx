@@ -7,7 +7,7 @@ import {
   type SavedList,
 } from "../hooks/useSavedLists";
 import { aonUrl } from "../lib/aon";
-import { formatPrice, sumPrices } from "../lib/price";
+import { formatPrice, modifierLabel, sumPrices } from "../lib/price";
 import { parseHashParams, parseShareParams } from "../lib/url";
 import type { Item, PriceModifier } from "../types";
 import { ItemTooltipWrapper } from "./ItemTooltip";
@@ -129,6 +129,8 @@ export function SharedList() {
                             {formatPrice(item.price)}
                           </span>{" "}
                           {formatPrice(item.price, priceModifier)}
+                          {modifierLabel(priceModifier) &&
+                            ` ${modifierLabel(priceModifier)}`}
                         </>
                       ) : (
                         formatPrice(item.price)

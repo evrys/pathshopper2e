@@ -57,6 +57,7 @@ function makeEntry(overrides: Partial<CartEntry> = {}): CartEntry {
 const defaultProps = {
   entries: [] as CartEntry[],
   totalPrice: {},
+  allItems: [] as CartEntry["item"][],
   listName: "My List",
   lists: [],
   activeListId: "list-1",
@@ -65,6 +66,7 @@ const defaultProps = {
   onRemoveItem: vi.fn(),
   onSetPriceModifier: vi.fn(),
   onSetNotes: vi.fn(),
+  onUpdateItem: vi.fn(),
   onAddItem: vi.fn(),
   onLoadList: vi.fn(),
   onNewList: vi.fn(),
@@ -156,6 +158,32 @@ describe("Cart", () => {
     // Should show both original and discounted price
     expect(screen.getByText("10 gp")).toBeDefined();
     expect(screen.getByText("8 gp")).toBeDefined();
+  });
+
+  it("shows modifier label for preset modifiers", () => {
+    const entries = [
+      makeEntry({
+        item: makeItem({ price: { gp: 10 } }),
+        priceModifier: { type: "crafting" },
+      }),
+    ];
+    render(<Cart {...defaultProps} entries={entries} />);
+
+    expect(screen.getByText(/\(crafting\)/)).toBeDefined();
+  });
+
+  it("does not show modifier label for custom flat modifiers", () => {
+    const entries = [
+      makeEntry({
+        item: makeItem({ price: { gp: 10 } }),
+        priceModifier: { type: "flat", cp: -200 },
+      }),
+    ];
+    render(<Cart {...defaultProps} entries={entries} />);
+
+    expect(
+      screen.queryByText(/\(crafting\)|\(selling\)|\(upgrading\)/),
+    ).toBeNull();
   });
 
   it("shows the total price when items exist", () => {

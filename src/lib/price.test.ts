@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   formatPrice,
   fromCopper,
+  modifierLabel,
   parseBudget,
   resolvePriceModifier,
   sumPrices,
@@ -289,5 +290,31 @@ describe("resolvePriceModifier", () => {
     // Sell 100 gp item: adjustment = -150% of 10000 cp = -15000 cp
     // Net = 10000 - 15000 = -5000 cp = -50 gp (you receive 50 gp)
     expect(resolvePriceModifier({ type: "sell" }, { gp: 100 })).toBe(-15000);
+  });
+});
+
+describe("modifierLabel", () => {
+  it('returns "(crafting)" for crafting modifier', () => {
+    expect(modifierLabel({ type: "crafting" })).toBe("(crafting)");
+  });
+
+  it('returns "(selling)" for sell modifier', () => {
+    expect(modifierLabel({ type: "sell" })).toBe("(selling)");
+  });
+
+  it('returns "(upgrading)" for upgrade modifier', () => {
+    expect(modifierLabel({ type: "upgrade", cp: 5000 })).toBe("(upgrading)");
+  });
+
+  it("returns undefined for flat modifier", () => {
+    expect(modifierLabel({ type: "flat", cp: -500 })).toBeUndefined();
+  });
+
+  it("returns undefined for percent modifier", () => {
+    expect(modifierLabel({ type: "percent", percent: -25 })).toBeUndefined();
+  });
+
+  it("returns undefined when no modifier provided", () => {
+    expect(modifierLabel(undefined)).toBeUndefined();
   });
 });

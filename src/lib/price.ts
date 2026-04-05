@@ -108,3 +108,15 @@ export function sumPrices(
   }
   return fromCopper(Math.round(totalCp));
 }
+
+/** Return a parenthesised label for preset price modifiers, e.g. "(crafting)".
+ *  Returns undefined for custom (flat/percent) modifiers or when no modifier is given. */
+export function modifierLabel(
+  modifier: PriceModifier | undefined,
+): string | undefined {
+  if (!modifier) return undefined;
+  if (modifier.type === "crafting") return "(crafting)";
+  if (modifier.type === "sell") return "(selling)";
+  if (modifier.type === "upgrade") return "(upgrading)";
+  return undefined;
+}
