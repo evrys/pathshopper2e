@@ -130,8 +130,9 @@ export function Cart({
   const [settingsEntry, setSettingsEntry] = useState<CartEntry | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
-  const [renameValue, setRenameValue] = useState("");
+  const renameRef = useRef<HTMLInputElement>(null);
   const renameCallbackRef = (el: HTMLInputElement | null) => {
+    (renameRef as React.MutableRefObject<HTMLInputElement | null>).current = el;
     if (el) {
       el.focus();
       el.select();
@@ -141,7 +142,7 @@ export function Cart({
   const title = listName || "My shopping list";
 
   function commitRename() {
-    const trimmed = renameValue.trim();
+    const trimmed = renameRef.current?.value.trim() ?? "";
     if (trimmed && trimmed !== listName) {
       onListNameChange(trimmed);
     }
@@ -202,8 +203,7 @@ export function Cart({
             ref={renameCallbackRef}
             className={styles.renameInput}
             type="text"
-            value={renameValue}
-            onChange={(e) => setRenameValue(e.target.value)}
+            defaultValue={listName}
             onBlur={commitRename}
             onKeyDown={(e) => {
               if (e.key === "Escape") {
@@ -249,7 +249,6 @@ export function Cart({
               <DropdownMenu.Item
                 className={styles.menuItem}
                 onSelect={() => {
-                  setRenameValue(listName);
                   setRenaming(true);
                 }}
               >
