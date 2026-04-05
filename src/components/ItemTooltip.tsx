@@ -2,6 +2,7 @@ import * as Tooltip from "@radix-ui/react-tooltip";
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useMediaQuery } from "../hooks/useMediaQuery";
+import { aonUrl } from "../lib/aon";
 import { sanitizeHtml } from "../lib/html";
 import { formatPrice } from "../lib/price";
 import { formatTrait, traitUrl } from "../lib/traits";
@@ -20,11 +21,23 @@ function TooltipContent({ item }: { item: Item }) {
   const description = item.description ? sanitizeHtml(item.description) : null;
   const headerBg =
     RARITY_HEADER_COLORS[item.rarity] ?? RARITY_HEADER_COLORS.common;
+  const href = aonUrl(item);
 
   return (
     <div className={styles.tooltip}>
       <div className={styles.header} style={{ background: headerBg }}>
-        <span className={styles.name}>{item.name}</span>
+        {href ? (
+          <a
+            className={styles.name}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {item.name}
+          </a>
+        ) : (
+          <span className={styles.name}>{item.name}</span>
+        )}
         <span className={styles.level}>Item {item.level}</span>
       </div>
       <div className={styles.body}>
