@@ -5,7 +5,7 @@ import { formatPrice } from "./price";
 
 /**
  * Export cart entries as a CSV string.
- * Columns: Name, Quantity, Level, Base Price, Type, Price Modifier, Notes, URL
+ * Columns: Name, Quantity, Level, Base Price, Type, Modifier Type, Price Modifier, Notes, URL
  */
 export function entriesToCsv(entries: CartEntry[]): string {
   const rows = [
@@ -15,6 +15,7 @@ export function entriesToCsv(entries: CartEntry[]): string {
       "Level",
       "Base Price",
       "Type",
+      "Modifier Type",
       "Price Modifier",
       "Notes",
       "URL",
@@ -28,12 +29,23 @@ export function entriesToCsv(entries: CartEntry[]): string {
       isCustom ? "" : String(item.level),
       formatPrice(item.price),
       isCustom ? "custom" : item.type,
+      formatModifierType(priceModifier),
       formatPriceModifier(priceModifier),
       notes ?? "",
       isCustom ? "" : aonUrl(item),
     ]);
   }
   return rows.map((row) => row.map(csvEscape).join(",")).join("\n");
+}
+
+/** Format the modifier type label for CSV export.
+ *  Returns a human-readable label for preset modifiers, empty for custom/none. */
+function formatModifierType(modifier: PriceModifier | undefined): string {
+  if (!modifier) return "";
+  if (modifier.type === "crafting") return "crafting";
+  if (modifier.type === "sell") return "selling";
+  if (modifier.type === "upgrade") return "upgrading";
+  return "";
 }
 
 /** Format a price modifier for CSV export. */
@@ -124,8 +136,8 @@ export interface CsvItem {
 
 /**
  * Parse a CSV string into an array of item descriptors.
- * Expects a "Name" column and optionally "Quantity", "Price Modifier" (or "Discount"), "Type",
- * and "Base Price" (or "Price") columns.
+ * Expects a "Name" column and optionally "Quantity", "Modifier Type",
+ * "Price Modifier" (or "Discount"), "Type", and "Base Price" (or "Price") columns.
  */
 export function parseCsvItems(csv: string): CsvItem[] {
   const lines = parseCsvRows(csv);
@@ -135,6 +147,7 @@ export function parseCsvItems(csv: string): CsvItem[] {
   const nameIdx = header.indexOf("name");
   if (nameIdx === -1) return [];
   const qtyIdx = header.indexOf("quantity");
+  const modifierTypeIdx = header.indexOf("modifier type");
   const modifierIdx = Math.max(
     header.indexOf("price modifier"),
     header.indexOf("discount"),
@@ -152,8 +165,9 @@ export function parseCsvItems(csv: string): CsvItem[] {
     const name = row[nameIdx]?.trim();
     if (!name) continue;
     const qty = qtyIdx >= 0 ? Number.parseInt(row[qtyIdx] ?? "1", 10) || 1 : 1;
-    const priceModifier =
-      modifierIdx >= 0 ? parsePriceModifier(row[modifierIdx] ?? "") : undefined;
+    const modifierType =
+      modifierTypeIdx >= 0 ? row[modifierTypeIdx]?.trim().toLowerCase() : "";
+    const priceModifier = parseModifierFromRow(modifierType, modifierIdx, row);
     const typeStr = typeIdx >= 0 ? row[typeIdx]?.trim().toLowerCase() : "";
     const priceStr = priceIdx >= 0 ? row[priceIdx]?.trim() : undefined;
     const notesStr = notesIdx >= 0 ? row[notesIdx]?.trim() : undefined;
@@ -168,6 +182,27 @@ export function parseCsvItems(csv: string): CsvItem[] {
     });
   }
   return result;
+}
+
+/** Reconstruct a PriceModifier from the Modifier Type and Price Modifier columns. */
+function parseModifierFromRow(
+  modifierType: string,
+  modifierIdx: number,
+  row: string[],
+): PriceModifier | undefined {
+  if (modifierType === "crafting") return { type: "crafting" };
+  if (modifierType === "selling") return { type: "sell" };
+  if (modifierType === "upgrading") {
+    // Parse the value column as an upgrade cp amount
+    if (modifierIdx >= 0) {
+      const flat = parsePriceModifier(row[modifierIdx] ?? "");
+      if (flat?.type === "flat") return { type: "upgrade", cp: flat.cp };
+    }
+    return undefined;
+  }
+  // No modifier type column or empty — fall back to parsing the value column
+  if (modifierIdx >= 0) return parsePriceModifier(row[modifierIdx] ?? "");
+  return undefined;
 }
 
 /** Parse CSV text into rows of fields, handling quoted fields. */

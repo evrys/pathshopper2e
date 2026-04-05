@@ -50,13 +50,13 @@ describe("entriesToCsv", () => {
     const csv = entriesToCsv(entries);
     const lines = csv.split("\n");
     expect(lines[0]).toBe(
-      "Name,Quantity,Level,Base Price,Type,Price Modifier,Notes,URL",
+      "Name,Quantity,Level,Base Price,Type,Modifier Type,Price Modifier,Notes,URL",
     );
     expect(lines[1]).toBe(
-      "Longsword,2,1,1 gp,weapon,,,https://2e.aonprd.com/Search.aspx?q=Longsword",
+      "Longsword,2,1,1 gp,weapon,,,,https://2e.aonprd.com/Search.aspx?q=Longsword",
     );
     expect(lines[2]).toBe(
-      "Shield,1,0,2 gp,armor,,,https://2e.aonprd.com/Search.aspx?q=Shield",
+      "Shield,1,0,2 gp,armor,,,,https://2e.aonprd.com/Search.aspx?q=Shield",
     );
   });
 
@@ -74,7 +74,7 @@ describe("entriesToCsv", () => {
   it("returns only header for empty list", () => {
     const csv = entriesToCsv([]);
     expect(csv).toBe(
-      "Name,Quantity,Level,Base Price,Type,Price Modifier,Notes,URL",
+      "Name,Quantity,Level,Base Price,Type,Modifier Type,Price Modifier,Notes,URL",
     );
   });
 });
@@ -257,7 +257,7 @@ describe("entriesToCsv export details", () => {
     ];
     const csv = entriesToCsv(entries);
     const lines = csv.split("\n");
-    expect(lines[1]).toBe("Magic Wand,1,,50 gp,custom,,,");
+    expect(lines[1]).toBe("Magic Wand,1,,50 gp,custom,,,,");
   });
 
   it("exports discounts in the Discount column", () => {
@@ -296,6 +296,82 @@ describe("entriesToCsv export details", () => {
     const csv = entriesToCsv(entries);
     const lines = csv.split("\n");
     expect(lines[1]).toContain(",1 gp 5 sp 3 cp,");
+  });
+
+  it("exports 'crafting' in Modifier Type column for crafting modifier", () => {
+    const entries: CartEntry[] = [
+      {
+        item: makeItem({
+          id: "a1",
+          name: "Longsword",
+          level: 1,
+          price: { gp: 1 },
+          type: "weapon",
+        }),
+        quantity: 1,
+        priceModifier: { type: "crafting" },
+      },
+    ];
+    const csv = entriesToCsv(entries);
+    const lines = csv.split("\n");
+    expect(lines[1]).toContain(",crafting,-50%,");
+  });
+
+  it("exports 'selling' in Modifier Type column for sell modifier", () => {
+    const entries: CartEntry[] = [
+      {
+        item: makeItem({
+          id: "a1",
+          name: "Longsword",
+          level: 1,
+          price: { gp: 1 },
+          type: "weapon",
+        }),
+        quantity: 1,
+        priceModifier: { type: "sell" },
+      },
+    ];
+    const csv = entriesToCsv(entries);
+    const lines = csv.split("\n");
+    expect(lines[1]).toContain(",selling,sell,");
+  });
+
+  it("exports 'upgrading' in Modifier Type column for upgrade modifier", () => {
+    const entries: CartEntry[] = [
+      {
+        item: makeItem({
+          id: "a1",
+          name: "Longsword",
+          level: 1,
+          price: { gp: 100 },
+          type: "weapon",
+        }),
+        quantity: 1,
+        priceModifier: { type: "upgrade", cp: 6500 },
+      },
+    ];
+    const csv = entriesToCsv(entries);
+    const lines = csv.split("\n");
+    expect(lines[1]).toContain(",upgrading,-65 gp,");
+  });
+
+  it("exports empty Modifier Type for flat and percent modifiers", () => {
+    const entries: CartEntry[] = [
+      {
+        item: makeItem({
+          id: "a1",
+          name: "Longsword",
+          level: 1,
+          price: { gp: 1 },
+          type: "weapon",
+        }),
+        quantity: 1,
+        priceModifier: { type: "flat", cp: -500 },
+      },
+    ];
+    const csv = entriesToCsv(entries);
+    const lines = csv.split("\n");
+    expect(lines[1]).toContain(",weapon,,-5 gp,");
   });
 });
 
@@ -405,6 +481,66 @@ describe("complex roundtrip", () => {
       isCustom: true,
       price: "5 sp",
     });
+  });
+
+  it("roundtrips preset modifier types (crafting, sell, upgrade)", () => {
+    const entries: CartEntry[] = [
+      {
+        item: makeItem({
+          id: "w1",
+          name: "Longsword",
+          level: 1,
+          price: { gp: 10 },
+          type: "weapon",
+        }),
+        quantity: 1,
+        priceModifier: { type: "crafting" },
+      },
+      {
+        item: makeItem({
+          id: "w2",
+          name: "Shield",
+          level: 0,
+          price: { gp: 5 },
+          type: "armor",
+        }),
+        quantity: 1,
+        priceModifier: { type: "sell" },
+      },
+      {
+        item: makeItem({
+          id: "w3",
+          name: "Striking Rune (Major)",
+          level: 19,
+          price: { gp: 31065 },
+          type: "equipment",
+        }),
+        quantity: 1,
+        priceModifier: { type: "upgrade", cp: 6500 },
+      },
+    ];
+
+    const csv = entriesToCsv(entries);
+    const parsed = parseCsvItems(csv);
+
+    expect(parsed[0].priceModifier).toEqual({ type: "crafting" });
+    expect(parsed[1].priceModifier).toEqual({ type: "sell" });
+    expect(parsed[2].priceModifier).toEqual({ type: "upgrade", cp: -6500 });
+  });
+
+  it("parses modifier type column from manually-created CSV", () => {
+    const csv = [
+      "Name,Quantity,Modifier Type,Price Modifier",
+      "Longsword,1,crafting,-50%",
+      "Shield,1,selling,sell",
+      "Rune,1,upgrading,-65 gp",
+      "Potion,1,,10%",
+    ].join("\n");
+    const parsed = parseCsvItems(csv);
+    expect(parsed[0].priceModifier).toEqual({ type: "crafting" });
+    expect(parsed[1].priceModifier).toEqual({ type: "sell" });
+    expect(parsed[2].priceModifier).toEqual({ type: "upgrade", cp: -6500 });
+    expect(parsed[3].priceModifier).toEqual({ type: "percent", percent: 10 });
   });
 });
 
