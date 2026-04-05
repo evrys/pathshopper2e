@@ -340,6 +340,7 @@ function App() {
           <Cart
             entries={entries}
             totalPrice={totalPrice}
+            allItems={items}
             listName={activeList?.name ?? "My shopping list"}
             lists={lists}
             activeListId={activeListId}

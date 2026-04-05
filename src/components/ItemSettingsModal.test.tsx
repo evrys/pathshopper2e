@@ -1,11 +1,26 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { UpgradeOption } from "../lib/variants";
 import { ItemSettingsModal } from "./ItemSettingsModal";
 
 afterEach(cleanup);
 
 const BASE_PRICE = { gp: 10 };
+
+/** Select the Custom (gp) Discount preset to reveal the amount input. */
+function selectCustomGp() {
+  fireEvent.change(screen.getByLabelText("Discount"), {
+    target: { value: "custom-gp" },
+  });
+}
+
+/** Select the Custom (%) Discount preset to reveal the amount input. */
+function selectCustomPercent() {
+  fireEvent.change(screen.getByLabelText("Discount"), {
+    target: { value: "custom-percent" },
+  });
+}
 
 describe("ItemSettingsModal", () => {
   it("renders the modal with item name", () => {
@@ -18,7 +33,7 @@ describe("ItemSettingsModal", () => {
       />,
     );
     expect(screen.getByText("Longsword")).toBeDefined();
-    expect(screen.getByLabelText("Discount per item")).toBeDefined();
+    expect(screen.getByLabelText("Discount")).toBeDefined();
     expect(screen.getByLabelText("Notes")).toBeDefined();
   });
 
@@ -34,6 +49,7 @@ describe("ItemSettingsModal", () => {
       />,
     );
 
+    selectCustomGp();
     fireEvent.change(screen.getByLabelText("Discount per item"), {
       target: { value: "2" },
     });
@@ -58,6 +74,7 @@ describe("ItemSettingsModal", () => {
       />,
     );
 
+    selectCustomGp();
     fireEvent.change(screen.getByLabelText("Discount per item"), {
       target: { value: "0.5" },
     });
@@ -81,6 +98,7 @@ describe("ItemSettingsModal", () => {
       />,
     );
 
+    selectCustomGp();
     fireEvent.change(screen.getByLabelText("Discount per item"), {
       target: { value: "2.5" },
     });
@@ -103,6 +121,7 @@ describe("ItemSettingsModal", () => {
       />,
     );
 
+    selectCustomGp();
     fireEvent.change(screen.getByLabelText("Discount per item"), {
       target: { value: "2.555" },
     });
@@ -126,11 +145,9 @@ describe("ItemSettingsModal", () => {
       />,
     );
 
+    selectCustomPercent();
     fireEvent.change(screen.getByLabelText("Discount per item"), {
       target: { value: "25" },
-    });
-    fireEvent.change(screen.getByLabelText("Currency denomination"), {
-      target: { value: "%" },
     });
     fireEvent.click(screen.getByText("Apply"));
 
@@ -171,6 +188,7 @@ describe("ItemSettingsModal", () => {
       />,
     );
 
+    selectCustomGp();
     fireEvent.change(screen.getByLabelText("Discount per item"), {
       target: { value: "20" },
     });
@@ -192,9 +210,7 @@ describe("ItemSettingsModal", () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText("Currency denomination"), {
-      target: { value: "%" },
-    });
+    selectCustomPercent();
     fireEvent.change(screen.getByLabelText("Discount per item"), {
       target: { value: "150" },
     });
@@ -216,6 +232,7 @@ describe("ItemSettingsModal", () => {
       />,
     );
 
+    selectCustomGp();
     fireEvent.change(screen.getByLabelText("Discount per item"), {
       target: { value: "3" },
     });
@@ -235,14 +252,12 @@ describe("ItemSettingsModal", () => {
       />,
     );
 
+    const preset = screen.getByLabelText("Discount") as HTMLSelectElement;
+    expect(preset.value).toBe("custom-gp");
     const input = screen.getByLabelText(
       "Discount per item",
     ) as HTMLInputElement;
     expect(input.value).toBe("2");
-    const select = screen.getByLabelText(
-      "Currency denomination",
-    ) as HTMLSelectElement;
-    expect(select.value).toBe("gp");
   });
 
   it("initializes from an existing percent discount", () => {
@@ -256,14 +271,12 @@ describe("ItemSettingsModal", () => {
       />,
     );
 
+    const preset = screen.getByLabelText("Discount") as HTMLSelectElement;
+    expect(preset.value).toBe("custom-percent");
     const input = screen.getByLabelText(
       "Discount per item",
     ) as HTMLInputElement;
     expect(input.value).toBe("15");
-    const select = screen.getByLabelText(
-      "Currency denomination",
-    ) as HTMLSelectElement;
-    expect(select.value).toBe("%");
   });
 
   it("calls onClose when Cancel is clicked", () => {
@@ -310,6 +323,7 @@ describe("ItemSettingsModal", () => {
       />,
     );
 
+    selectCustomGp();
     fireEvent.change(screen.getByLabelText("Discount per item"), {
       target: { value: "1" },
     });
@@ -506,6 +520,240 @@ describe("ItemSettingsModal", () => {
           onClose={() => {}}
         />,
       );
+      fireEvent.click(screen.getByText("Apply"));
+      expect(onApply).toHaveBeenCalledWith(undefined, "", undefined);
+    });
+  });
+
+  describe("discount presets", () => {
+    const UPGRADE_OPTIONS: UpgradeOption[] = [
+      { name: "Striking (Greater)", priceCp: 106500, priceDisplay: "1065 gp" },
+      { name: "Striking", priceCp: 6500, priceDisplay: "65 gp" },
+    ];
+
+    it("renders the Discount dropdown", () => {
+      render(
+        <ItemSettingsModal
+          itemName="Striking (Major)"
+          price={{ gp: 31065 }}
+          onApply={() => {}}
+          onClose={() => {}}
+        />,
+      );
+      expect(screen.getByLabelText("Discount")).toBeDefined();
+    });
+
+    it("shows upgrade options when provided", () => {
+      render(
+        <ItemSettingsModal
+          itemName="Striking (Major)"
+          price={{ gp: 31065 }}
+          upgradeOptions={UPGRADE_OPTIONS}
+          onApply={() => {}}
+          onClose={() => {}}
+        />,
+      );
+      const select = screen.getByLabelText("Discount") as HTMLSelectElement;
+      const options = [...select.options].map((o) => o.text);
+      expect(options).toContain("Upgrade from Striking (Greater) (1065 gp)");
+      expect(options).toContain("Upgrade from Striking (65 gp)");
+    });
+
+    it("always shows None, Crafting, Custom (gp), and Custom (%) options", () => {
+      render(
+        <ItemSettingsModal
+          itemName="Longsword"
+          price={BASE_PRICE}
+          onApply={() => {}}
+          onClose={() => {}}
+        />,
+      );
+      const select = screen.getByLabelText("Discount") as HTMLSelectElement;
+      const options = [...select.options].map((o) => o.text);
+      expect(options).toContain("None");
+      expect(options).toContain("Crafting (50%)");
+      expect(options).toContain("Custom (gp)");
+      expect(options).toContain("Custom (%)");
+    });
+
+    it("selecting an upgrade option applies a flat discount", () => {
+      const onApply = vi.fn();
+      render(
+        <ItemSettingsModal
+          itemName="Striking (Major)"
+          price={{ gp: 31065 }}
+          upgradeOptions={UPGRADE_OPTIONS}
+          onApply={onApply}
+          onClose={() => {}}
+        />,
+      );
+      fireEvent.change(screen.getByLabelText("Discount"), {
+        target: { value: "upgrade-1" },
+      });
+      fireEvent.click(screen.getByText("Apply"));
+      expect(onApply).toHaveBeenCalledWith(
+        { type: "flat", cp: 6500 },
+        "",
+        undefined,
+      );
+    });
+
+    it("selecting crafting applies a 50% discount", () => {
+      const onApply = vi.fn();
+      render(
+        <ItemSettingsModal
+          itemName="Longsword"
+          price={BASE_PRICE}
+          upgradeOptions={[]}
+          onApply={onApply}
+          onClose={() => {}}
+        />,
+      );
+      fireEvent.change(screen.getByLabelText("Discount"), {
+        target: { value: "crafting" },
+      });
+      fireEvent.click(screen.getByText("Apply"));
+      expect(onApply).toHaveBeenCalledWith(
+        { type: "percent", percent: 50 },
+        "",
+        undefined,
+      );
+    });
+
+    it("selecting Custom (gp) shows the amount input", () => {
+      render(
+        <ItemSettingsModal
+          itemName="Longsword"
+          price={BASE_PRICE}
+          onApply={() => {}}
+          onClose={() => {}}
+        />,
+      );
+      fireEvent.change(screen.getByLabelText("Discount"), {
+        target: { value: "custom-gp" },
+      });
+      expect(screen.getByLabelText("Discount per item")).toBeDefined();
+    });
+
+    it("selecting Custom (%) shows the amount input", () => {
+      render(
+        <ItemSettingsModal
+          itemName="Longsword"
+          price={BASE_PRICE}
+          onApply={() => {}}
+          onClose={() => {}}
+        />,
+      );
+      fireEvent.change(screen.getByLabelText("Discount"), {
+        target: { value: "custom-percent" },
+      });
+      expect(screen.getByLabelText("Discount per item")).toBeDefined();
+    });
+
+    it("hides the amount input for non-custom presets", () => {
+      render(
+        <ItemSettingsModal
+          itemName="Longsword"
+          price={BASE_PRICE}
+          onApply={() => {}}
+          onClose={() => {}}
+        />,
+      );
+      // Default is "None"
+      expect(screen.queryByLabelText("Discount per item")).toBeNull();
+      // Crafting preset
+      fireEvent.change(screen.getByLabelText("Discount"), {
+        target: { value: "crafting" },
+      });
+      expect(screen.queryByLabelText("Discount per item")).toBeNull();
+    });
+
+    it("shows a preview for preset discounts", () => {
+      render(
+        <ItemSettingsModal
+          itemName="Longsword"
+          price={BASE_PRICE}
+          onApply={() => {}}
+          onClose={() => {}}
+        />,
+      );
+      fireEvent.change(screen.getByLabelText("Discount"), {
+        target: { value: "crafting" },
+      });
+      expect(screen.getByText(/→/)).toBeDefined();
+    });
+
+    it("initializes preset from existing crafting discount", () => {
+      render(
+        <ItemSettingsModal
+          itemName="Longsword"
+          price={BASE_PRICE}
+          currentDiscount={{ type: "percent", percent: 50 }}
+          onApply={() => {}}
+          onClose={() => {}}
+        />,
+      );
+      const select = screen.getByLabelText("Discount") as HTMLSelectElement;
+      expect(select.value).toBe("crafting");
+    });
+
+    it("initializes preset from existing upgrade discount", () => {
+      render(
+        <ItemSettingsModal
+          itemName="Striking (Major)"
+          price={{ gp: 31065 }}
+          upgradeOptions={UPGRADE_OPTIONS}
+          currentDiscount={{ type: "flat", cp: 6500 }}
+          onApply={() => {}}
+          onClose={() => {}}
+        />,
+      );
+      const select = screen.getByLabelText("Discount") as HTMLSelectElement;
+      expect(select.value).toBe("upgrade-1");
+    });
+
+    it("initializes as custom-gp for flat discounts not matching upgrades", () => {
+      render(
+        <ItemSettingsModal
+          itemName="Longsword"
+          price={BASE_PRICE}
+          currentDiscount={{ type: "flat", cp: 200 }}
+          onApply={() => {}}
+          onClose={() => {}}
+        />,
+      );
+      const select = screen.getByLabelText("Discount") as HTMLSelectElement;
+      expect(select.value).toBe("custom-gp");
+    });
+
+    it("initializes as custom-percent for non-50% discounts", () => {
+      render(
+        <ItemSettingsModal
+          itemName="Longsword"
+          price={BASE_PRICE}
+          currentDiscount={{ type: "percent", percent: 25 }}
+          onApply={() => {}}
+          onClose={() => {}}
+        />,
+      );
+      const select = screen.getByLabelText("Discount") as HTMLSelectElement;
+      expect(select.value).toBe("custom-percent");
+    });
+
+    it("selecting None clears the discount", () => {
+      const onApply = vi.fn();
+      render(
+        <ItemSettingsModal
+          itemName="Longsword"
+          price={BASE_PRICE}
+          currentDiscount={{ type: "percent", percent: 50 }}
+          onApply={onApply}
+          onClose={() => {}}
+        />,
+      );
+      fireEvent.change(screen.getByLabelText("Discount"), {
+        target: { value: "none" },
+      });
       fireEvent.click(screen.getByText("Apply"));
       expect(onApply).toHaveBeenCalledWith(undefined, "", undefined);
     });

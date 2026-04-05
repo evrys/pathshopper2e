@@ -1,25 +1,23 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { CP_PER, formatPrice, fromCopper, toCopper } from "../lib/price";
+import type { UpgradeOption } from "../lib/variants";
 import type { Discount, Price } from "../types";
 import styles from "./ItemSettingsModal.module.css";
 
-type Denomination = "gp" | "%";
+/**
+ * Preset value for the "Discount" dropdown.
+ * - "none": no discount
+ * - "crafting": 50% discount
+ * - "upgrade-N": flat discount equal to the Nth upgrade option's price
+ * - "custom-gp": manual flat gp input
+ * - "custom-percent": manual % input
+ */
+type DiscountPreset = string;
 
 /** Convert a flat copper discount into a gp amount. */
 function cpToGp(cp: number): number {
   return cp / CP_PER.gp;
-}
-
-/** Determine the initial amount + denomination from an existing Discount. */
-function initFromDiscount(d: Discount): {
-  amount: string;
-  denom: Denomination;
-} {
-  if (d.type === "percent") {
-    return { amount: String(d.percent), denom: "%" };
-  }
-  return { amount: String(cpToGp(d.cp)), denom: "gp" };
 }
 
 type PriceDenomination = "gp" | "sp" | "cp";
@@ -35,6 +33,26 @@ function priceToDenom(price: Price): {
   return { amount: 0, denom: "gp" };
 }
 
+/** Determine the initial preset from an existing discount and available upgrade options. */
+function initPreset(
+  discount: Discount,
+  upgradeOptions: UpgradeOption[],
+): { preset: DiscountPreset; amount: string } {
+  if (discount.type === "percent") {
+    if (discount.percent === 50) {
+      return { preset: "crafting", amount: "" };
+    }
+    return { preset: "custom-percent", amount: String(discount.percent) };
+  }
+  // Check if the flat discount matches an upgrade option
+  for (let i = 0; i < upgradeOptions.length; i++) {
+    if (upgradeOptions[i].priceCp === discount.cp) {
+      return { preset: `upgrade-${i}`, amount: "" };
+    }
+  }
+  return { preset: "custom-gp", amount: String(cpToGp(discount.cp)) };
+}
+
 interface ItemSettingsModalProps {
   itemName: string;
   price: Price;
@@ -44,6 +62,8 @@ interface ItemSettingsModalProps {
   currentDiscount?: Discount;
   /** Current notes, if any. */
   currentNotes?: string;
+  /** Cheaper variants this item can be upgraded from. */
+  upgradeOptions?: UpgradeOption[];
   /** Called with the new discount, notes, and optional custom item updates. */
   onApply: (
     discount: Discount | undefined,
@@ -59,14 +79,15 @@ export function ItemSettingsModal({
   isCustom,
   currentDiscount,
   currentNotes,
+  upgradeOptions = [],
   onApply,
   onClose,
 }: ItemSettingsModalProps) {
-  const init = currentDiscount ? initFromDiscount(currentDiscount) : null;
+  const init = currentDiscount
+    ? initPreset(currentDiscount, upgradeOptions)
+    : null;
+  const [preset, setPreset] = useState<DiscountPreset>(init?.preset ?? "none");
   const [amount, setAmount] = useState(init?.amount ?? "");
-  const [denomination, setDenomination] = useState<Denomination>(
-    init?.denom ?? "gp",
-  );
   const [notes, setNotes] = useState(currentNotes ?? "");
   const notesRef = useRef<HTMLInputElement>(null);
 
@@ -92,8 +113,7 @@ export function ItemSettingsModal({
     return () => document.removeEventListener("keydown", handleKey);
   }, [onClose]);
 
-  const parsed = amount === "" ? 0 : Number(amount);
-  const isPercent = denomination === "%";
+  const isCustomInput = preset === "custom-gp" || preset === "custom-percent";
 
   // Effective price: use custom price fields when editing a custom item
   const parsedCustomPrice =
@@ -105,34 +125,67 @@ export function ItemSettingsModal({
         ? ({} as Price)
         : price;
 
-  const discountCp = !Number.isFinite(parsed)
-    ? 0
-    : isPercent
-      ? Math.round((parsed / 100) * toCopper(effectivePrice))
-      : parsed * CP_PER.gp;
+  // Compute the discount in copper based on preset
+  const parsed = amount === "" ? 0 : Number(amount);
+  const discountCp = (() => {
+    if (preset === "none") return 0;
+    if (preset === "crafting") {
+      return Math.round(0.5 * toCopper(effectivePrice));
+    }
+    if (preset.startsWith("upgrade-")) {
+      const idx = Number(preset.slice("upgrade-".length));
+      return upgradeOptions[idx]?.priceCp ?? 0;
+    }
+    // custom-gp or custom-percent
+    if (!Number.isFinite(parsed)) return 0;
+    if (preset === "custom-percent") {
+      return Math.round((parsed / 100) * toCopper(effectivePrice));
+    }
+    return parsed * CP_PER.gp;
+  })();
+
   const priceCp = toCopper(effectivePrice);
   const customPriceCp = parsedCustomPrice * CP_PER[customPriceDenom];
-  const isValid =
-    Number.isFinite(parsed) &&
-    parsed >= 0 &&
-    discountCp <= priceCp &&
-    (!isPercent || parsed <= 100) &&
-    Number.isInteger(discountCp) &&
-    (!isCustom || customName.trim().length > 0) &&
-    (!isCustom || Number.isInteger(customPriceCp));
+
+  const isValid = (() => {
+    if (isCustom && customName.trim().length === 0) return false;
+    if (isCustom && !Number.isInteger(customPriceCp)) return false;
+    if (preset === "none") return true;
+    if (preset === "crafting" || preset.startsWith("upgrade-")) {
+      return discountCp <= priceCp;
+    }
+    // Custom input validation
+    return (
+      Number.isFinite(parsed) &&
+      parsed >= 0 &&
+      discountCp <= priceCp &&
+      (preset !== "custom-percent" || parsed <= 100) &&
+      Number.isInteger(discountCp)
+    );
+  })();
+
   const discountedPrice = fromCopper(Math.max(0, priceCp - discountCp));
 
-  // Compute a user-facing error for the discount field
+  // Compute a user-facing error for the custom discount field
   const discountError = (() => {
-    if (amount === "" || parsed === 0) return undefined;
+    if (!isCustomInput || amount === "" || parsed === 0) return undefined;
     if (!Number.isFinite(parsed) || parsed < 0)
       return "Discount must be a positive number";
-    if (isPercent && parsed > 100) return "Percentage cannot exceed 100%";
-    if (!isPercent && !Number.isInteger(discountCp))
+    if (preset === "custom-percent" && parsed > 100)
+      return "Percentage cannot exceed 100%";
+    if (preset === "custom-gp" && !Number.isInteger(discountCp))
       return "Discount must be a whole number of copper pieces";
     if (discountCp > priceCp) return "Discount cannot exceed the item price";
     return undefined;
   })();
+
+  function handlePresetChange(value: string) {
+    setPreset(value);
+    // Reset custom amount when switching presets
+    if (value !== "custom-gp" && value !== "custom-percent") {
+      setAmount("");
+    }
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -140,8 +193,9 @@ export function ItemSettingsModal({
     let discount: Discount | undefined;
     if (discountCp === 0) {
       discount = undefined;
-    } else if (isPercent) {
-      discount = { type: "percent", percent: parsed };
+    } else if (preset === "crafting" || preset === "custom-percent") {
+      const percent = preset === "crafting" ? 50 : parsed;
+      discount = { type: "percent", percent };
     } else {
       discount = { type: "flat", cp: discountCp };
     }
@@ -217,10 +271,30 @@ export function ItemSettingsModal({
             </>
           )}
           <div className={styles.field}>
-            <label htmlFor="discount-amount">Discount per item</label>
-            <div className={styles.inputRow}>
+            <label htmlFor="discount-preset">Discount</label>
+            <select
+              id="discount-preset"
+              className={styles.presetSelect}
+              value={preset}
+              onChange={(e) => handlePresetChange(e.target.value)}
+            >
+              <option value="none">None</option>
+              {upgradeOptions.map((opt, i) => (
+                <option key={opt.name} value={`upgrade-${i}`}>
+                  Upgrade from {opt.name} ({opt.priceDisplay})
+                </option>
+              ))}
+              <option value="crafting">Crafting (50%)</option>
+              <option value="custom-gp">Custom (gp)</option>
+              <option value="custom-percent">Custom (%)</option>
+            </select>
+          </div>
+          {isCustomInput && (
+            <div className={styles.field}>
+              <label htmlFor="discount-amount">Discount per item</label>
               <input
                 id="discount-amount"
+                className={styles.textInput}
                 type="number"
                 min="0"
                 step="any"
@@ -228,19 +302,8 @@ export function ItemSettingsModal({
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0"
               />
-              <select
-                className={styles.denomSelect}
-                value={denomination}
-                onChange={(e) =>
-                  setDenomination(e.target.value as Denomination)
-                }
-                aria-label="Currency denomination"
-              >
-                <option value="gp">gp</option>
-                <option value="%">%</option>
-              </select>
             </div>
-          </div>
+          )}
           {discountError && (
             <p className={styles.fieldError} role="alert">
               {discountError}

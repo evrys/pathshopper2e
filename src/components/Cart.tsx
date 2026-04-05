@@ -12,7 +12,8 @@ import {
   serializeCustomItems,
   serializeNotes,
 } from "../lib/url";
-import type { Discount, Price } from "../types";
+import { getUpgradeOptions } from "../lib/variants";
+import type { Discount, Item, Price } from "../types";
 import { AddCustomItemModal } from "./AddCustomItemModal";
 import styles from "./Cart.module.css";
 import { ItemSettingsModal } from "./ItemSettingsModal";
@@ -22,6 +23,7 @@ import { SavedListsModal } from "./SavedListsModal";
 interface CartProps {
   entries: CartEntry[];
   totalPrice: Price;
+  allItems: Item[];
   listName: string;
   lists: SavedList[];
   activeListId: string;
@@ -102,6 +104,7 @@ function buildShareUrl(
 export function Cart({
   entries,
   totalPrice,
+  allItems,
   listName,
   lists,
   activeListId,
@@ -389,6 +392,7 @@ export function Cart({
               isCustom={discountEntry.item.id.startsWith("custom-")}
               currentDiscount={discountEntry.discount}
               currentNotes={discountEntry.notes}
+              upgradeOptions={getUpgradeOptions(discountEntry.item, allItems)}
               onApply={(discount, notes, customUpdate) => {
                 onSetDiscount(discountEntry.item.id, discount);
                 onSetNotes(discountEntry.item.id, notes);
