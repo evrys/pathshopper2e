@@ -159,3 +159,37 @@ a.trait:hover {
 .desc a:hover {
   color: #e0e0e0;
 }
+
+@media (max-width: 640px) {
+  .content {
+    max-width: calc(100vw - 1.5rem);
+  }
+
+  .tooltip {
+    font-size: 0.75rem;
+  }
+
+  .header {
+    padding: 0.3rem 0.5rem;
+  }
+
+  .name {
+    font-size: 0.8125rem;
+  }
+
+  .level {
+    font-size: 0.75rem;
+  }
+
+  .body {
+    padding: 0.35rem 0.5rem 0.45rem;
+  }
+
+  .trait {
+    font-size: 0.6875rem;
+  }
+
+  .desc table {
+    font-size: 0.85em;
+  }
+}
