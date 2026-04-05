@@ -123,18 +123,27 @@ function MobileTooltip({ item, onClose }: { item: Item; onClose: () => void }) {
  */
 export function useMobileTooltip(item: Item) {
   const [open, setOpen] = useState(false);
+  const closedAtRef = useRef(0);
 
   const rowProps = {
     onClick: (e: React.MouseEvent) => {
       // Don't open tooltip when tapping buttons (add, etc.)
       const target = e.target as HTMLElement;
       if (target.closest("button")) return;
+      // Ignore clicks that arrive right after the overlay was dismissed,
+      // which can happen when the tap passes through to the row.
+      if (Date.now() - closedAtRef.current < 300) return;
       setOpen((prev) => !prev);
     },
   };
 
+  const handleClose = useCallback(() => {
+    closedAtRef.current = Date.now();
+    setOpen(false);
+  }, []);
+
   const portal = open ? (
-    <MobileTooltip item={item} onClose={() => setOpen(false)} />
+    <MobileTooltip item={item} onClose={handleClose} />
   ) : null;
 
   return { rowProps, portal };
