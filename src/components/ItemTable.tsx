@@ -81,12 +81,30 @@ function TraitBadges({
   );
 }
 
+/** Highlight the first case-insensitive substring match in `text`. */
+function highlightSubstring(text: string, needle: string): ReactNode {
+  if (!needle) return text;
+  // Match against the hyphen-normalized form (same logic as trait matching)
+  const lower = text.toLowerCase();
+  const lowerNeedle = needle.toLowerCase();
+  const idx = lower.indexOf(lowerNeedle);
+  if (idx === -1) return text;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark>{text.slice(idx, idx + needle.length)}</mark>
+      {text.slice(idx + needle.length)}
+    </>
+  );
+}
+
 /** Row wrapper that opens the item tooltip on any tap (mobile only). */
 function MobileItemRow({
   item,
   highlighted,
   snippet,
   matchedTraits,
+  search,
   onAddItem,
   style,
 }: {
@@ -94,6 +112,7 @@ function MobileItemRow({
   highlighted: ReactNode | null;
   snippet: ReactNode | null;
   matchedTraits: Set<string> | undefined;
+  search: string;
   onAddItem: (item: Item) => void;
   style: React.CSSProperties;
 }) {
@@ -108,7 +127,11 @@ function MobileItemRow({
           <TraitBadges traits={item.traits} matchedTraits={matchedTraits} />
         )}
       </span>
-      <span className={styles.colType}>{formatTrait(item.type)}</span>
+      <span className={styles.colType}>
+        {matchedTraits?.has(item.type)
+          ? highlightSubstring(formatTrait(item.type), search)
+          : formatTrait(item.type)}
+      </span>
       <span className={styles.level}>{item.level}</span>
       <span className={styles.price}>{formatPrice(item.price)}</span>
       <span
@@ -190,7 +213,10 @@ export function ItemTable({
         : item.plainDescription,
     [],
   );
-  const getTraits = useCallback((item: Item) => item.traits, []);
+  const getTraits = useCallback(
+    (item: Item) => [...item.traits, item.type],
+    [],
+  );
   const fuzzyResults = useFuzzySearch(
     preFiltered,
     getName,
@@ -446,6 +472,7 @@ export function ItemTable({
                     highlighted={fuzzyData?.highlighted ?? null}
                     snippet={snippet}
                     matchedTraits={matchedTraits}
+                    search={search}
                     onAddItem={onAddItem}
                     style={rowStyle}
                   />
@@ -475,7 +502,9 @@ export function ItemTable({
                     )}
                   </span>
                   <span className={styles.colType}>
-                    {formatTrait(item.type)}
+                    {matchedTraits?.has(item.type)
+                      ? highlightSubstring(formatTrait(item.type), search)
+                      : formatTrait(item.type)}
                   </span>
                   <span className={styles.level}>{item.level}</span>
                   <span className={styles.price}>

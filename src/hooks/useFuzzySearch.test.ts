@@ -525,4 +525,49 @@ describe("rankSearch ordering", () => {
       expect(results[0].secondarySnippet).not.toBeNull();
     });
   });
+
+  describe("category matching via getTraits", () => {
+    it("matches items when category slug is included in getTraits", () => {
+      const items = makeItems(
+        { name: "Healing Potion", traits: ["healing"], description: "Heals" },
+        { name: "Iron Shield", traits: ["noisy"], description: "A shield" },
+      );
+      const names = items.map((i) => i.name);
+      const secondaries = items.map((i) => i.description);
+      // Simulate including item.type in getTraits (as ItemTable does)
+      const categories = ["alchemical-items", "shields"];
+      const getTraits = (item: TestItem) => [
+        ...item.traits,
+        categories[items.indexOf(item)],
+      ];
+      const results = rankSearch(
+        items,
+        names,
+        secondaries,
+        "shields",
+        getTraits,
+      );
+      expect(results.map((r) => r.item.name)).toContain("Iron Shield");
+    });
+
+    it("matches hyphenated category slugs with spaces in search", () => {
+      const items = makeItems({
+        name: "Healing Potion",
+        traits: [],
+        description: "Heals",
+      });
+      const names = items.map((i) => i.name);
+      const secondaries = items.map((i) => i.description);
+      const getTraits = (_item: TestItem) => ["alchemical-items"];
+      const results = rankSearch(
+        items,
+        names,
+        secondaries,
+        "alchemical items",
+        getTraits,
+      );
+      expect(results).toHaveLength(1);
+      expect(results[0].matchedTraits.has("alchemical-items")).toBe(true);
+    });
+  });
 });

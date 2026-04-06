@@ -238,7 +238,8 @@
 
 /* ── Fuzzy match highlights ── */
 
-.name mark {
+.name mark,
+.colType mark {
   background: rgba(232, 115, 30, 0.3);
   color: inherit;
   border-radius: 2px;
