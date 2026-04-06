@@ -1,9 +1,11 @@
 /**
- * Fetches all PF2e item data from the Archives of Nethys Elasticsearch API
- * and writes it to data/raw-items.json for further processing.
+ * Fetches all PF2e item, trait, and source data from the Archives of Nethys
+ * Elasticsearch API and writes raw JSON files for further processing.
  *
- * Pulls equipment, weapons, armor, and shields with their full markdown
- * descriptions directly from AoN's public search index.
+ * Outputs:
+ * - data/raw-items.json    — Equipment, weapons, armor, shields
+ * - data/raw-traits.json   — All trait definitions
+ * - data/raw-sources.json  — All sourcebook metadata
  *
  * Usage: pnpm fetch-data
  */
@@ -12,8 +14,52 @@ import { mkdirSync, writeFileSync } from "node:fs";
 
 const AON_ES = "https://elasticsearch.aonprd.com/aon/_search";
 
+interface EsHit {
+  _id: string;
+  _source: Record<string, unknown>;
+}
+
+interface EsResponse {
+  hits: { total: { value: number }; hits: EsHit[] };
+}
+
+/** Fetch all documents matching a query, paginating automatically. */
+async function fetchAll(
+  query: string,
+  sourceFields: string,
+  label: string,
+): Promise<Record<string, unknown>[]> {
+  const allDocs: Record<string, unknown>[] = [];
+  let from = 0;
+  const size = 500;
+
+  // First request to get total count
+  const countUrl = `${AON_ES}?q=${encodeURIComponent(query)}&size=0`;
+  const countRes = await fetch(countUrl);
+  const countData = (await countRes.json()) as EsResponse;
+  const total = countData.hits.total.value;
+  console.log(`  ${label}: ${total} documents`);
+
+  while (from < total) {
+    const url = `${AON_ES}?q=${encodeURIComponent(query)}&size=${size}&from=${from}&_source=${sourceFields}&sort=_doc`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(
+        `AoN API error: ${res.status} ${res.statusText} (${label}, from=${from})`,
+      );
+    }
+    const data = (await res.json()) as EsResponse;
+    const hits = data.hits.hits;
+    if (hits.length === 0) break;
+    for (const hit of hits) allDocs.push(hit._source);
+    from += size;
+  }
+
+  return allDocs;
+}
+
 /** Fields we need from each item document. */
-const SOURCE_FIELDS = [
+const ITEM_FIELDS = [
   "id",
   "name",
   "level",
@@ -37,63 +83,39 @@ const SOURCE_FIELDS = [
 /** AoN categories that represent purchasable items. */
 const ITEM_CATEGORIES = ["equipment", "weapon", "armor", "shield"] as const;
 
-interface EsHit {
-  _id: string;
-  _source: Record<string, unknown>;
-}
-
-interface EsResponse {
-  hits: { total: { value: number }; hits: EsHit[] };
-}
-
-/** Fetch all items for a given category, paginating with from/size. */
-async function fetchCategory(category: string): Promise<EsHit[]> {
-  const allHits: EsHit[] = [];
-  let from = 0;
-  const size = 500;
-
-  // First request to get total count
-  const countUrl = `${AON_ES}?q=category:${category}+AND+type:Item&size=0`;
-  const countRes = await fetch(countUrl);
-  const countData = (await countRes.json()) as EsResponse;
-  const total = countData.hits.total.value;
-  console.log(`  ${category}: ${total} items`);
-
-  while (from < total) {
-    const url = `${AON_ES}?q=category:${category}+AND+type:Item&size=${size}&from=${from}&_source=${SOURCE_FIELDS}&sort=_doc`;
-    const res = await fetch(url);
-    if (!res.ok) {
-      throw new Error(
-        `AoN API error: ${res.status} ${res.statusText} (from=${from})`,
-      );
-    }
-    const data = (await res.json()) as EsResponse;
-    const hits = data.hits.hits;
-    if (hits.length === 0) break;
-    allHits.push(...hits);
-    from += size;
-  }
-
-  return allHits;
-}
+const TRAIT_FIELDS = "id,name,url,summary,trait_group";
+const SOURCE_FIELDS =
+  "id,name,url,primary_source_category,primary_source_group,release_date";
 
 async function main() {
-  console.log("Fetching items from Archives of Nethys...");
-
-  const allItems: Record<string, unknown>[] = [];
-
-  for (const category of ITEM_CATEGORIES) {
-    const hits = await fetchCategory(category);
-    for (const hit of hits) {
-      allItems.push(hit._source);
-    }
-  }
-
-  console.log(`\nFetched ${allItems.length} total items.`);
-
   mkdirSync("data", { recursive: true });
+
+  // ── Items ───────────────────────────────────────────────────────────
+  console.log("Fetching items from Archives of Nethys...");
+  const allItems: Record<string, unknown>[] = [];
+  for (const category of ITEM_CATEGORIES) {
+    const docs = await fetchAll(
+      `category:${category} AND type:Item`,
+      ITEM_FIELDS,
+      category,
+    );
+    allItems.push(...docs);
+  }
+  console.log(`  Total: ${allItems.length} items\n`);
   writeFileSync("data/raw-items.json", JSON.stringify(allItems));
   console.log("Wrote data/raw-items.json");
+
+  // ── Traits ──────────────────────────────────────────────────────────
+  console.log("\nFetching traits...");
+  const traits = await fetchAll("type:Trait", TRAIT_FIELDS, "traits");
+  writeFileSync("data/raw-traits.json", JSON.stringify(traits, null, 2));
+  console.log(`Wrote data/raw-traits.json (${traits.length} traits)`);
+
+  // ── Sources ─────────────────────────────────────────────────────────
+  console.log("\nFetching sources...");
+  const sources = await fetchAll("type:Source", SOURCE_FIELDS, "sources");
+  writeFileSync("data/raw-sources.json", JSON.stringify(sources, null, 2));
+  console.log(`Wrote data/raw-sources.json (${sources.length} sources)`);
 }
 
 main();

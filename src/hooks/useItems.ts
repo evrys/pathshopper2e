@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { stripHtml } from "../lib/html";
-import { loadTraitUrls } from "../lib/traits";
+import { loadTraitData } from "../lib/traits";
 import type { Item, JsonItem } from "../types";
 
 let cachedItems: Item[] | null = null;
@@ -16,7 +16,7 @@ export function useItems() {
       try {
         const [res] = await Promise.all([
           fetch("./data/items.json"),
-          loadTraitUrls(),
+          loadTraitData(),
         ]);
         const data = (await res.json()) as JsonItem[];
         const enriched = data.map((item) => ({

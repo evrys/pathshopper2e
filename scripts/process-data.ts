@@ -17,6 +17,7 @@ import type { JsonItem, Price } from "../src/types.ts";
 
 const RAW_INPUT = "data/raw-items.json";
 const RAW_SOURCES = "data/raw-sources.json";
+const RAW_TRAITS = "data/raw-traits.json";
 const OUTPUT = "data/items.json";
 const PUBLIC_OUTPUT = "public/data/items.json";
 
@@ -326,45 +327,112 @@ function shortenId(aonId: string): string {
   return `${prefix}${rest.replace(/-/g, ".")}`;
 }
 
-// ── Trait descriptions ──────────────────────────────────────────────
+// ── Trait data ──────────────────────────────────────────────────────
 
-const TRAIT_DESCRIPTIONS_PATH = "public/data/trait-descriptions.json";
+interface RawTrait {
+  name: string;
+  url: string;
+  summary?: string;
+}
 
-/** Load the trait slug → HTML description map. */
-function loadTraitDescriptions(): Record<string, string> {
-  try {
-    return JSON.parse(readFileSync(TRAIT_DESCRIPTIONS_PATH, "utf-8")) as Record<
-      string,
-      string
-    >;
-  } catch {
-    console.warn("Could not load trait descriptions; skipping.");
-    return {};
-  }
+interface TraitEntry {
+  url: string;
+  description: string;
 }
 
 /**
- * Look up a trait description by its normalized slug.
- *
- * Tries the exact key, then common normalizations:
- *   - strip `-ft.` / `-feet` suffixes  (`thrown-20-ft.` → `thrown-20`)
- *   - strip `1` prefix from die sizes  (`fatal-1d10`   → `fatal-d10`)
+ * Load raw AoN traits and build a slug → {url, description} map.
+ * The slug is the kebab-case name used by items (e.g. "deadly", "acid").
  */
-function traitDescription(
-  slug: string,
-  descs: Record<string, string>,
-): string | undefined {
-  if (descs[slug]) return descs[slug];
+function loadTraitData(): Map<string, TraitEntry> {
+  try {
+    const raw = JSON.parse(readFileSync(RAW_TRAITS, "utf-8")) as RawTrait[];
+    const map = new Map<string, TraitEntry>();
+    for (const t of raw) {
+      const slug = t.name.toLowerCase().replace(/\s+/g, "-");
+      // Keep the first entry for each slug (skip legacy duplicates)
+      if (!map.has(slug)) {
+        map.set(slug, {
+          url: t.url,
+          description: t.summary ?? "",
+        });
+      }
+    }
+    console.log(`Loaded ${map.size} traits from ${RAW_TRAITS}.`);
+    return map;
+  } catch {
+    console.warn("Could not load raw traits; skipping.");
+    return new Map();
+  }
+}
 
-  // Strip measurement suffixes
-  const stripped = slug.replace(/-ft\.?$/, "").replace(/-feet$/, "");
-  if (descs[stripped]) return descs[stripped];
+/** Write the unified public/data/traits.json keyed by item trait slugs. */
+function writeTraitsJson(
+  traitData: Map<string, TraitEntry>,
+  itemTraits: Set<string>,
+): void {
+  const out: Record<string, TraitEntry> = {};
+
+  for (const trait of [...itemTraits].sort()) {
+    // Try exact match
+    let entry = traitData.get(trait);
+
+    // Try progressively shorter base names for parameterized traits
+    if (!entry) {
+      for (const candidate of baseTraitCandidates(trait)) {
+        entry = traitData.get(candidate);
+        if (entry) break;
+      }
+    }
+
+    if (entry) {
+      out[trait] = entry;
+    }
+  }
+
+  const matched = Object.keys(out).length;
+  const missing = itemTraits.size - matched;
+  console.log(
+    `Matched ${matched}/${itemTraits.size} item traits (${missing} unmatched).`,
+  );
+
+  writeFileSync("public/data/traits.json", `${JSON.stringify(out, null, 2)}\n`);
+  console.log("Wrote public/data/traits.json");
+}
+
+/**
+ * Generate base-trait candidates for a parameterized trait slug.
+ * e.g. "deadly-d10" → ["deadly"], "thrown-20-ft." → ["thrown-20", "thrown"]
+ */
+function baseTraitCandidates(trait: string): string[] {
+  const candidates: string[] = [];
+  // Strip trailing dice (d4, d6, d8, d10, d12) or numbers
+  const noDice = trait.replace(/-d\d+$/, "").replace(/-\d+$/, "");
+  if (noDice !== trait) candidates.push(noDice);
+
+  // Strip "-to-..." suffix
+  const noTo = trait.replace(/-to-.+$/, "");
+  if (noTo !== trait) candidates.push(noTo);
+
+  // Strip trailing number without hyphen: "additive0" → "additive"
+  const noSuffix = trait.replace(/\d+$/, "");
+  if (noSuffix !== trait && noSuffix.length > 0) candidates.push(noSuffix);
+
+  // Strip "-ft." / "-feet" suffixes
+  const noFt = trait.replace(/-ft\.?$/, "").replace(/-feet$/, "");
+  if (noFt !== trait) candidates.push(noFt);
 
   // Normalize "1d" → "d" in die sizes (e.g. fatal-1d10 → fatal-d10)
-  const normDice = stripped.replace(/\b1(d\d+)/, "$1");
-  if (descs[normDice]) return descs[normDice];
+  const normDice = trait.replace(/\b1(d\d+)/, "$1");
+  if (normDice !== trait) candidates.push(normDice);
 
-  return undefined;
+  // Strip last hyphenated segment progressively
+  const parts = trait.split("-");
+  for (let i = parts.length - 1; i >= 1; i--) {
+    candidates.push(parts.slice(0, i).join("-"));
+  }
+
+  return candidates;
 }
 
 /** Format a trait slug like "deadly-d10" into "Deadly D10". */
@@ -372,14 +440,29 @@ function formatTraitLabel(trait: string): string {
   return trait.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/** Look up a trait description from the unified trait data. */
+function traitDescription(
+  slug: string,
+  traitData: Map<string, TraitEntry>,
+): string | undefined {
+  const entry = traitData.get(slug);
+  if (entry?.description) return entry.description;
+
+  for (const candidate of baseTraitCandidates(slug)) {
+    const e = traitData.get(candidate);
+    if (e?.description) return e.description;
+  }
+  return undefined;
+}
+
 /** Build an HTML section listing trait descriptions for the given traits. */
 function buildTraitDescriptions(
   traits: string[],
-  descs: Record<string, string>,
+  traitData: Map<string, TraitEntry>,
 ): string {
   const entries: string[] = [];
   for (const trait of traits) {
-    const desc = traitDescription(trait, descs);
+    const desc = traitDescription(trait, traitData);
     if (!desc) continue;
     // Trait descriptions may contain raw markdown italic; convert inline
     const html = (marked.parseInline(desc) as string).replace(/\s+/g, " ");
@@ -459,7 +542,7 @@ function main() {
   const rawItems = JSON.parse(readFileSync(RAW_INPUT, "utf-8")) as AonItem[];
   console.log(`Read ${rawItems.length} raw items from ${RAW_INPUT}.`);
 
-  const traitDescs = loadTraitDescriptions();
+  const traitData = loadTraitData();
   const sourceCategoryMap = loadSourceCategories();
 
   // ── Merge combination-weapon melee/ranged pairs ───────────────────
@@ -502,7 +585,7 @@ function main() {
 
     // Append trait descriptions and crit spec for weapons
     if (raw.category === "weapon") {
-      description += buildTraitDescriptions(traits, traitDescs);
+      description += buildTraitDescriptions(traits, traitData);
       const group = extractWeaponGroup(raw.markdown ?? "");
       if (group) {
         description += buildCritSpec(group);
@@ -557,6 +640,10 @@ function main() {
   writeFileSync(PUBLIC_OUTPUT, JSON.stringify(priced));
 
   console.log(`Wrote ${priced.length} items to ${OUTPUT} and ${PUBLIC_OUTPUT}`);
+
+  // Build unified traits.json from all traits referenced by items
+  const allTraits = new Set(priced.flatMap((item) => item.traits));
+  writeTraitsJson(traitData, allTraits);
 }
 
 main();

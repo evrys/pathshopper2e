@@ -1,23 +1,28 @@
 import { AON_BASE } from "./aon";
 
-let traitUrls: Record<string, string> | null = null;
+interface TraitEntry {
+  url: string;
+  description: string;
+}
 
-/** Load the trait→AoN URL map (cached after first call). */
-export async function loadTraitUrls(): Promise<void> {
-  if (traitUrls) return;
+let traitData: Record<string, TraitEntry> | null = null;
+
+/** Load the trait data map (cached after first call). */
+export async function loadTraitData(): Promise<void> {
+  if (traitData) return;
   try {
-    const res = await fetch("./data/trait-urls.json");
-    traitUrls = (await res.json()) as Record<string, string>;
+    const res = await fetch("./data/traits.json");
+    traitData = (await res.json()) as Record<string, TraitEntry>;
   } catch (err) {
-    console.error("Failed to load trait URLs:", err);
-    traitUrls = {};
+    console.error("Failed to load trait data:", err);
+    traitData = {};
   }
 }
 
 /** Get the full AoN URL for a trait slug, or undefined if unknown. */
 export function traitUrl(trait: string): string | undefined {
-  const path = traitUrls?.[trait];
-  return path ? `${AON_BASE}${path}` : undefined;
+  const entry = traitData?.[trait];
+  return entry?.url ? `${AON_BASE}${entry.url}` : undefined;
 }
 
 /** Format a trait slug like "deadly-d10" into a title-cased label "Deadly D10". */
