@@ -323,7 +323,7 @@ function App() {
     entries,
     totalPrice,
     allItems: items,
-    listName: activeList?.name ?? "My shopping list",
+    listName: activeList?.name ?? "Shopping list",
     lists,
     activeListId,
     onListNameChange: renameActiveList,

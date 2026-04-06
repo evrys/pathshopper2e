@@ -89,7 +89,7 @@ describe("useSavedLists hook", () => {
         expect(result.current.lists).toHaveLength(1);
       });
 
-      expect(result.current.lists[0].name).toBe("My shopping list");
+      expect(result.current.lists[0].name).toBe("Shopping list");
       expect(result.current.activeList).toBeDefined();
       expect(result.current.activeListId).toBe(result.current.lists[0].id);
     });
@@ -105,7 +105,7 @@ describe("useSavedLists hook", () => {
 
       const stored = getStoredList(result.current.lists[0].id);
       expect(stored).not.toBeNull();
-      expect(stored?.name).toBe("My shopping list");
+      expect(stored?.name).toBe("Shopping list");
     });
 
     it("loads existing lists from localStorage", async () => {
@@ -233,7 +233,7 @@ describe("useSavedLists hook", () => {
         expect(result.current.lists).toHaveLength(2);
       });
 
-      expect(result.current.activeList?.name).toBe("My shopping list");
+      expect(result.current.activeList?.name).toBe("Shopping list");
     });
 
     it("trims whitespace from name", async () => {
@@ -883,7 +883,7 @@ describe("useSavedLists hook", () => {
         expect(result.current.lists[0].id).not.toBe("list-1");
       });
 
-      expect(result.current.activeList?.name).toBe("My shopping list");
+      expect(result.current.activeList?.name).toBe("Shopping list");
       expect(result.current.activeList?.items).toEqual({});
     });
 

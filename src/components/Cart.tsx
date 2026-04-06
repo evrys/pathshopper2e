@@ -236,7 +236,7 @@ export function Cart({
     }
   };
   const csvInputRef = useRef<HTMLInputElement>(null);
-  const title = listName || "My shopping list";
+  const title = listName || "Shopping list";
 
   // Track which item to flash-highlight (newly added or quantity bumped)
   const [flashId, setFlashId] = useState<string | null>(null);

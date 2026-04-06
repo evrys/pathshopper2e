@@ -92,7 +92,7 @@ export function SharedList() {
   );
   const totalItems = entries.reduce((sum, e) => sum + e.quantity, 0);
 
-  const title = charName ? charName : "My shopping list";
+  const title = charName ? charName : "Shopping list";
 
   const isMobile = useIsMobile();
 
