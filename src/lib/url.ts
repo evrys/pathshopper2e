@@ -248,6 +248,7 @@ export function parseCustomItems(str: string): Item[] {
       usage: "",
       source: "Custom",
       sourceId: "",
+      sourceCategory: "",
       remaster: false,
       description: "",
       plainDescription: "",

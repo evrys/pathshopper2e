@@ -9,6 +9,7 @@ import {
 import { formatTrait } from "../lib/traits";
 import type { Item } from "../types";
 import styles from "./FilterModal.module.css";
+import type { MultiSelectGroup } from "./MultiSelect";
 import { MultiSelect } from "./MultiSelect";
 
 const TYPE_OPTIONS = Object.entries(TYPE_LABELS).map(([value, label]) => ({
@@ -73,16 +74,45 @@ export function FilterModal({
       .map(([value]) => ({ value, label: formatTrait(value) }));
   }, [items]);
 
-  const sourceOptions = useMemo(() => {
-    const sources = new Map<string, string>();
+  const sourceGroups = useMemo((): MultiSelectGroup[] => {
+    const sources = new Map<string, { name: string; category: string }>();
     for (const item of items) {
       if (item.sourceId && !sources.has(item.sourceId)) {
-        sources.set(item.sourceId, item.source);
+        sources.set(item.sourceId, {
+          name: item.source,
+          category: item.sourceCategory || "Other",
+        });
       }
     }
-    return [...sources.entries()]
-      .sort((a, b) => a[1].localeCompare(b[1]))
-      .map(([id, name]) => ({ value: id, label: name }));
+    const byCategory = new Map<string, { value: string; label: string }[]>();
+    for (const [id, { name, category }] of sources) {
+      let group = byCategory.get(category);
+      if (!group) {
+        group = [];
+        byCategory.set(category, group);
+      }
+      group.push({ value: id, label: name });
+    }
+    // Sort options within each group, then return groups in a fixed order
+    const ORDER = [
+      "Rulebooks",
+      "Lost Omens",
+      "Adventure Paths",
+      "Adventures",
+      "Society",
+      "Blog Posts",
+      "Comics",
+    ];
+    return [...byCategory.entries()]
+      .sort(
+        (a, b) =>
+          (ORDER.indexOf(a[0]) === -1 ? 999 : ORDER.indexOf(a[0])) -
+          (ORDER.indexOf(b[0]) === -1 ? 999 : ORDER.indexOf(b[0])),
+      )
+      .map(([cat, opts]) => ({
+        label: cat,
+        options: opts.sort((a, b) => a.label.localeCompare(b.label)),
+      }));
   }, [items]);
 
   const activeCount =
@@ -190,7 +220,7 @@ export function FilterModal({
               <span className={styles.groupLabel}>Source</span>
               <MultiSelect
                 placeholder="All Sources"
-                options={sourceOptions}
+                groups={sourceGroups}
                 selected={sourceFilter}
                 onChange={(next) => onFiltersChange({ sourceFilter: next })}
               />

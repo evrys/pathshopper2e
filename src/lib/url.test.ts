@@ -380,6 +380,7 @@ function makeCustomItem(overrides: Partial<Item> = {}): Item {
     usage: "",
     source: "Custom",
     sourceId: "",
+    sourceCategory: "",
     remaster: false,
     description: "",
     plainDescription: "",

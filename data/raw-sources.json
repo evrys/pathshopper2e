@@ -1,0 +1,1720 @@
+[
+  {
+    "id": "source-1",
+    "name": "Core Rulebook",
+    "primary_source_category": "Rulebooks",
+    "release_date": "2019-08-01",
+    "url": "/Sources.aspx?ID=1"
+  },
+  {
+    "id": "source-2",
+    "name": "Bestiary",
+    "primary_source_category": "Rulebooks",
+    "release_date": "2019-08-01",
+    "url": "/Sources.aspx?ID=2"
+  },
+  {
+    "id": "source-3",
+    "name": "The Fall of Plaguestone",
+    "primary_source_category": "Adventures",
+    "primary_source_group": "The Fall of Plaguestone",
+    "release_date": "2019-08-01",
+    "url": "/Sources.aspx?ID=3"
+  },
+  {
+    "id": "source-4",
+    "name": "Pathfinder #145: Hellknight Hill",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Age of Ashes",
+    "release_date": "2019-08-01",
+    "url": "/Sources.aspx?ID=4"
+  },
+  {
+    "id": "source-5",
+    "name": "Age of Ashes Player's Guide",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Age of Ashes",
+    "release_date": "2019-08-01",
+    "url": "/Sources.aspx?ID=5"
+  },
+  {
+    "id": "source-6",
+    "name": "World Guide",
+    "primary_source_category": "Lost Omens",
+    "release_date": "2019-08-31",
+    "url": "/Sources.aspx?ID=6"
+  },
+  {
+    "id": "source-7",
+    "name": "Pathfinder #146: Cult of Cinders",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Age of Ashes",
+    "release_date": "2019-09-01",
+    "url": "/Sources.aspx?ID=7"
+  },
+  {
+    "id": "source-8",
+    "name": "Pathfinder #147: Tomorrow Must Burn",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Age of Ashes",
+    "release_date": "2019-09-18",
+    "url": "/Sources.aspx?ID=8"
+  },
+  {
+    "id": "source-9",
+    "name": "PFS Scenario #1-03: Escaping the Grave",
+    "primary_source_category": "Society",
+    "release_date": "2019-07-31",
+    "url": "/Sources.aspx?ID=9"
+  },
+  {
+    "id": "source-11",
+    "name": "PFS Quest #2: Unforgiving Fire",
+    "primary_source_category": "Society",
+    "release_date": "2019-09-25",
+    "url": "/Sources.aspx?ID=11"
+  },
+  {
+    "id": "source-12",
+    "name": "Character Guide",
+    "primary_source_category": "Lost Omens",
+    "release_date": "2019-10-16",
+    "url": "/Sources.aspx?ID=12"
+  },
+  {
+    "id": "source-13",
+    "name": "Pathfinder #148: Fires of the Haunted City",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Age of Ashes",
+    "release_date": "2019-10-16",
+    "url": "/Sources.aspx?ID=13"
+  },
+  {
+    "id": "source-14",
+    "name": "Pathfinder #149: Against the Scarlet Triad",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Age of Ashes",
+    "release_date": "2019-11-13",
+    "url": "/Sources.aspx?ID=14"
+  },
+  {
+    "id": "source-15",
+    "name": "Pathfinder #150: Broken Promises",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Age of Ashes",
+    "release_date": "2019-12-12",
+    "url": "/Sources.aspx?ID=15"
+  },
+  {
+    "id": "source-17",
+    "name": "Gods & Magic",
+    "primary_source_category": "Lost Omens",
+    "release_date": "2020-01-29",
+    "url": "/Sources.aspx?ID=17"
+  },
+  {
+    "id": "source-19",
+    "name": "Gods & Magic - Web Supplement",
+    "primary_source_category": "Lost Omens",
+    "release_date": "2020-01-29",
+    "url": "/Sources.aspx?ID=19"
+  },
+  {
+    "id": "source-20",
+    "name": "PFS Character Options",
+    "primary_source_category": "Blog Posts",
+    "release_date": "2020-01-30",
+    "url": "/Sources.aspx?ID=20"
+  },
+  {
+    "id": "source-21",
+    "name": "Pathfinder #151: The Show Must Go On",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Extinction Curse",
+    "release_date": "2020-01-30",
+    "url": "/Sources.aspx?ID=21"
+  },
+  {
+    "id": "source-22",
+    "name": "Gamemastery Guide",
+    "primary_source_category": "Rulebooks",
+    "release_date": "2020-02-26",
+    "url": "/Sources.aspx?ID=22"
+  },
+  {
+    "id": "source-23",
+    "name": "Pathfinder #152: Legacy of the Lost God",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Extinction Curse",
+    "release_date": "2020-02-26",
+    "url": "/Sources.aspx?ID=23"
+  },
+  {
+    "id": "source-25",
+    "name": "Extinction Curse Player's Guide",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Extinction Curse",
+    "release_date": "2020-01-13",
+    "url": "/Sources.aspx?ID=25"
+  },
+  {
+    "id": "source-27",
+    "name": "PFS Quest #5: The Dragon Who Stole Evoking Day",
+    "primary_source_category": "Society",
+    "release_date": "2020-01-13",
+    "url": "/Sources.aspx?ID=27"
+  },
+  {
+    "id": "source-28",
+    "name": "PFS Scenario #1-15: The Blooming Catastrophe",
+    "primary_source_category": "Society",
+    "primary_source_group": "Pathfinder Society",
+    "release_date": "2020-02-26",
+    "url": "/Sources.aspx?ID=28"
+  },
+  {
+    "id": "source-29",
+    "name": "Pathfinder #153: Life's Long Shadows",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Extinction Curse",
+    "release_date": "2020-03-26",
+    "url": "/Sources.aspx?ID=29"
+  },
+  {
+    "id": "source-30",
+    "name": "Friends in High Places",
+    "primary_source_category": "Blog Posts",
+    "release_date": "2020-01-21",
+    "url": "/Sources.aspx?ID=30"
+  },
+  {
+    "id": "source-31",
+    "name": "Pathfinder #154: Siege of the Dinosaurs",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Extinction Curse",
+    "release_date": "2020-04-29",
+    "url": "/Sources.aspx?ID=31"
+  },
+  {
+    "id": "source-32",
+    "name": "Bestiary 2",
+    "primary_source_category": "Rulebooks",
+    "release_date": "2020-05-27",
+    "url": "/Sources.aspx?ID=32"
+  },
+  {
+    "id": "source-33",
+    "name": "Pathfinder #155: Lord of the Black Sands",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Extinction Curse",
+    "release_date": "2020-05-27",
+    "url": "/Sources.aspx?ID=33"
+  },
+  {
+    "id": "source-34",
+    "name": "PFS Scenario #1-17: The Perennial Crown Part 2, The Thorned Monarch",
+    "primary_source_category": "Society",
+    "release_date": "2020-03-24",
+    "url": "/Sources.aspx?ID=34"
+  },
+  {
+    "id": "source-35",
+    "name": "PFS Scenario #1-19: Iolite Squad Alpha",
+    "primary_source_category": "Society",
+    "primary_source_group": "Pathfinder Society",
+    "release_date": "2020-04-27",
+    "url": "/Sources.aspx?ID=35"
+  },
+  {
+    "id": "source-36",
+    "name": "Pathfinder #156: The Apocalypse Prophet",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Extinction Curse",
+    "release_date": "2020-06-24",
+    "url": "/Sources.aspx?ID=36"
+  },
+  {
+    "id": "source-38",
+    "name": "Organized Play Foundation",
+    "primary_source_category": "Society",
+    "primary_source_group": "Pathfinder Society",
+    "release_date": "2019-08-05",
+    "url": "/Sources.aspx?ID=38"
+  },
+  {
+    "id": "source-39",
+    "name": "Advanced Player's Guide",
+    "primary_source_category": "Rulebooks",
+    "release_date": "2020-07-30",
+    "url": "/Sources.aspx?ID=39"
+  },
+  {
+    "id": "source-40",
+    "name": "Legends",
+    "primary_source_category": "Lost Omens",
+    "release_date": "2020-07-30",
+    "url": "/Sources.aspx?ID=40"
+  },
+  {
+    "id": "source-41",
+    "name": "The Slithering",
+    "primary_source_category": "Adventures",
+    "primary_source_group": "The Slithering",
+    "release_date": "2020-07-30",
+    "url": "/Sources.aspx?ID=41"
+  },
+  {
+    "id": "source-42",
+    "name": "Battle of the Pantheons Winner Announcement",
+    "primary_source_category": "Blog Posts",
+    "release_date": "2020-06-25",
+    "url": "/Sources.aspx?ID=42"
+  },
+  {
+    "id": "source-43",
+    "name": "Agents of Edgewatch Player's Guide",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Agents of Edgewatch",
+    "release_date": "2020-07-08",
+    "url": "/Sources.aspx?ID=43"
+  },
+  {
+    "id": "source-45",
+    "name": "Pathfinder #157: Devil at the Dreaming Palace",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Agents of Edgewatch",
+    "release_date": "2020-07-30",
+    "url": "/Sources.aspx?ID=45"
+  },
+  {
+    "id": "source-46",
+    "name": "PFS Scenario #1-24: Lightning Strikes, Stars Fall",
+    "primary_source_category": "Society",
+    "release_date": "2020-07-30",
+    "url": "/Sources.aspx?ID=46"
+  },
+  {
+    "id": "source-47",
+    "name": "Pathfinder #158: Sixty Feet Under",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Agents of Edgewatch",
+    "release_date": "2020-08-26",
+    "url": "/Sources.aspx?ID=47"
+  },
+  {
+    "id": "source-48",
+    "name": "Pathfinder #159: All or Nothing",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Agents of Edgewatch",
+    "release_date": "2020-09-15",
+    "url": "/Sources.aspx?ID=48"
+  },
+  {
+    "id": "source-49",
+    "name": "Pathfinder #160: Assault on Hunting Lodge Seven",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Agents of Edgewatch",
+    "release_date": "2020-10-14",
+    "url": "/Sources.aspx?ID=49"
+  },
+  {
+    "id": "source-50",
+    "name": "PFS Guide",
+    "primary_source_category": "Lost Omens",
+    "release_date": "2020-10-14",
+    "url": "/Sources.aspx?ID=50"
+  },
+  {
+    "id": "source-51",
+    "name": "Pathfinder #161: Belly of the Black Whale",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Agents of Edgewatch",
+    "release_date": "2020-11-15",
+    "url": "/Sources.aspx?ID=51"
+  },
+  {
+    "id": "source-52",
+    "name": "PFS Quest #10: The Broken Scales",
+    "primary_source_category": "Society",
+    "release_date": "2020-05-28",
+    "url": "/Sources.aspx?ID=52"
+  },
+  {
+    "id": "source-53",
+    "name": "Little Trouble in Big Absalom",
+    "primary_source_category": "Adventures",
+    "primary_source_group": "Little Trouble in Big Absalom",
+    "release_date": "2020-07-25",
+    "url": "/Sources.aspx?ID=53"
+  },
+  {
+    "id": "source-54",
+    "name": "Pathfinder #162: Ruins of the Radiant Siege",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Agents of Edgewatch",
+    "release_date": "2020-12-15",
+    "url": "/Sources.aspx?ID=54"
+  },
+  {
+    "id": "source-55",
+    "name": "Troubles in Otari",
+    "primary_source_category": "Adventures",
+    "primary_source_group": "Troubles in Otari",
+    "release_date": "2020-12-09",
+    "url": "/Sources.aspx?ID=55"
+  },
+  {
+    "id": "source-56",
+    "name": "Redpitch Alchemy",
+    "primary_source_category": "Blog Posts",
+    "release_date": "2020-11-25",
+    "url": "/Sources.aspx?ID=56"
+  },
+  {
+    "id": "source-57",
+    "name": "The Waters of Stone Ring Pond",
+    "primary_source_category": "Blog Posts",
+    "release_date": "2020-12-16",
+    "url": "/Sources.aspx?ID=57"
+  },
+  {
+    "id": "source-58",
+    "name": "GM's Toolbox: Gravehall",
+    "primary_source_category": "Blog Posts",
+    "release_date": "2020-12-23",
+    "url": "/Sources.aspx?ID=58"
+  },
+  {
+    "id": "source-59",
+    "name": "A Caroling Horse (Of Course. Of Course.)",
+    "primary_source_category": "Blog Posts",
+    "release_date": "2021-01-01",
+    "url": "/Sources.aspx?ID=59"
+  },
+  {
+    "id": "source-60",
+    "name": "No-Prep Character: Duhgik",
+    "primary_source_category": "Blog Posts",
+    "release_date": "2020-07-17",
+    "url": "/Sources.aspx?ID=60"
+  },
+  {
+    "id": "source-61",
+    "name": "No-Prep Character: Pr’rall",
+    "primary_source_category": "Blog Posts",
+    "release_date": "2020-07-10",
+    "url": "/Sources.aspx?ID=61"
+  },
+  {
+    "id": "source-62",
+    "name": "No-Prep Character: Morlibint",
+    "primary_source_category": "Blog Posts",
+    "release_date": "2020-11-11",
+    "url": "/Sources.aspx?ID=62"
+  },
+  {
+    "id": "source-63",
+    "name": "Pathfinder Beginner Box: Game Master's Guide",
+    "primary_source_category": "Rulebooks",
+    "release_date": "2020-10-15",
+    "url": "/Sources.aspx?ID=63"
+  },
+  {
+    "id": "source-64",
+    "name": "Pathfinder Beginner Box: Hero's Handbook",
+    "primary_source_category": "Rulebooks",
+    "release_date": "2020-10-15",
+    "url": "/Sources.aspx?ID=64"
+  },
+  {
+    "id": "source-65",
+    "name": "Pathfinder Encounter: Heaving Kobolds",
+    "primary_source_category": "Blog Posts",
+    "release_date": "2021-01-07",
+    "url": "/Sources.aspx?ID=65"
+  },
+  {
+    "id": "source-66",
+    "name": "Bestiary 3",
+    "primary_source_category": "Rulebooks",
+    "release_date": "2021-04-07",
+    "url": "/Sources.aspx?ID=66"
+  },
+  {
+    "id": "source-67",
+    "name": "GM's Toolkit: Secret Keeper's Mask",
+    "primary_source_category": "Blog Posts",
+    "release_date": "2021-01-13",
+    "url": "/Sources.aspx?ID=67"
+  },
+  {
+    "id": "source-68",
+    "name": "No-Prep Character: Eleukas",
+    "primary_source_category": "Blog Posts",
+    "release_date": "2021-01-20",
+    "url": "/Sources.aspx?ID=68"
+  },
+  {
+    "id": "source-69",
+    "name": "Abomination Vaults Player's Guide",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Abomination Vaults",
+    "release_date": "2021-01-15",
+    "url": "/Sources.aspx?ID=69"
+  },
+  {
+    "id": "source-71",
+    "name": "Pathfinder #163: Ruins of Gauntlight",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Abomination Vaults",
+    "release_date": "2021-01-15",
+    "url": "/Sources.aspx?ID=71"
+  },
+  {
+    "id": "source-72",
+    "name": "No-Prep Character: Lisavet",
+    "primary_source_category": "Blog Posts",
+    "release_date": "2021-01-27",
+    "url": "/Sources.aspx?ID=72"
+  },
+  {
+    "id": "source-73",
+    "name": "No-Prep Character: Urok",
+    "primary_source_category": "Blog Posts",
+    "release_date": "2021-02-12",
+    "url": "/Sources.aspx?ID=73"
+  },
+  {
+    "id": "source-74",
+    "name": "Ancestry Guide",
+    "primary_source_category": "Lost Omens",
+    "release_date": "2021-02-24",
+    "url": "/Sources.aspx?ID=74"
+  },
+  {
+    "id": "source-75",
+    "name": "Pathfinder #164: Hands of the Devil",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Abomination Vaults",
+    "release_date": "2021-02-24",
+    "url": "/Sources.aspx?ID=75"
+  },
+  {
+    "id": "source-76",
+    "name": "Azarketi Ancestry Web Supplement",
+    "primary_source_category": "Lost Omens",
+    "release_date": "2021-02-24",
+    "url": "/Sources.aspx?ID=76"
+  },
+  {
+    "id": "source-77",
+    "name": "No-Prep Character: Chea",
+    "primary_source_category": "Blog Posts",
+    "release_date": "2021-02-19",
+    "url": "/Sources.aspx?ID=77"
+  },
+  {
+    "id": "source-78",
+    "name": "Pathfinder Bestiary 3 Bonus Monster",
+    "primary_source_category": "Blog Posts",
+    "release_date": "2021-03-19",
+    "url": "/Sources.aspx?ID=78"
+  },
+  {
+    "id": "source-80",
+    "name": "Pathfinder Encounter: Phinelli's Miracle Elixir",
+    "primary_source_category": "Blog Posts",
+    "release_date": "2021-02-26",
+    "url": "/Sources.aspx?ID=80"
+  },
+  {
+    "id": "source-81",
+    "name": "Pathfinder #165: Eyes of Empty Death",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Abomination Vaults",
+    "release_date": "2021-04-07",
+    "url": "/Sources.aspx?ID=81"
+  },
+  {
+    "id": "source-82",
+    "name": "Fists of the Ruby Phoenix Player's Guide",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Fists of the Ruby Phoenix",
+    "release_date": "2021-04-12",
+    "url": "/Sources.aspx?ID=82"
+  },
+  {
+    "id": "source-83",
+    "name": "Come One, Come All, to the Extinction Curse Player's Guide!",
+    "primary_source_category": "Blog Posts",
+    "release_date": "2020-01-14",
+    "url": "/Sources.aspx?ID=83"
+  },
+  {
+    "id": "source-84",
+    "name": "No-Prep Character: Zhang Yong",
+    "primary_source_category": "Blog Posts",
+    "release_date": "2021-04-23",
+    "url": "/Sources.aspx?ID=84"
+  },
+  {
+    "id": "source-85",
+    "name": "Pathfinder #166: Despair on Danger Island",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Fists of the Ruby Phoenix",
+    "release_date": "2021-07-07",
+    "url": "/Sources.aspx?ID=85"
+  },
+  {
+    "id": "source-86",
+    "name": "Pathfinder #167: Ready? Fight!",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Fists of the Ruby Phoenix",
+    "release_date": "2021-07-07",
+    "url": "/Sources.aspx?ID=86"
+  },
+  {
+    "id": "source-87",
+    "name": "Pathfinder #168: King of the Mountain",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Fists of the Ruby Phoenix",
+    "release_date": "2021-07-07",
+    "url": "/Sources.aspx?ID=87"
+  },
+  {
+    "id": "source-88",
+    "name": "Malevolence",
+    "primary_source_category": "Adventures",
+    "primary_source_group": "Malevolence",
+    "release_date": "2021-07-07",
+    "url": "/Sources.aspx?ID=88"
+  },
+  {
+    "id": "source-89",
+    "name": "The Mwangi Expanse",
+    "primary_source_category": "Lost Omens",
+    "release_date": "2021-07-07",
+    "url": "/Sources.aspx?ID=89"
+  },
+  {
+    "id": "source-90",
+    "name": "No-Prep Character: Wendlyn",
+    "primary_source_category": "Blog Posts",
+    "release_date": "2021-06-18",
+    "url": "/Sources.aspx?ID=90"
+  },
+  {
+    "id": "source-91",
+    "name": "No-Prep Character: Gristleburst",
+    "primary_source_category": "Blog Posts",
+    "release_date": "2021-07-09",
+    "url": "/Sources.aspx?ID=91"
+  },
+  {
+    "id": "source-92",
+    "name": "Gods of the Expanse",
+    "primary_source_category": "Blog Posts",
+    "release_date": "2021-07-16",
+    "url": "/Sources.aspx?ID=92"
+  },
+  {
+    "id": "source-94",
+    "name": "Pathfinder #169: Kindled Magic",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Strength of Thousands",
+    "release_date": "2021-08-05",
+    "url": "/Sources.aspx?ID=94"
+  },
+  {
+    "id": "source-95",
+    "name": "Strength of Thousands Player's Guide",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Strength of Thousands",
+    "release_date": "2021-07-26",
+    "url": "/Sources.aspx?ID=95"
+  },
+  {
+    "id": "source-96",
+    "name": "Secrets of Magic",
+    "primary_source_category": "Rulebooks",
+    "release_date": "2021-09-01",
+    "url": "/Sources.aspx?ID=96"
+  },
+  {
+    "id": "source-97",
+    "name": "Pathfinder #170: Spoken on the Song Wind",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Strength of Thousands",
+    "release_date": "2021-09-01",
+    "url": "/Sources.aspx?ID=97"
+  },
+  {
+    "id": "source-98",
+    "name": "Guns & Gears (Remastered)",
+    "primary_source_category": "Rulebooks",
+    "release_date": "2021-10-13",
+    "url": "/Sources.aspx?ID=98"
+  },
+  {
+    "id": "source-99",
+    "name": "Night of the Gray Death",
+    "primary_source_category": "Adventures",
+    "primary_source_group": "Night of the Gray Death",
+    "release_date": "2021-10-13",
+    "url": "/Sources.aspx?ID=99"
+  },
+  {
+    "id": "source-100",
+    "name": "Grand Bazaar",
+    "primary_source_category": "Lost Omens",
+    "release_date": "2021-10-13",
+    "url": "/Sources.aspx?ID=100"
+  },
+  {
+    "id": "source-101",
+    "name": "Pathfinder #171: Hurricane's Howl",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Strength of Thousands",
+    "release_date": "2021-10-13",
+    "url": "/Sources.aspx?ID=101"
+  },
+  {
+    "id": "source-102",
+    "name": "Pathfinder #172: Secrets of the Temple City",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Strength of Thousands",
+    "release_date": "2021-10-13",
+    "url": "/Sources.aspx?ID=102"
+  },
+  {
+    "id": "source-103",
+    "name": "Pathfinder #173: Doorway to the Red Star",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Strength of Thousands",
+    "release_date": "2021-11-10",
+    "url": "/Sources.aspx?ID=103"
+  },
+  {
+    "id": "source-105",
+    "name": "Pathfinder Special: Fumbus",
+    "primary_source_category": "Comics",
+    "release_date": "2021-11-11",
+    "url": "/Sources.aspx?ID=105"
+  },
+  {
+    "id": "source-107",
+    "name": "Monsters of Myth",
+    "primary_source_category": "Lost Omens",
+    "release_date": "2021-12-22",
+    "url": "/Sources.aspx?ID=107"
+  },
+  {
+    "id": "source-108",
+    "name": "Absalom, City of Lost Omens",
+    "primary_source_category": "Lost Omens",
+    "release_date": "2021-12-22",
+    "url": "/Sources.aspx?ID=108"
+  },
+  {
+    "id": "source-109",
+    "name": "Threshold of Knowledge",
+    "primary_source_category": "Adventures",
+    "primary_source_group": "Threshold of Knowledge",
+    "release_date": "2021-11-19",
+    "url": "/Sources.aspx?ID=109"
+  },
+  {
+    "id": "source-110",
+    "name": "Quest for the Frozen Flame Player's Guide",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Quest for the Frozen Flame",
+    "release_date": "2021-12-20",
+    "url": "/Sources.aspx?ID=110"
+  },
+  {
+    "id": "source-112",
+    "name": "Pathfinder #175: Broken Tusk Moon",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Quest for the Frozen Flame",
+    "release_date": "2022-01-26",
+    "url": "/Sources.aspx?ID=112"
+  },
+  {
+    "id": "source-113",
+    "name": "Pathfinder #176: Lost Mammoth Valley",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Quest for the Frozen Flame",
+    "release_date": "2022-02-23",
+    "url": "/Sources.aspx?ID=113"
+  },
+  {
+    "id": "source-115",
+    "name": "Pathfinder #174: Shadows of the Ancients",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Strength of Thousands",
+    "release_date": "2022-03-30",
+    "url": "/Sources.aspx?ID=115"
+  },
+  {
+    "id": "source-116",
+    "name": "Pathfinder #177: Burning Tundra",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Quest for the Frozen Flame",
+    "release_date": "2022-03-30",
+    "url": "/Sources.aspx?ID=116"
+  },
+  {
+    "id": "source-117",
+    "name": "Outlaws of Alkenstar Player's Guide",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Outlaws of Alkenstar",
+    "release_date": "2022-03-28",
+    "url": "/Sources.aspx?ID=117"
+  },
+  {
+    "id": "source-118",
+    "name": "Book of the Dead",
+    "primary_source_category": "Rulebooks",
+    "release_date": "2022-04-27",
+    "url": "/Sources.aspx?ID=118"
+  },
+  {
+    "id": "source-119",
+    "name": "Pathfinder #178: Punks in a Powderkeg",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Outlaws of Alkenstar",
+    "release_date": "2022-04-27",
+    "url": "/Sources.aspx?ID=119"
+  },
+  {
+    "id": "source-121",
+    "name": "Shadows at Sundown",
+    "primary_source_category": "Adventures",
+    "primary_source_group": "Shadows at Sundown",
+    "release_date": "2022-05-25",
+    "url": "/Sources.aspx?ID=121"
+  },
+  {
+    "id": "source-122",
+    "name": "Pathfinder #179: Cradle of Quartz",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Outlaws of Alkenstar",
+    "release_date": "2022-05-25",
+    "url": "/Sources.aspx?ID=122"
+  },
+  {
+    "id": "source-123",
+    "name": "Knights of Lastwall",
+    "primary_source_category": "Lost Omens",
+    "release_date": "2022-05-25",
+    "url": "/Sources.aspx?ID=123"
+  },
+  {
+    "id": "source-124",
+    "name": "Abomination Vaults Hardcover",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Abomination Vaults",
+    "release_date": "2022-05-25",
+    "url": "/Sources.aspx?ID=124"
+  },
+  {
+    "id": "source-125",
+    "name": "Pathfinder #180: The Smoking Gun",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Outlaws of Alkenstar",
+    "release_date": "2022-06-29",
+    "url": "/Sources.aspx?ID=125"
+  },
+  {
+    "id": "source-127",
+    "name": "Blood Lords Player's Guide",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Blood Lords",
+    "release_date": "2022-06-29",
+    "url": "/Sources.aspx?ID=127"
+  },
+  {
+    "id": "source-128",
+    "name": "Pathfinder Society Year 4 Rule Updates",
+    "primary_source_category": "Blog Posts",
+    "primary_source_group": "Pathfinder Society",
+    "release_date": "2022-06-30",
+    "url": "/Sources.aspx?ID=128"
+  },
+  {
+    "id": "source-129",
+    "name": "Dark Archive",
+    "primary_source_category": "Rulebooks",
+    "release_date": "2022-07-27",
+    "url": "/Sources.aspx?ID=129"
+  },
+  {
+    "id": "source-139",
+    "name": "Pathfinder #181: Zombie Feast",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Blood Lords",
+    "release_date": "2022-07-27",
+    "url": "/Sources.aspx?ID=139"
+  },
+  {
+    "id": "source-140",
+    "name": "A Fistful of Flowers",
+    "primary_source_category": "Adventures",
+    "release_date": "2022-07-25",
+    "url": "/Sources.aspx?ID=140"
+  },
+  {
+    "id": "source-141",
+    "name": "Travel Guide",
+    "primary_source_category": "Lost Omens",
+    "release_date": "2022-08-31",
+    "url": "/Sources.aspx?ID=141"
+  },
+  {
+    "id": "source-143",
+    "name": "Pathfinder #182: Graveclaw",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Blood Lords",
+    "release_date": "2022-08-31",
+    "url": "/Sources.aspx?ID=143"
+  },
+  {
+    "id": "source-144",
+    "name": "In Darkness",
+    "primary_source_category": "Adventures",
+    "primary_source_group": "Dark Archive",
+    "release_date": "2022-09-09",
+    "url": "/Sources.aspx?ID=144"
+  },
+  {
+    "id": "source-145",
+    "name": "Pathfinder #183: Field of Maidens",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Blood Lords",
+    "release_date": "2022-09-21",
+    "url": "/Sources.aspx?ID=145"
+  },
+  {
+    "id": "source-146",
+    "name": "Impossible Lands",
+    "primary_source_category": "Lost Omens",
+    "release_date": "2022-11-16",
+    "url": "/Sources.aspx?ID=146"
+  },
+  {
+    "id": "source-147",
+    "name": "Pathfinder #184: The Ghouls Hunger",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Blood Lords",
+    "release_date": "2022-10-26",
+    "url": "/Sources.aspx?ID=147"
+  },
+  {
+    "id": "source-148",
+    "name": "Crown of the Kobold King",
+    "primary_source_category": "Adventures",
+    "primary_source_group": "Crown of the Kobold King",
+    "release_date": "2022-10-26",
+    "url": "/Sources.aspx?ID=148"
+  },
+  {
+    "id": "source-149",
+    "name": "Celebrating Hispanic Heritage Month",
+    "primary_source_category": "Blog Posts",
+    "release_date": "2022-10-03",
+    "url": "/Sources.aspx?ID=149"
+  },
+  {
+    "id": "source-150",
+    "name": "Kingmaker Adventure Path",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Kingmaker",
+    "release_date": "2022-10-26",
+    "url": "/Sources.aspx?ID=150"
+  },
+  {
+    "id": "source-151",
+    "name": "Kingmaker Companion Guide",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Kingmaker",
+    "release_date": "2022-10-26",
+    "url": "/Sources.aspx?ID=151"
+  },
+  {
+    "id": "source-188",
+    "name": "Pathfinder #185: A Taste of Ashes",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Blood Lords",
+    "release_date": "2022-11-16",
+    "url": "/Sources.aspx?ID=188"
+  },
+  {
+    "id": "source-189",
+    "name": "Pathfinder #186: Ghost King's Rage",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Blood Lords",
+    "release_date": "2022-12-14",
+    "url": "/Sources.aspx?ID=189"
+  },
+  {
+    "id": "source-190",
+    "name": "Gatewalkers Player's Guide",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Gatewalkers",
+    "release_date": "2023-01-04",
+    "url": "/Sources.aspx?ID=190"
+  },
+  {
+    "id": "source-191",
+    "name": "Treasure Vault",
+    "primary_source_category": "Rulebooks",
+    "release_date": "2023-02-22",
+    "url": "/Sources.aspx?ID=191"
+  },
+  {
+    "id": "source-192",
+    "name": "Pathfinder #187: The Seventh Arch",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Gatewalkers",
+    "release_date": "2023-01-25",
+    "url": "/Sources.aspx?ID=192"
+  },
+  {
+    "id": "source-193",
+    "name": "Fists of the Ruby Phoenix Hardcover",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Fists of the Ruby Phoenix",
+    "release_date": "2023-01-25",
+    "url": "/Sources.aspx?ID=193"
+  },
+  {
+    "id": "source-194",
+    "name": "Pathfinder #188: They Watched the Stars",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Gatewalkers",
+    "release_date": "2023-02-22",
+    "url": "/Sources.aspx?ID=194"
+  },
+  {
+    "id": "source-195",
+    "name": "Pathfinder #189: Dreamers of the Nameless Spires",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Gatewalkers",
+    "release_date": "2023-03-29",
+    "url": "/Sources.aspx?ID=195"
+  },
+  {
+    "id": "source-196",
+    "name": "Firebrands",
+    "primary_source_category": "Lost Omens",
+    "release_date": "2023-03-29",
+    "url": "/Sources.aspx?ID=196"
+  },
+  {
+    "id": "source-197",
+    "name": "Stolen Fate Player's Guide",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Stolen Fate",
+    "release_date": "2023-04-13",
+    "url": "/Sources.aspx?ID=197"
+  },
+  {
+    "id": "source-198",
+    "name": "Pathfinder #190: The Choosing",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Stolen Fate",
+    "release_date": "2023-04-26",
+    "url": "/Sources.aspx?ID=198"
+  },
+  {
+    "id": "source-199",
+    "name": "Pathfinder #191: The Destiny War",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Stolen Fate",
+    "release_date": "2023-05-24",
+    "url": "/Sources.aspx?ID=199"
+  },
+  {
+    "id": "source-200",
+    "name": "The Enmity Cycle",
+    "primary_source_category": "Adventures",
+    "primary_source_group": "The Enmity Cycle",
+    "release_date": "2023-05-24",
+    "url": "/Sources.aspx?ID=200"
+  },
+  {
+    "id": "source-201",
+    "name": "Wake the Dead #1",
+    "primary_source_category": "Comics",
+    "release_date": "2023-05-31",
+    "url": "/Sources.aspx?ID=201"
+  },
+  {
+    "id": "source-202",
+    "name": "A Few Flowers More",
+    "primary_source_category": "Adventures",
+    "release_date": "2023-07-24",
+    "url": "/Sources.aspx?ID=202"
+  },
+  {
+    "id": "source-203",
+    "name": "Pathfinder #192: Worst of All Possible Worlds",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Stolen Fate",
+    "release_date": "2023-06-28",
+    "url": "/Sources.aspx?ID=203"
+  },
+  {
+    "id": "source-204",
+    "name": "Highhelm",
+    "primary_source_category": "Lost Omens",
+    "release_date": "2023-06-28",
+    "url": "/Sources.aspx?ID=204"
+  },
+  {
+    "id": "source-205",
+    "name": "Rage of Elements",
+    "primary_source_category": "Rulebooks",
+    "release_date": "2023-08-02",
+    "url": "/Sources.aspx?ID=205"
+  },
+  {
+    "id": "source-206",
+    "name": "Pathfinder #193: Mantle of Gold",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Sky King's Tomb",
+    "release_date": "2023-08-02",
+    "url": "/Sources.aspx?ID=206"
+  },
+  {
+    "id": "source-207",
+    "name": "Wake the Dead #2",
+    "primary_source_category": "Comics",
+    "release_date": "2023-07-26",
+    "url": "/Sources.aspx?ID=207"
+  },
+  {
+    "id": "source-208",
+    "name": "Sky King's Tomb Player's Guide",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Sky King's Tomb",
+    "release_date": "2023-07-13",
+    "url": "/Sources.aspx?ID=208"
+  },
+  {
+    "id": "source-209",
+    "name": "Pathfinder #194: Cult of the Cave Worm",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Sky King's Tomb",
+    "release_date": "2023-08-30",
+    "url": "/Sources.aspx?ID=209"
+  },
+  {
+    "id": "source-210",
+    "name": "Pathfinder #195: Heavy is the Crown",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Sky King's Tomb",
+    "release_date": "2023-09-23",
+    "url": "/Sources.aspx?ID=210"
+  },
+  {
+    "id": "source-212",
+    "name": "Wake the Dead #3",
+    "primary_source_category": "Comics",
+    "release_date": "2023-09-27",
+    "url": "/Sources.aspx?ID=212"
+  },
+  {
+    "id": "source-213",
+    "name": "Season of Ghosts Player's Guide",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Season of Ghosts",
+    "release_date": "2023-10-02",
+    "url": "/Sources.aspx?ID=213"
+  },
+  {
+    "id": "source-214",
+    "name": "Pathfinder #196: The Summer That Never Was",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Season of Ghosts",
+    "release_date": "2023-10-18",
+    "url": "/Sources.aspx?ID=214"
+  },
+  {
+    "id": "source-215",
+    "name": "Rusthenge",
+    "primary_source_category": "Adventures",
+    "primary_source_group": "Rusthenge",
+    "release_date": "2023-10-18",
+    "url": "/Sources.aspx?ID=215"
+  },
+  {
+    "id": "source-216",
+    "name": "Player Core",
+    "primary_source_category": "Rulebooks",
+    "release_date": "2023-11-15",
+    "url": "/Sources.aspx?ID=216"
+  },
+  {
+    "id": "source-218",
+    "name": "GM Core",
+    "primary_source_category": "Rulebooks",
+    "release_date": "2023-11-15",
+    "url": "/Sources.aspx?ID=218"
+  },
+  {
+    "id": "source-219",
+    "name": "Wake the Dead #4",
+    "primary_source_category": "Comics",
+    "release_date": "2023-11-28",
+    "url": "/Sources.aspx?ID=219"
+  },
+  {
+    "id": "source-220",
+    "name": "Wake the Dead #5",
+    "primary_source_category": "Comics",
+    "release_date": "2024-01-31",
+    "url": "/Sources.aspx?ID=220"
+  },
+  {
+    "id": "source-221",
+    "name": "Monster Core",
+    "primary_source_category": "Rulebooks",
+    "release_date": "2024-03-27",
+    "url": "/Sources.aspx?ID=221"
+  },
+  {
+    "id": "source-222",
+    "name": "Pathfinder #197: Let the Leaves Fall",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Season of Ghosts",
+    "release_date": "2023-11-29",
+    "url": "/Sources.aspx?ID=222"
+  },
+  {
+    "id": "source-223",
+    "name": "Tian Xia World Guide",
+    "primary_source_category": "Lost Omens",
+    "release_date": "2024-04-24",
+    "url": "/Sources.aspx?ID=223"
+  },
+  {
+    "id": "source-224",
+    "name": "Pathfinder #198: No Breath to Cry",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Season of Ghosts",
+    "release_date": "2023-12-25",
+    "url": "/Sources.aspx?ID=224"
+  },
+  {
+    "id": "source-225",
+    "name": "Pathfinder #199: To Bloom Below the Web",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Season of Ghosts",
+    "release_date": "2024-01-26",
+    "url": "/Sources.aspx?ID=225"
+  },
+  {
+    "id": "source-226",
+    "name": "Howl of the Wild",
+    "primary_source_category": "Rulebooks",
+    "release_date": "2024-05-29",
+    "url": "/Sources.aspx?ID=226"
+  },
+  {
+    "id": "source-227",
+    "name": "Player Core 2",
+    "primary_source_category": "Rulebooks",
+    "release_date": "2024-08-01",
+    "url": "/Sources.aspx?ID=227"
+  },
+  {
+    "id": "source-229",
+    "name": "Pathfinder #200: Seven Dooms for Sandpoint",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Seven Dooms for Sandpoint",
+    "release_date": "2024-03-27",
+    "url": "/Sources.aspx?ID=229"
+  },
+  {
+    "id": "source-230",
+    "name": "Tian Xia Character Guide",
+    "primary_source_category": "Lost Omens",
+    "release_date": "2024-08-28",
+    "url": "/Sources.aspx?ID=230"
+  },
+  {
+    "id": "source-231",
+    "name": "Prey for Death",
+    "primary_source_category": "Adventures",
+    "primary_source_group": "Prey for Death",
+    "release_date": "2024-07-31",
+    "url": "/Sources.aspx?ID=231"
+  },
+  {
+    "id": "source-232",
+    "name": "War of Immortals",
+    "primary_source_category": "Rulebooks",
+    "release_date": "2024-10-30",
+    "url": "/Sources.aspx?ID=232"
+  },
+  {
+    "id": "source-233",
+    "name": "War of Immortals Alternate Mythic Rules",
+    "primary_source_category": "Rulebooks",
+    "release_date": "2024-10-30",
+    "url": "/Sources.aspx?ID=233"
+  },
+  {
+    "id": "source-234",
+    "name": "Divine Mysteries",
+    "primary_source_category": "Lost Omens",
+    "release_date": "2025-01-30",
+    "url": "/Sources.aspx?ID=234"
+  },
+  {
+    "id": "source-235",
+    "name": "Rival Academies",
+    "primary_source_category": "Lost Omens",
+    "primary_source_group": "Convocation",
+    "release_date": "2025-02-26",
+    "url": "/Sources.aspx?ID=235"
+  },
+  {
+    "id": "source-236",
+    "name": "NPC Core",
+    "primary_source_category": "Rulebooks",
+    "release_date": "2025-02-26",
+    "url": "/Sources.aspx?ID=236"
+  },
+  {
+    "id": "source-237",
+    "name": "Divine Mysteries Web Supplement",
+    "primary_source_category": "Lost Omens",
+    "release_date": "2024-11-20",
+    "url": "/Sources.aspx?ID=237"
+  },
+  {
+    "id": "source-239",
+    "name": "Foolish Housekeeping and Other Articles",
+    "primary_source_category": "Blog Posts",
+    "release_date": "2025-04-01",
+    "url": "/Sources.aspx?ID=239"
+  },
+  {
+    "id": "source-240",
+    "name": "Wardens of Wildwood Players Guide",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Wardens of Wildwood",
+    "release_date": "2024-04-15",
+    "url": "/Sources.aspx?ID=240"
+  },
+  {
+    "id": "source-241",
+    "name": "Pathfinder #201: Pactbreaker",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Wardens of Wildwood",
+    "release_date": "2024-04-15",
+    "url": "/Sources.aspx?ID=241"
+  },
+  {
+    "id": "source-242",
+    "name": "Pathfinder #202: Severed at the Root",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Wardens of Wildwood",
+    "release_date": "2024-05-15",
+    "url": "/Sources.aspx?ID=242"
+  },
+  {
+    "id": "source-243",
+    "name": "Pathfinder #203 Shepherd of Decay",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Wardens of Wildwood",
+    "release_date": "2024-06-15",
+    "url": "/Sources.aspx?ID=243"
+  },
+  {
+    "id": "source-244",
+    "name": "Curtain Call Player's Guide",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Curtain Call",
+    "release_date": "2024-07-15",
+    "url": "/Sources.aspx?ID=244"
+  },
+  {
+    "id": "source-245",
+    "name": "Pathfinder #204: Stage Fright",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Curtain Call",
+    "release_date": "2024-07-15",
+    "url": "/Sources.aspx?ID=245"
+  },
+  {
+    "id": "source-246",
+    "name": "Pathfinder #205: Singer, Stalker, Skinsaw Man",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Curtain Call",
+    "release_date": "2024-08-15",
+    "url": "/Sources.aspx?ID=246"
+  },
+  {
+    "id": "source-247",
+    "name": "Pathfinder #206: Bring the House Down",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Curtain Call",
+    "release_date": "2024-09-15",
+    "url": "/Sources.aspx?ID=247"
+  },
+  {
+    "id": "source-248",
+    "name": "Triumph of the Tusk Player's Guide",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Triumph of the Tusk",
+    "release_date": "2024-10-15",
+    "url": "/Sources.aspx?ID=248"
+  },
+  {
+    "id": "source-249",
+    "name": "Pathfinder #207: Resurrection Flood",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Triumph of the Tusk",
+    "release_date": "2024-10-15",
+    "url": "/Sources.aspx?ID=249"
+  },
+  {
+    "id": "source-250",
+    "name": "Pathfinder #208: Hoof, Cinder, and Storm",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Triumph of the Tusk",
+    "release_date": "2024-11-15",
+    "url": "/Sources.aspx?ID=250"
+  },
+  {
+    "id": "source-251",
+    "name": "Pathfinder #209: Destroyer's Doom",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Triumph of the Tusk",
+    "release_date": "2024-12-15",
+    "url": "/Sources.aspx?ID=251"
+  },
+  {
+    "id": "source-252",
+    "name": "Spore War Player's Guide",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Spore War",
+    "release_date": "2025-01-15",
+    "url": "/Sources.aspx?ID=252"
+  },
+  {
+    "id": "source-253",
+    "name": "Pathfinder #210: Whispers in the Dirt",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Spore War",
+    "release_date": "2025-01-15",
+    "url": "/Sources.aspx?ID=253"
+  },
+  {
+    "id": "source-254",
+    "name": "Pathfinder #211: The Secret of Deathstalk Tower",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Spore War",
+    "release_date": "2025-02-15",
+    "url": "/Sources.aspx?ID=254"
+  },
+  {
+    "id": "source-255",
+    "name": "Pathfinder #212: A Voice in the Blight",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Spore War",
+    "release_date": "2025-03-15",
+    "url": "/Sources.aspx?ID=255"
+  },
+  {
+    "id": "source-256",
+    "name": "Shades of Blood Player's Guide",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Shades of Blood",
+    "release_date": "2025-04-02",
+    "url": "/Sources.aspx?ID=256"
+  },
+  {
+    "id": "source-257",
+    "name": "Pathfinder #213: Thirst for Blood",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Shades of Blood",
+    "release_date": "2025-04-02",
+    "url": "/Sources.aspx?ID=257"
+  },
+  {
+    "id": "source-258",
+    "name": "Pathfinder #214: The Broken Palace",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Shades of Blood",
+    "release_date": "2025-05-07",
+    "url": "/Sources.aspx?ID=258"
+  },
+  {
+    "id": "source-259",
+    "name": "Pathfinder #215: To Blot Out the Sun",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Shades of Blood",
+    "release_date": "2025-05-15",
+    "url": "/Sources.aspx?ID=259"
+  },
+  {
+    "id": "source-265",
+    "name": "Shining Kingdoms",
+    "primary_source_category": "Lost Omens",
+    "release_date": "2025-06-04",
+    "url": "/Sources.aspx?ID=265"
+  },
+  {
+    "id": "source-266",
+    "name": "Claws of the Tyrant",
+    "primary_source_category": "Adventures",
+    "release_date": "2025-04-02",
+    "url": "/Sources.aspx?ID=266"
+  },
+  {
+    "id": "source-268",
+    "name": "Battlecry!",
+    "primary_source_category": "Rulebooks",
+    "release_date": "2025-07-31",
+    "url": "/Sources.aspx?ID=268"
+  },
+  {
+    "id": "source-270",
+    "name": "Myth-Speakers Players Guide",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Myth-Speakers",
+    "release_date": "2025-07-16",
+    "url": "/Sources.aspx?ID=270"
+  },
+  {
+    "id": "source-271",
+    "name": "Pathfinder #216: The Acropolis Pyre",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Myth-Speakers",
+    "release_date": "2025-07-17",
+    "url": "/Sources.aspx?ID=271"
+  },
+  {
+    "id": "source-273",
+    "name": "Pathfinder #217: Death Sails a Wine-Dark Sea",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Myth-Speakers",
+    "release_date": "2025-07-31",
+    "url": "/Sources.aspx?ID=273"
+  },
+  {
+    "id": "source-274",
+    "name": "Pathfinder #218: Titanbane",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Myth-Speakers",
+    "release_date": "2025-09-03",
+    "url": "/Sources.aspx?ID=274"
+  },
+  {
+    "id": "source-275",
+    "name": "Pathfinder Game Night: Dawn of the Frogs (Deluxe Adventure)",
+    "primary_source_category": "Adventures",
+    "primary_source_group": "Dawn of the Frogs",
+    "release_date": "2025-09-03",
+    "url": "/Sources.aspx?ID=275"
+  },
+  {
+    "id": "source-276",
+    "name": "Monster Core 2",
+    "primary_source_category": "Rulebooks",
+    "release_date": "2025-11-05",
+    "url": "/Sources.aspx?ID=276"
+  },
+  {
+    "id": "source-277",
+    "name": "Draconic Codex",
+    "primary_source_category": "Lost Omens",
+    "release_date": "2025-11-05",
+    "url": "/Sources.aspx?ID=277"
+  },
+  {
+    "id": "source-278",
+    "name": "PFS Scenario #7-01: Intro to the Year of Battle’s Spark: Enough is Enough",
+    "primary_source_category": "Society",
+    "primary_source_group": "PFS Year 7",
+    "release_date": "2025-08-01",
+    "url": "/Sources.aspx?ID=278"
+  },
+  {
+    "id": "source-279",
+    "name": "PFS Scenario #7-02: Shipyard Sabotage",
+    "primary_source_category": "Society",
+    "primary_source_group": "PFS Year 7",
+    "release_date": "2025-08-01",
+    "url": "/Sources.aspx?ID=279"
+  },
+  {
+    "id": "source-280",
+    "name": "PFS Scenario #7-03: A Foot in the Door",
+    "primary_source_category": "Society",
+    "primary_source_group": "PFS Year 7",
+    "release_date": "2025-09-01",
+    "url": "/Sources.aspx?ID=280"
+  },
+  {
+    "id": "source-281",
+    "name": "PFS Scenario #7-04: Sulfuric Negotiations",
+    "primary_source_category": "Society",
+    "primary_source_group": "PFS Year 7",
+    "release_date": "2025-09-01",
+    "url": "/Sources.aspx?ID=281"
+  },
+  {
+    "id": "source-282",
+    "name": "Revenge of the Runelords Player's Guide",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Revenge of the Runelords",
+    "release_date": "2025-09-25",
+    "url": "/Sources.aspx?ID=282"
+  },
+  {
+    "id": "source-283",
+    "name": "Pathfinder Adventure Path #219: Lord of the Trinity Star",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Revenge of the Runelords",
+    "release_date": "2025-10-08",
+    "url": "/Sources.aspx?ID=283"
+  },
+  {
+    "id": "source-285",
+    "name": "Pathfinder Seven Dooms for Sandpoint Player’s Guide",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Seven Dooms for Sandpoint",
+    "release_date": "2024-03-27",
+    "url": "/Sources.aspx?ID=285"
+  },
+  {
+    "id": "source-286",
+    "name": "PFS Scenario #7-05: Battle of the Thorns",
+    "primary_source_category": "Society",
+    "primary_source_group": "PFS Year 7",
+    "release_date": "2025-10-28",
+    "url": "/Sources.aspx?ID=286"
+  },
+  {
+    "id": "source-287",
+    "name": "Gatewalkers Player's Guide (Remastered)",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Gatewalkers",
+    "release_date": "2025-07-02",
+    "url": "/Sources.aspx?ID=287"
+  },
+  {
+    "id": "source-288",
+    "name": "PFS Scenario #7-06: Brastlewark at War Part 1: The Gnome Defection",
+    "primary_source_category": "Society",
+    "primary_source_group": "PFS Year 7",
+    "release_date": "2025-11-19",
+    "url": "/Sources.aspx?ID=288"
+  },
+  {
+    "id": "source-289",
+    "name": "PFS Scenario #7-07: Draconic Folly",
+    "primary_source_category": "Society",
+    "primary_source_group": "PFS Year 7",
+    "release_date": "2025-11-19",
+    "url": "/Sources.aspx?ID=289"
+  },
+  {
+    "id": "source-290",
+    "name": "Gatewalkers (Hardcover)",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Gatewalkers",
+    "release_date": "2025-07-02",
+    "url": "/Sources.aspx?ID=290"
+  },
+  {
+    "id": "source-291",
+    "name": "PFS Scenario #7-08: The Haunted Corridor",
+    "primary_source_category": "Society",
+    "primary_source_group": "PFS Year 7",
+    "release_date": "2025-12-17",
+    "url": "/Sources.aspx?ID=291"
+  },
+  {
+    "id": "source-292",
+    "name": "PFS Scenario #7-09: The Chitterwood Walks, Part 1: Scrambling the Tribes",
+    "primary_source_category": "Society",
+    "primary_source_group": "PFS Year 7",
+    "release_date": "2026-01-07",
+    "url": "/Sources.aspx?ID=292"
+  },
+  {
+    "id": "source-293",
+    "name": "Dark Archives (Remastered)",
+    "primary_source_category": "Rulebooks",
+    "release_date": "2026-02-04",
+    "url": "/Sources.aspx?ID=293"
+  },
+  {
+    "id": "source-294",
+    "name": "Season of Ghosts (Hardcover)",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Season of Ghosts",
+    "release_date": "2026-02-04",
+    "url": "/Sources.aspx?ID=294"
+  },
+  {
+    "id": "source-295",
+    "name": "PFS Scenario #7-11: The Darkness Within",
+    "primary_source_category": "Society",
+    "primary_source_group": "PFS Year 7",
+    "release_date": "2026-02-04",
+    "url": "/Sources.aspx?ID=295"
+  },
+  {
+    "id": "source-296",
+    "name": "PFS Scenario #7-12: The Chitterwood Walks, Part 2: The Battle of Logas",
+    "primary_source_category": "Society",
+    "primary_source_group": "PFS Year 7",
+    "release_date": "2026-02-04",
+    "url": "/Sources.aspx?ID=296"
+  },
+  {
+    "id": "source-305",
+    "name": "PFS Scenario #7-13: Ancient Beyond Imagining",
+    "primary_source_category": "Society",
+    "primary_source_group": "PFS Year 7",
+    "release_date": "2026-03-04",
+    "url": "/Sources.aspx?ID=305"
+  },
+  {
+    "id": "source-306",
+    "name": "PFS Scenario #7-14: Brastlewark at War, Part 2: The Gnome Liberation",
+    "primary_source_category": "Society",
+    "primary_source_group": "PFS Year 7",
+    "release_date": "2026-03-04",
+    "url": "/Sources.aspx?ID=306"
+  },
+  {
+    "id": "source-307",
+    "name": "Pathfinder #222: Hellbreakers",
+    "primary_source_category": "Adventure Paths",
+    "primary_source_group": "Hellbreakers",
+    "release_date": "2026-03-04",
+    "url": "/Sources.aspx?ID=307"
+  },
+  {
+    "id": "source-317",
+    "name": "Hellbreakers Players Guide",
+    "primary_source_category": "Adventure Paths",
+    "release_date": "2026-03-04",
+    "url": "/Sources.aspx?ID=317"
+  },
+  {
+    "id": "source-318",
+    "name": "Guns & Gears",
+    "primary_source_category": "Rulebooks",
+    "release_date": "2021-10-13",
+    "url": "/Sources.aspx?ID=318"
+  }
+]

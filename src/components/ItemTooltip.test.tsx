@@ -28,6 +28,7 @@ const ITEM: Item = {
   usage: "held in 1 hand",
   source: "Core Rulebook",
   sourceId: "1",
+  sourceCategory: "Rulebooks",
   remaster: true,
   description: "<p>A common longsword.</p>",
   plainDescription: "A common longsword.",

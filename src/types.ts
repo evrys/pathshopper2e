@@ -42,6 +42,8 @@ export interface Item {
   source: string;
   /** AoN source ID (from /Sources.aspx?ID=N) */
   sourceId: string;
+  /** Source category, e.g. "Rulebooks", "Lost Omens", "Adventure Paths" */
+  sourceCategory: string;
   /** Whether this is remastered content (not a legacy pre-remaster item) */
   remaster: boolean;
   /** HTML description (converted from AoN markdown) */

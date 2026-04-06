@@ -17,6 +17,7 @@ function makeItem(
     usage: "",
     source: "",
     sourceId: "",
+    sourceCategory: "",
     remaster: true,
     description: "",
     plainDescription: "",

@@ -228,6 +228,7 @@ export function expandCustomItems(
     usage: "",
     source: "Custom",
     sourceId: "",
+    sourceCategory: "",
     remaster: false,
     description: "",
     plainDescription: "",

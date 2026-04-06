@@ -48,6 +48,7 @@ export function AddCustomItemModal({
       usage: "",
       source: "Custom",
       sourceId: "",
+      sourceCategory: "",
       remaster: false,
       description: "",
       plainDescription: "",

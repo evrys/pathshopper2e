@@ -123,4 +123,15 @@ describe("MultiSelect", () => {
 
     expect(screen.queryByText("Alpha")).toBeNull();
   });
+
+  it("truncates the label when many items are selected", () => {
+    render(
+      <MultiSelect
+        options={OPTIONS}
+        selected={new Set(["a", "b", "c"])}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByText("Alpha, Beta (+1 more)")).toBeDefined();
+  });
 });

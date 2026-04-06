@@ -52,3 +52,13 @@
 .option:hover {
   background: var(--color-surface-hover);
 }
+
+.groupHeader {
+  display: block;
+  padding: 0.5rem 0.75rem 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}

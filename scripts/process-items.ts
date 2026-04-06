@@ -16,6 +16,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import type { JsonItem, Price } from "../src/types.ts";
 
 const RAW_INPUT = "data/raw-items.json";
+const RAW_SOURCES = "data/raw-sources.json";
 const OUTPUT = "data/items.json";
 const PUBLIC_OUTPUT = "public/data/items.json";
 
@@ -280,6 +281,32 @@ function extractSourceId(markdown: string): string {
   return match ? match[1] : "";
 }
 
+// ── Source categories ───────────────────────────────────────────────
+
+interface RawSource {
+  url: string;
+  primary_source_category?: string;
+}
+
+/** Load the sourceId → category map from raw-sources.json. */
+function loadSourceCategories(): Map<string, string> {
+  try {
+    const sources = JSON.parse(
+      readFileSync(RAW_SOURCES, "utf-8"),
+    ) as RawSource[];
+    const map = new Map<string, string>();
+    for (const src of sources) {
+      const id = src.url.match(/ID=(\d+)/)?.[1];
+      if (id) map.set(id, src.primary_source_category ?? "");
+    }
+    console.log(`Loaded ${map.size} source categories from ${RAW_SOURCES}.`);
+    return map;
+  } catch {
+    console.warn("Could not load source categories; skipping.");
+    return new Map();
+  }
+}
+
 // ── ID shortening ───────────────────────────────────────────────────
 
 const CATEGORY_PREFIX: Record<string, string> = {
@@ -433,6 +460,7 @@ function main() {
   console.log(`Read ${rawItems.length} raw items from ${RAW_INPUT}.`);
 
   const traitDescs = loadTraitDescriptions();
+  const sourceCategoryMap = loadSourceCategories();
 
   // ── Merge combination-weapon melee/ranged pairs ───────────────────
   // AoN lists combination weapons (e.g. Axe Musket) as two entries:
@@ -482,6 +510,8 @@ function main() {
       description += extractSpecificMagicWeapons(raw.markdown ?? "");
     }
 
+    const sourceId = extractSourceId(raw.markdown ?? "");
+
     const item: JsonItem = {
       id: shortenId(raw.id),
       name: raw.name,
@@ -494,7 +524,8 @@ function main() {
       bulk: raw.bulk ?? 0,
       usage: raw.usage ?? "",
       source: raw.primary_source ?? "",
-      sourceId: extractSourceId(raw.markdown ?? ""),
+      sourceId,
+      sourceCategory: sourceCategoryMap.get(sourceId) ?? "",
       remaster: !raw.remaster_id || raw.remaster_id.length === 0,
       description,
       aonUrl: raw.url,
