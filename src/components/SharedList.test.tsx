@@ -78,7 +78,7 @@ describe("SharedList", () => {
   it("shows the default title when no name is provided", () => {
     window.location.hash = "";
     renderWithProviders(<SharedList />);
-    expect(screen.getByText("My shopping list")).toBeDefined();
+    expect(screen.getByText("Wishlist")).toBeDefined();
   });
 
   it("shows the character name as title", () => {

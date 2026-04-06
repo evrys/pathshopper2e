@@ -5,7 +5,7 @@ import type { CartEntry } from "./useCart";
 
 const LIST_PREFIX = "pathshopper2e:list:";
 const ACTIVE_KEY = "pathshopper2e:active-list-id";
-const DEFAULT_LIST_NAME = "My shopping list";
+const DEFAULT_LIST_NAME = "Wishlist";
 
 /** Query key used by TanStack Query for the saved lists. */
 export const LISTS_QUERY_KEY = ["saved-lists"] as const;
