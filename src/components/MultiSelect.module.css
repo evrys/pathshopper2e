@@ -3,6 +3,8 @@
   align-items: center;
   gap: 0.5rem;
   min-width: 120px;
+  max-width: 100%;
+  overflow: hidden;
   text-align: left;
 }
 
