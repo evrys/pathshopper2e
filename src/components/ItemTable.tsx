@@ -3,7 +3,6 @@ import { type ReactNode, useCallback, useMemo, useRef } from "react";
 import { useFuzzySearch } from "../hooks/useFuzzySearch";
 import { useIsMobile } from "../hooks/useMediaQuery";
 import { aonUrl } from "../lib/aon";
-import { TYPE_LABELS } from "../lib/constants";
 import { formatPrice, toCopper } from "../lib/price";
 import { formatTrait, traitUrl } from "../lib/traits";
 import type { Item } from "../types";
@@ -109,9 +108,7 @@ function MobileItemRow({
           <TraitBadges traits={item.traits} matchedTraits={matchedTraits} />
         )}
       </span>
-      <span className={styles.colType}>
-        {TYPE_LABELS[item.type] ?? item.type}
-      </span>
+      <span className={styles.colType}>{formatTrait(item.type)}</span>
       <span className={styles.level}>{item.level}</span>
       <span className={styles.price}>{formatPrice(item.price)}</span>
       <span
@@ -395,7 +392,7 @@ export function ItemTable({
             className={`${styles.sortable} ${styles.colType}`}
             onClick={() => handleSort("type")}
           >
-            Type{sortIndicator("type")}
+            Category{sortIndicator("type")}
           </button>
           <button
             type="button"
@@ -478,7 +475,7 @@ export function ItemTable({
                     )}
                   </span>
                   <span className={styles.colType}>
-                    {TYPE_LABELS[item.type] ?? item.type}
+                    {formatTrait(item.type)}
                   </span>
                   <span className={styles.level}>{item.level}</span>
                   <span className={styles.price}>

@@ -1,21 +1,12 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { MixerHorizontalIcon } from "@radix-ui/react-icons";
 import { useMemo, useState } from "react";
-import {
-  DEFAULT_RARITIES,
-  DEFAULT_REMASTER,
-  TYPE_LABELS,
-} from "../lib/constants";
+import { DEFAULT_RARITIES, DEFAULT_REMASTER } from "../lib/constants";
 import { formatTrait } from "../lib/traits";
 import type { Item } from "../types";
 import styles from "./FilterModal.module.css";
 import type { MultiSelectGroup } from "./MultiSelect";
 import { MultiSelect } from "./MultiSelect";
-
-const TYPE_OPTIONS = Object.entries(TYPE_LABELS).map(([value, label]) => ({
-  value,
-  label,
-}));
 
 const RARITY_OPTIONS = [
   { value: "common", label: "Common" },
@@ -61,6 +52,16 @@ export function FilterModal({
   onFiltersChange,
 }: FilterModalProps) {
   const [open, setOpen] = useState(false);
+
+  const typeOptions = useMemo(() => {
+    const types = new Set<string>();
+    for (const item of items) {
+      if (item.type) types.add(item.type);
+    }
+    return [...types]
+      .sort((a, b) => a.localeCompare(b))
+      .map((t) => ({ value: t, label: formatTrait(t) }));
+  }, [items]);
 
   const traitOptions = useMemo(() => {
     const counts = new Map<string, number>();
@@ -177,10 +178,10 @@ export function FilterModal({
 
           <div className={styles.panelBody}>
             <div className={styles.filterGroup}>
-              <span className={styles.groupLabel}>Item Type</span>
+              <span className={styles.groupLabel}>Category</span>
               <MultiSelect
-                placeholder="All Types"
-                options={TYPE_OPTIONS}
+                placeholder="All Categories"
+                options={typeOptions}
                 selected={typeFilter}
                 onChange={(next) => onFiltersChange({ typeFilter: next })}
               />

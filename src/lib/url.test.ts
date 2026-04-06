@@ -186,9 +186,9 @@ describe("parseCartString", () => {
 
 describe("parseHashParams", () => {
   it("strips leading # and preserves + as literal values", () => {
-    const params = parseHashParams("#q=fire+ice&type=weapon");
+    const params = parseHashParams("#q=fire+ice&type=weapons");
     expect(params.get("q")).toBe("fire+ice");
-    expect(params.get("type")).toBe("weapon");
+    expect(params.get("type")).toBe("weapons");
   });
 
   it("works without leading #", () => {
@@ -370,7 +370,7 @@ function makeCustomItem(overrides: Partial<Item> = {}): Item {
   return {
     id: "custom-0-999",
     name: "Magic Sword",
-    type: "equipment",
+    type: "other",
     level: 0,
     price: { gp: 50 },
     category: "Custom",

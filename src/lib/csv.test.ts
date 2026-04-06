@@ -8,7 +8,7 @@ function makeItem(
 ): Item {
   return {
     level: 0,
-    type: "equipment",
+    type: "held-items",
     price: {},
     category: "",
     traits: [],
@@ -34,7 +34,7 @@ describe("entriesToCsv", () => {
           name: "Longsword",
           level: 1,
           price: { gp: 1 },
-          type: "weapon",
+          type: "weapons",
         }),
         quantity: 2,
       },
@@ -52,10 +52,10 @@ describe("entriesToCsv", () => {
     const csv = entriesToCsv(entries);
     const lines = csv.split("\n");
     expect(lines[0]).toBe(
-      "Name,Quantity,Level,Base Price,Type,Modifier Type,Price Modifier,Notes,URL",
+      "Name,Quantity,Level,Base Price,Category,Modifier Type,Price Modifier,Notes,URL",
     );
     expect(lines[1]).toBe(
-      "Longsword,2,1,1 gp,weapon,,,,https://2e.aonprd.com/Search.aspx?q=Longsword",
+      "Longsword,2,1,1 gp,weapons,,,,https://2e.aonprd.com/Search.aspx?q=Longsword",
     );
     expect(lines[2]).toBe(
       "Shield,1,0,2 gp,armor,,,,https://2e.aonprd.com/Search.aspx?q=Shield",
@@ -76,7 +76,7 @@ describe("entriesToCsv", () => {
   it("returns only header for empty list", () => {
     const csv = entriesToCsv([]);
     expect(csv).toBe(
-      "Name,Quantity,Level,Base Price,Type,Modifier Type,Price Modifier,Notes,URL",
+      "Name,Quantity,Level,Base Price,Category,Modifier Type,Price Modifier,Notes,URL",
     );
   });
 });
@@ -143,7 +143,7 @@ describe("parseCsvItems", () => {
           name: "Longsword",
           level: 1,
           price: { gp: 1 },
-          type: "weapon",
+          type: "weapons",
         }),
         quantity: 2,
       },
@@ -153,7 +153,7 @@ describe("parseCsvItems", () => {
           name: "Aeon Stone, Dusty Rose",
           level: 5,
           price: { gp: 100 },
-          type: "equipment",
+          type: "held-items",
         }),
         quantity: 1,
       },
@@ -270,7 +270,7 @@ describe("entriesToCsv export details", () => {
           name: "Longsword",
           level: 1,
           price: { gp: 1 },
-          type: "weapon",
+          type: "weapons",
         }),
         quantity: 1,
         priceModifier: { type: "percent", percent: 10 },
@@ -308,7 +308,7 @@ describe("entriesToCsv export details", () => {
           name: "Longsword",
           level: 1,
           price: { gp: 1 },
-          type: "weapon",
+          type: "weapons",
         }),
         quantity: 1,
         priceModifier: { type: "crafting" },
@@ -327,7 +327,7 @@ describe("entriesToCsv export details", () => {
           name: "Longsword",
           level: 1,
           price: { gp: 1 },
-          type: "weapon",
+          type: "weapons",
         }),
         quantity: 1,
         priceModifier: { type: "sell" },
@@ -346,7 +346,7 @@ describe("entriesToCsv export details", () => {
           name: "Longsword",
           level: 1,
           price: { gp: 100 },
-          type: "weapon",
+          type: "weapons",
         }),
         quantity: 1,
         priceModifier: { type: "upgrade", cp: 6500 },
@@ -365,7 +365,7 @@ describe("entriesToCsv export details", () => {
           name: "Longsword",
           level: 1,
           price: { gp: 1 },
-          type: "weapon",
+          type: "weapons",
         }),
         quantity: 1,
         priceModifier: { type: "flat", cp: -500 },
@@ -373,7 +373,7 @@ describe("entriesToCsv export details", () => {
     ];
     const csv = entriesToCsv(entries);
     const lines = csv.split("\n");
-    expect(lines[1]).toContain(",weapon,,-5 gp,");
+    expect(lines[1]).toContain(",weapons,,-5 gp,");
   });
 });
 
@@ -387,7 +387,7 @@ describe("complex roundtrip", () => {
           name: "Longsword",
           level: 1,
           price: { gp: 1 },
-          type: "weapon",
+          type: "weapons",
         }),
         quantity: 3,
       },
@@ -398,7 +398,7 @@ describe("complex roundtrip", () => {
           name: "Aeon Stone, Dusty Rose",
           level: 5,
           price: { gp: 100 },
-          type: "equipment",
+          type: "held-items",
         }),
         quantity: 1,
         priceModifier: { type: "percent", percent: 25 },
@@ -493,7 +493,7 @@ describe("complex roundtrip", () => {
           name: "Longsword",
           level: 1,
           price: { gp: 10 },
-          type: "weapon",
+          type: "weapons",
         }),
         quantity: 1,
         priceModifier: { type: "crafting" },
@@ -515,7 +515,7 @@ describe("complex roundtrip", () => {
           name: "Striking Rune (Major)",
           level: 19,
           price: { gp: 31065 },
-          type: "equipment",
+          type: "held-items",
         }),
         quantity: 1,
         priceModifier: { type: "upgrade", cp: 6500 },
@@ -555,7 +555,7 @@ describe("notes in CSV", () => {
           name: "Longsword",
           level: 1,
           price: { gp: 1 },
-          type: "weapon",
+          type: "weapons",
         }),
         quantity: 1,
         notes: "Buy from the smith",
@@ -587,7 +587,7 @@ describe("notes in CSV", () => {
           name: "Longsword",
           level: 1,
           price: { gp: 1 },
-          type: "weapon",
+          type: "weapons",
         }),
         quantity: 2,
         notes: "Buy at market",
@@ -617,7 +617,7 @@ describe("notes in CSV", () => {
           name: "Longsword",
           level: 1,
           price: { gp: 1 },
-          type: "weapon",
+          type: "weapons",
         }),
         quantity: 1,
         notes: "Buy here, or there",

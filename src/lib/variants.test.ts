@@ -7,7 +7,7 @@ function makeItem(
   overrides: Partial<Item> & Pick<Item, "id" | "name" | "price">,
 ): Item {
   return {
-    type: "equipment",
+    type: "held-items",
     level: 0,
     category: "",
     traits: [],

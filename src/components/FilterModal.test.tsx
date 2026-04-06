@@ -10,7 +10,7 @@ const ITEMS: Item[] = [
   {
     id: "w1",
     name: "Longsword",
-    type: "weapon",
+    type: "weapons",
     level: 1,
     price: { gp: 1 },
     category: "Base Weapons",
@@ -74,7 +74,7 @@ describe("FilterModal", () => {
       <FilterModal
         items={ITEMS}
         {...defaultFilters()}
-        typeFilter={new Set(["weapon"])}
+        typeFilter={new Set(["weapons"])}
         minLevel="5"
         onFiltersChange={() => {}}
       />,
@@ -93,7 +93,7 @@ describe("FilterModal", () => {
     );
     fireEvent.click(screen.getByText("Filters"));
     expect(screen.getByRole("dialog")).toBeDefined();
-    expect(screen.getByText("Item Type")).toBeDefined();
+    expect(screen.getByText("Category")).toBeDefined();
     expect(screen.getByText("Rarity")).toBeDefined();
     expect(screen.getByText("Level Range")).toBeDefined();
   });
@@ -121,7 +121,7 @@ describe("FilterModal", () => {
       <FilterModal
         items={ITEMS}
         {...defaultFilters()}
-        typeFilter={new Set(["weapon"])}
+        typeFilter={new Set(["weapons"])}
         onFiltersChange={onFiltersChange}
       />,
     );

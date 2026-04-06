@@ -18,7 +18,7 @@ function renderWithProvider(ui: React.ReactElement) {
 const ITEM: Item = {
   id: "w1",
   name: "Longsword",
-  type: "weapon",
+  type: "weapons",
   level: 1,
   price: { gp: 1 },
   category: "Base Weapons",

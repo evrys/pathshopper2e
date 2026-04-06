@@ -22,7 +22,7 @@ export interface Item {
   id: string;
   /** Display name */
   name: string;
-  /** Top-level type: weapon, armor, consumable, equipment, etc. */
+  /** AoN item category as kebab-case slug, e.g. "weapons", "alchemical-items", "worn-items" */
   type: string;
   /** Item level */
   level: number;

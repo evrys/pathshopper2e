@@ -6,7 +6,7 @@ function makeItem(overrides: Partial<Item> = {}): Item {
   return {
     id: "w386",
     name: "Longsword",
-    type: "weapon",
+    type: "weapons",
     level: 0,
     price: { gp: 1 },
     category: "Base Weapons",
@@ -347,7 +347,7 @@ describe("cartReducer", () => {
         update: { name: "Better Wand" },
       });
       expect(state.entries.get("custom-1")?.item.category).toBe("Custom");
-      expect(state.entries.get("custom-1")?.item.type).toBe("weapon");
+      expect(state.entries.get("custom-1")?.item.type).toBe("weapons");
     });
 
     it("preserves quantity, discount, and notes", () => {

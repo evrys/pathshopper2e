@@ -14,7 +14,7 @@ export function entriesToCsv(entries: CartEntry[]): string {
       "Quantity",
       "Level",
       "Base Price",
-      "Type",
+      "Category",
       "Modifier Type",
       "Price Modifier",
       "Notes",
@@ -130,14 +130,14 @@ export interface CsvItem {
   price?: string;
   /** Notes text from CSV, if any. */
   notes?: string;
-  /** True when the CSV "Type" column is "custom". */
+  /** True when the CSV "Category" column is "custom". */
   isCustom: boolean;
 }
 
 /**
  * Parse a CSV string into an array of item descriptors.
  * Expects a "Name" column and optionally "Quantity", "Modifier Type",
- * "Price Modifier" (or "Discount"), "Type", and "Base Price" (or "Price") columns.
+ * "Price Modifier" (or "Discount"), "Category" (or "Type"), and "Base Price" (or "Price") columns.
  */
 export function parseCsvItems(csv: string): CsvItem[] {
   const lines = parseCsvRows(csv);
@@ -152,7 +152,7 @@ export function parseCsvItems(csv: string): CsvItem[] {
     header.indexOf("price modifier"),
     header.indexOf("discount"),
   );
-  const typeIdx = header.indexOf("type");
+  const typeIdx = Math.max(header.indexOf("category"), header.indexOf("type"));
   const priceIdx = Math.max(
     header.indexOf("base price"),
     header.indexOf("price"),

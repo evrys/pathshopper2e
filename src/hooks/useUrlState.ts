@@ -47,7 +47,7 @@ function serialize(state: UrlState): string {
 
   if (state.search) params.set("q", state.search);
   if (state.types.size > 0)
-    params.set("type", [...state.types].sort().join("+"));
+    params.set("cat", [...state.types].sort().join("+"));
   if (!setsEqual(state.rarities, DEFAULT_RARITIES))
     params.set("rarity", [...state.rarities].sort().join("+"));
   if (!setsEqual(state.remaster, DEFAULT_REMASTER))
@@ -69,7 +69,7 @@ function deserialize(hash: string): UrlState {
 
   const search = params.get("q") ?? "";
 
-  const typeStr = params.get("type");
+  const typeStr = params.get("cat") ?? params.get("type");
   const types = typeStr ? new Set(typeStr.split("+")) : new Set<string>();
 
   const rarityStr = params.get("rarity");

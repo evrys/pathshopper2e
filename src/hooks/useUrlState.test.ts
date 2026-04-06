@@ -27,12 +27,12 @@ describe("URL state serialization", () => {
       expect(hash).toContain("q=longsword");
     });
 
-    it("serializes type filter", () => {
+    it("serializes category filter", () => {
       const hash = serialize({
         ...defaults,
-        types: new Set(["weapon", "armor"]),
+        types: new Set(["weapons", "armor"]),
       });
-      expect(hash).toContain("type=armor+weapon");
+      expect(hash).toContain("cat=armor+weapons");
     });
 
     it("serializes non-default rarity filter", () => {
@@ -119,9 +119,9 @@ describe("URL state serialization", () => {
       expect(state.search).toBe("longsword");
     });
 
-    it("parses type filter", () => {
-      const state = deserialize("#type=weapon+armor");
-      expect(state.types).toEqual(new Set(["weapon", "armor"]));
+    it("parses category filter", () => {
+      const state = deserialize("#cat=weapons+armor");
+      expect(state.types).toEqual(new Set(["weapons", "armor"]));
     });
 
     it("parses rarity filter", () => {
@@ -192,7 +192,7 @@ describe("URL state serialization", () => {
     it("roundtrips a complex state", () => {
       const state = {
         search: "healing",
-        types: new Set(["consumable"]),
+        types: new Set(["consumables"]),
         rarities: new Set(["common"]),
         remaster: new Set(["legacy"]),
         traits: new Set(["healing", "vitality"]),

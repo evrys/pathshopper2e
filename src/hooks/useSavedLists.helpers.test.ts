@@ -15,7 +15,7 @@ function makeItem(overrides: Partial<Item> = {}): Item {
   return {
     id: "w1",
     name: "Longsword",
-    type: "weapon",
+    type: "weapons",
     level: 1,
     price: { gp: 1 },
     category: "Base Weapons",

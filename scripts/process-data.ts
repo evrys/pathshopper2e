@@ -75,36 +75,6 @@ function parsePrice(priceInCopper: number | undefined): Price {
   return price;
 }
 
-// ── Type mapping ────────────────────────────────────────────────────
-
-/** Map AoN category + item_category to the app's type field. */
-function mapType(item: AonItem): string {
-  if (item.category === "weapon") return "weapon";
-  if (item.category === "armor") return "armor";
-  if (item.category === "shield") return "shield";
-
-  // equipment category — use item_category for finer distinction
-  const ic = item.item_category ?? "";
-  if (ic === "Consumables") return "consumable";
-  if (ic === "Adventuring Gear") return "equipment";
-  if (ic === "Worn Items") return "equipment";
-  if (ic === "Held Items") return "equipment";
-  if (ic === "Materials") return "equipment";
-  if (ic === "Runes") return "equipment";
-  if (ic === "Assistive Items") return "equipment";
-  if (ic === "Staves") return "equipment";
-  if (ic === "Contracts") return "equipment";
-  if (ic === "Grimoires") return "equipment";
-  if (ic === "Tattoos") return "equipment";
-  if (ic === "Spellhearts") return "equipment";
-  if (ic === "Structures") return "equipment";
-  if (ic === "Customizations") return "equipment";
-  if (ic === "Services") return "equipment";
-
-  // Fallback
-  return "equipment";
-}
-
 // ── Trait normalization ─────────────────────────────────────────────
 
 /** Normalize AoN trait names to kebab-case slugs matching the app format. */
@@ -598,7 +568,7 @@ function main() {
     const item: JsonItem = {
       id: shortenId(raw.id),
       name: raw.name,
-      type: mapType(raw),
+      type: (raw.item_category ?? "").toLowerCase().replace(/\s+/g, "-"),
       level: raw.level ?? 0,
       price,
       category: raw.item_subcategory ?? raw.item_category ?? "",
