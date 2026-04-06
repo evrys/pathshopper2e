@@ -15,6 +15,7 @@ function makeItem(overrides: Partial<Item> = {}): Item {
     bulk: 1,
     usage: "held in 1 hand",
     source: "Player Core",
+    sourceId: "1",
     remaster: true,
     description: "",
     plainDescription: "",

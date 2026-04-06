@@ -34,6 +34,7 @@ interface FilterModalProps {
   rarityFilter: Set<string>;
   remasterFilter: Set<string>;
   traitFilter: Set<string>;
+  sourceFilter: Set<string>;
   minLevel: string;
   maxLevel: string;
   onFiltersChange: (filters: {
@@ -41,6 +42,7 @@ interface FilterModalProps {
     rarityFilter?: Set<string>;
     remasterFilter?: Set<string>;
     traitFilter?: Set<string>;
+    sourceFilter?: Set<string>;
     minLevel?: string;
     maxLevel?: string;
   }) => void;
@@ -52,6 +54,7 @@ export function FilterModal({
   rarityFilter,
   remasterFilter,
   traitFilter,
+  sourceFilter,
   minLevel,
   maxLevel,
   onFiltersChange,
@@ -70,11 +73,24 @@ export function FilterModal({
       .map(([value]) => ({ value, label: formatTrait(value) }));
   }, [items]);
 
+  const sourceOptions = useMemo(() => {
+    const sources = new Map<string, string>();
+    for (const item of items) {
+      if (item.sourceId && !sources.has(item.sourceId)) {
+        sources.set(item.sourceId, item.source);
+      }
+    }
+    return [...sources.entries()]
+      .sort((a, b) => a[1].localeCompare(b[1]))
+      .map(([id, name]) => ({ value: id, label: name }));
+  }, [items]);
+
   const activeCount =
     (typeFilter.size > 0 ? 1 : 0) +
     (rarityFilter.size > 0 ? 1 : 0) +
     (remasterFilter.size > 0 ? 1 : 0) +
     (traitFilter.size > 0 ? 1 : 0) +
+    (sourceFilter.size > 0 ? 1 : 0) +
     (minLevel ? 1 : 0) +
     (maxLevel ? 1 : 0);
 
@@ -84,6 +100,7 @@ export function FilterModal({
       rarityFilter: new Set<string>(),
       remasterFilter: new Set<string>(),
       traitFilter: new Set<string>(),
+      sourceFilter: new Set<string>(),
       minLevel: "",
       maxLevel: "",
     });
@@ -95,6 +112,7 @@ export function FilterModal({
       rarityFilter: new Set(DEFAULT_RARITIES),
       remasterFilter: new Set(DEFAULT_REMASTER),
       traitFilter: new Set<string>(),
+      sourceFilter: new Set<string>(),
       minLevel: "",
       maxLevel: "",
     });
@@ -165,6 +183,16 @@ export function FilterModal({
                 options={traitOptions}
                 selected={traitFilter}
                 onChange={(next) => onFiltersChange({ traitFilter: next })}
+              />
+            </div>
+
+            <div className={styles.filterGroup}>
+              <span className={styles.groupLabel}>Source</span>
+              <MultiSelect
+                placeholder="All Sources"
+                options={sourceOptions}
+                selected={sourceFilter}
+                onChange={(next) => onFiltersChange({ sourceFilter: next })}
               />
             </div>
 

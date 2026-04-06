@@ -47,6 +47,7 @@ export function AddCustomItemModal({
       bulk: 0,
       usage: "",
       source: "Custom",
+      sourceId: "",
       remaster: false,
       description: "",
       plainDescription: "",

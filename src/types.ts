@@ -40,6 +40,8 @@ export interface Item {
   usage: string;
   /** Source book title */
   source: string;
+  /** AoN source ID (from /Sources.aspx?ID=N) */
+  sourceId: string;
   /** Whether this is remastered content (not a legacy pre-remaster item) */
   remaster: boolean;
   /** HTML description (converted from AoN markdown) */

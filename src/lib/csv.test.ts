@@ -16,6 +16,7 @@ function makeItem(
     bulk: 0,
     usage: "",
     source: "",
+    sourceId: "",
     remaster: true,
     description: "",
     plainDescription: "",

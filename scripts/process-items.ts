@@ -270,6 +270,16 @@ function convertAonMarkdown(markdown: string, itemName: string): string {
   return html.replace(/\s+/g, " ").trim();
 }
 
+// ── Source ID extraction ────────────────────────────────────────────
+
+/** Extract the AoN source ID from the markdown's **Source** link. */
+function extractSourceId(markdown: string): string {
+  const match = markdown.match(
+    /\*\*Source\*\*\s*\[[^\]]+\]\(\/Sources\.aspx\?ID=(\d+)\)/,
+  );
+  return match ? match[1] : "";
+}
+
 // ── ID shortening ───────────────────────────────────────────────────
 
 const CATEGORY_PREFIX: Record<string, string> = {
@@ -484,6 +494,7 @@ function main() {
       bulk: raw.bulk ?? 0,
       usage: raw.usage ?? "",
       source: raw.primary_source ?? "",
+      sourceId: extractSourceId(raw.markdown ?? ""),
       remaster: !raw.remaster_id || raw.remaster_id.length === 0,
       description,
       aonUrl: raw.url,

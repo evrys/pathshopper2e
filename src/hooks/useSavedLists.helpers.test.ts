@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { PriceModifier, Item } from "../types";
+import type { Item, PriceModifier } from "../types";
 import type { CartEntry } from "./useCart";
 import {
   cartEntriesToSavedData,
@@ -24,6 +24,7 @@ function makeItem(overrides: Partial<Item> = {}): Item {
     bulk: 1,
     usage: "held in 1 hand",
     source: "Core Rulebook",
+    sourceId: "1",
     remaster: true,
     description: "",
     plainDescription: "",

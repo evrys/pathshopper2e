@@ -192,6 +192,7 @@ function App() {
     rarityFilter: urlState.rarities,
     remasterFilter: urlState.remaster,
     traitFilter: urlState.traits,
+    sourceFilter: urlState.sources,
     minLevel: urlState.minLevel,
     maxLevel: urlState.maxLevel,
     sortField: sortField ?? "",
@@ -210,6 +211,7 @@ function App() {
       if ("rarityFilter" in partial) update.rarities = partial.rarityFilter;
       if ("remasterFilter" in partial) update.remaster = partial.remasterFilter;
       if ("traitFilter" in partial) update.traits = partial.traitFilter;
+      if ("sourceFilter" in partial) update.sources = partial.sourceFilter;
       if ("minLevel" in partial) update.minLevel = partial.minLevel;
       if ("maxLevel" in partial) update.maxLevel = partial.maxLevel;
       if ("sortField" in partial || "sortDir" in partial) {
@@ -274,6 +276,7 @@ function App() {
             bulk: 0,
             usage: "",
             source: "Custom",
+            sourceId: "",
             remaster: false,
             description: "",
             plainDescription: "",

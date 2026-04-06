@@ -11,6 +11,7 @@ describe("URL state serialization", () => {
     rarities: new Set(["common", "uncommon"]),
     remaster: new Set(["remastered"]),
     traits: new Set<string>(),
+    sources: new Set<string>(),
     minLevel: "",
     maxLevel: "",
     sort: ":asc",
@@ -71,6 +72,18 @@ describe("URL state serialization", () => {
       expect(serialize(defaults)).not.toContain("traits");
     });
 
+    it("serializes source filter", () => {
+      const hash = serialize({
+        ...defaults,
+        sources: new Set(["96", "1"]),
+      });
+      expect(hash).toContain("source=1+96");
+    });
+
+    it("omits source when empty", () => {
+      expect(serialize(defaults)).not.toContain("source");
+    });
+
     it("serializes level range", () => {
       const hash = serialize({ ...defaults, minLevel: "3", maxLevel: "10" });
       expect(hash).toContain("minlvl=3");
@@ -95,6 +108,7 @@ describe("URL state serialization", () => {
       expect(state.rarities).toEqual(new Set(["common", "uncommon"]));
       expect(state.remaster).toEqual(new Set(["remastered"]));
       expect(state.traits.size).toBe(0);
+      expect(state.sources.size).toBe(0);
       expect(state.minLevel).toBe("");
       expect(state.maxLevel).toBe("");
       expect(state.sort).toBe(":asc");
@@ -145,6 +159,16 @@ describe("URL state serialization", () => {
       expect(state.traits.size).toBe(0);
     });
 
+    it("parses source filter", () => {
+      const state = deserialize("#source=96+1");
+      expect(state.sources).toEqual(new Set(["96", "1"]));
+    });
+
+    it("returns empty sources when absent", () => {
+      const state = deserialize("");
+      expect(state.sources.size).toBe(0);
+    });
+
     it("parses level range", () => {
       const state = deserialize("#minlvl=3&maxlvl=10");
       expect(state.minLevel).toBe("3");
@@ -172,6 +196,7 @@ describe("URL state serialization", () => {
         rarities: new Set(["common"]),
         remaster: new Set(["legacy"]),
         traits: new Set(["healing", "vitality"]),
+        sources: new Set(["96"]),
         minLevel: "1",
         maxLevel: "5",
         sort: "level:desc",
@@ -185,6 +210,7 @@ describe("URL state serialization", () => {
       expect(parsed.rarities).toEqual(state.rarities);
       expect(parsed.remaster).toEqual(state.remaster);
       expect(parsed.traits).toEqual(state.traits);
+      expect(parsed.sources).toEqual(state.sources);
       expect(parsed.minLevel).toBe(state.minLevel);
       expect(parsed.maxLevel).toBe(state.maxLevel);
       expect(parsed.sort).toBe(state.sort);

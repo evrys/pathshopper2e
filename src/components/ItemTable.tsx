@@ -20,6 +20,7 @@ export interface FilterState {
   rarityFilter: Set<string>;
   remasterFilter: Set<string>;
   traitFilter: Set<string>;
+  sourceFilter: Set<string>;
   minLevel: string;
   maxLevel: string;
   sortField: SortField;
@@ -147,6 +148,7 @@ export function ItemTable({
     rarityFilter,
     remasterFilter,
     traitFilter,
+    sourceFilter,
     minLevel,
     maxLevel,
     sortField,
@@ -167,6 +169,8 @@ export function ItemTable({
         return false;
       if (traitFilter.size > 0 && !item.traits.some((t) => traitFilter.has(t)))
         return false;
+      if (sourceFilter.size > 0 && !sourceFilter.has(item.sourceId))
+        return false;
       if (item.level < minLvl || item.level > maxLvl) return false;
       return true;
     });
@@ -176,6 +180,7 @@ export function ItemTable({
     rarityFilter,
     remasterFilter,
     traitFilter,
+    sourceFilter,
     minLevel,
     maxLevel,
   ]);
@@ -339,6 +344,7 @@ export function ItemTable({
             rarityFilter={rarityFilter}
             remasterFilter={remasterFilter}
             traitFilter={traitFilter}
+            sourceFilter={sourceFilter}
             minLevel={minLevel}
             maxLevel={maxLevel}
             onFiltersChange={onFiltersChange}
