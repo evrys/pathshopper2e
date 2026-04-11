@@ -8,11 +8,14 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import {
+  restrictToParentElement,
+  restrictToVerticalAxis,
+} from "@dnd-kit/modifiers";
+import {
   SortableContext,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import {
   ArrowDownIcon,
@@ -147,7 +150,9 @@ function SortableItem({
   } = useSortable({ id });
 
   const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
+    transform: transform
+      ? `translate3d(0, ${Math.round(transform.y)}px, 0)`
+      : undefined,
     transition,
     opacity: isDragging ? 0.5 : undefined,
     position: "relative" as const,
@@ -579,6 +584,7 @@ export function Cart({
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
+          modifiers={[restrictToVerticalAxis, restrictToParentElement]}
           onDragEnd={handleDragEnd}
         >
           <SortableContext
