@@ -1,7 +1,13 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { DotsVerticalIcon } from "@radix-ui/react-icons";
-import { useEffect, useRef, useState } from "react";
-import type { CartEntry } from "../hooks/useCart";
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  CheckIcon,
+  DotsVerticalIcon,
+} from "@radix-ui/react-icons";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { CartEntry, CartSortOrder } from "../hooks/useCart";
+import { sortEntries } from "../hooks/useCart";
 import { useIsMobile } from "../hooks/useMediaQuery";
 import type { SavedList } from "../hooks/useSavedLists";
 import { aonUrl } from "../lib/aon";
@@ -226,6 +232,11 @@ export function Cart({
   const [customItemOpen, setCustomItemOpen] = useState(false);
   const [settingsEntry, setSettingsEntry] = useState<CartEntry | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [sortOrder, setSortOrder] = useState<CartSortOrder>("added");
+  const sortedEntries = useMemo(
+    () => sortEntries(entries, sortOrder),
+    [entries, sortOrder],
+  );
   const [renaming, setRenaming] = useState(false);
   const renameRef = useRef<HTMLInputElement>(null);
   const renameCallbackRef = (el: HTMLInputElement | null) => {
@@ -359,7 +370,7 @@ export function Cart({
         {entries.length > 0 && (
           <a
             className={styles.shareBtn}
-            href={buildShareUrl(entries, listName, activeListId)}
+            href={buildShareUrl(sortedEntries, listName, activeListId)}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
@@ -416,6 +427,86 @@ export function Cart({
               >
                 Add custom item
               </DropdownMenu.Item>
+              <DropdownMenu.Separator className={styles.menuDivider} />
+              <DropdownMenu.Sub>
+                <DropdownMenu.SubTrigger className={styles.menuItem}>
+                  Sort by
+                  <svg
+                    className={styles.subTriggerArrow}
+                    width="8"
+                    height="10"
+                    viewBox="0 0 8 10"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path d="M1 1 L7 5 L1 9Z" />
+                  </svg>
+                </DropdownMenu.SubTrigger>
+                <DropdownMenu.Portal>
+                  <DropdownMenu.SubContent className={styles.menuDropdown}>
+                    <DropdownMenu.RadioGroup
+                      value={sortOrder}
+                      onValueChange={(v) => setSortOrder(v as CartSortOrder)}
+                    >
+                      <DropdownMenu.RadioItem
+                        className={`${styles.menuItem} ${styles.radioItem}`}
+                        value="added"
+                      >
+                        <DropdownMenu.ItemIndicator
+                          className={styles.radioIndicator}
+                        >
+                          <CheckIcon />
+                        </DropdownMenu.ItemIndicator>
+                        Time added
+                      </DropdownMenu.RadioItem>
+                      <DropdownMenu.RadioItem
+                        className={`${styles.menuItem} ${styles.radioItem}`}
+                        value="level-asc"
+                      >
+                        <DropdownMenu.ItemIndicator
+                          className={styles.radioIndicator}
+                        >
+                          <CheckIcon />
+                        </DropdownMenu.ItemIndicator>
+                        Level <ArrowUpIcon />
+                      </DropdownMenu.RadioItem>
+                      <DropdownMenu.RadioItem
+                        className={`${styles.menuItem} ${styles.radioItem}`}
+                        value="level-desc"
+                      >
+                        <DropdownMenu.ItemIndicator
+                          className={styles.radioIndicator}
+                        >
+                          <CheckIcon />
+                        </DropdownMenu.ItemIndicator>
+                        Level <ArrowDownIcon />
+                      </DropdownMenu.RadioItem>
+                      <DropdownMenu.RadioItem
+                        className={`${styles.menuItem} ${styles.radioItem}`}
+                        value="price-asc"
+                      >
+                        <DropdownMenu.ItemIndicator
+                          className={styles.radioIndicator}
+                        >
+                          <CheckIcon />
+                        </DropdownMenu.ItemIndicator>
+                        Price <ArrowUpIcon />
+                      </DropdownMenu.RadioItem>
+                      <DropdownMenu.RadioItem
+                        className={`${styles.menuItem} ${styles.radioItem}`}
+                        value="price-desc"
+                      >
+                        <DropdownMenu.ItemIndicator
+                          className={styles.radioIndicator}
+                        >
+                          <CheckIcon />
+                        </DropdownMenu.ItemIndicator>
+                        Price <ArrowDownIcon />
+                      </DropdownMenu.RadioItem>
+                    </DropdownMenu.RadioGroup>
+                  </DropdownMenu.SubContent>
+                </DropdownMenu.Portal>
+              </DropdownMenu.Sub>
               <DropdownMenu.Separator className={styles.menuDivider} />
               <DropdownMenu.Item
                 className={styles.menuItem}
@@ -494,7 +585,7 @@ export function Cart({
         </p>
       ) : (
         <ul className={styles.items} ref={itemsListRef}>
-          {entries.map((entry) =>
+          {sortedEntries.map((entry) =>
             isMobile ? (
               <MobileCartItem
                 key={entry.item.id}

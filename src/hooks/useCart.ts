@@ -2,6 +2,13 @@ import { useCallback, useReducer } from "react";
 import { resolvePriceModifier, sumPrices, toCopper } from "../lib/price";
 import type { Item, Price, PriceModifier } from "../types";
 
+export type CartSortOrder =
+  | "added"
+  | "level-asc"
+  | "level-desc"
+  | "price-asc"
+  | "price-desc";
+
 export interface CartEntry {
   item: Item;
   quantity: number;
@@ -97,6 +104,26 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
   }
 
   return { entries: next };
+}
+
+/** Sort cart entries by the given order. Returns a new array. */
+export function sortEntries(
+  entries: CartEntry[],
+  order: CartSortOrder,
+): CartEntry[] {
+  if (order === "added") return [...entries];
+
+  const desc = order.endsWith("-desc") ? -1 : 1;
+  const field = order.startsWith("level") ? "level" : "price";
+
+  return [...entries].sort((a, b) => {
+    const diff =
+      field === "level"
+        ? a.item.level - b.item.level
+        : toCopper(a.item.price) - toCopper(b.item.price);
+    if (diff !== 0) return diff * desc;
+    return a.item.name.localeCompare(b.item.name);
+  });
 }
 
 export function useCart() {

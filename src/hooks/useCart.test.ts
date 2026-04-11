@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { Item } from "../types";
-import { cartReducer, type CartState } from "./useCart";
+import {
+  cartReducer,
+  sortEntries,
+  type CartEntry,
+  type CartState,
+} from "./useCart";
 
 function makeItem(overrides: Partial<Item> = {}): Item {
   return {
@@ -389,5 +394,90 @@ describe("cartReducer", () => {
       });
       expect(state.entries.size).toBe(0);
     });
+  });
+});
+
+describe("sortEntries", () => {
+  function entry(overrides: Partial<Item> = {}, qty = 1): CartEntry {
+    return { item: makeItem(overrides), quantity: qty };
+  }
+
+  it("returns entries in original order for 'added'", () => {
+    const entries = [
+      entry({ id: "a", name: "Zword", level: 5, price: { gp: 50 } }),
+      entry({ id: "b", name: "Amulet", level: 1, price: { gp: 10 } }),
+      entry({ id: "c", name: "Mace", level: 3, price: { gp: 30 } }),
+    ];
+    const sorted = sortEntries(entries, "added");
+    expect(sorted.map((e) => e.item.id)).toEqual(["a", "b", "c"]);
+  });
+
+  it("sorts by level ascending", () => {
+    const entries = [
+      entry({ id: "a", level: 5 }),
+      entry({ id: "b", level: 1 }),
+      entry({ id: "c", level: 3 }),
+    ];
+    const sorted = sortEntries(entries, "level-asc");
+    expect(sorted.map((e) => e.item.level)).toEqual([1, 3, 5]);
+  });
+
+  it("sorts by level descending", () => {
+    const entries = [
+      entry({ id: "a", level: 1 }),
+      entry({ id: "b", level: 5 }),
+      entry({ id: "c", level: 3 }),
+    ];
+    const sorted = sortEntries(entries, "level-desc");
+    expect(sorted.map((e) => e.item.level)).toEqual([5, 3, 1]);
+  });
+
+  it("sorts by level then by name for ties", () => {
+    const entries = [
+      entry({ id: "a", name: "Zword", level: 3 }),
+      entry({ id: "b", name: "Amulet", level: 3 }),
+      entry({ id: "c", name: "Mace", level: 1 }),
+    ];
+    const sorted = sortEntries(entries, "level-asc");
+    expect(sorted.map((e) => e.item.name)).toEqual(["Mace", "Amulet", "Zword"]);
+  });
+
+  it("sorts by price ascending (copper value)", () => {
+    const entries = [
+      entry({ id: "a", price: { gp: 10 } }),
+      entry({ id: "b", price: { sp: 5 } }),
+      entry({ id: "c", price: { gp: 1 } }),
+    ];
+    const sorted = sortEntries(entries, "price-asc");
+    expect(sorted.map((e) => e.item.id)).toEqual(["b", "c", "a"]);
+  });
+
+  it("sorts by price descending", () => {
+    const entries = [
+      entry({ id: "a", price: { gp: 10 } }),
+      entry({ id: "b", price: { sp: 5 } }),
+      entry({ id: "c", price: { gp: 1 } }),
+    ];
+    const sorted = sortEntries(entries, "price-desc");
+    expect(sorted.map((e) => e.item.id)).toEqual(["a", "c", "b"]);
+  });
+
+  it("sorts by price then by name for ties", () => {
+    const entries = [
+      entry({ id: "a", name: "Zword", price: { gp: 5 } }),
+      entry({ id: "b", name: "Amulet", price: { gp: 5 } }),
+    ];
+    const sorted = sortEntries(entries, "price-asc");
+    expect(sorted.map((e) => e.item.name)).toEqual(["Amulet", "Zword"]);
+  });
+
+  it("does not mutate the original array", () => {
+    const entries = [
+      entry({ id: "a", level: 5 }),
+      entry({ id: "b", level: 1 }),
+    ];
+    const sorted = sortEntries(entries, "level-asc");
+    expect(sorted).not.toBe(entries);
+    expect(entries[0].item.id).toBe("a");
   });
 });
