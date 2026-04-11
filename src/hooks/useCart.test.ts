@@ -395,6 +395,61 @@ describe("cartReducer", () => {
       expect(state.entries.size).toBe(0);
     });
   });
+
+  describe("reorder", () => {
+    it("reorders entries by the given id list", () => {
+      const a = makeItem({ id: "a", name: "Alpha" });
+      const b = makeItem({ id: "b", name: "Beta" });
+      const c = makeItem({ id: "c", name: "Gamma" });
+      let state = cartReducer(emptyState, { type: "add", item: a });
+      state = cartReducer(state, { type: "add", item: b });
+      state = cartReducer(state, { type: "add", item: c });
+
+      state = cartReducer(state, {
+        type: "reorder",
+        orderedIds: ["c", "a", "b"],
+      });
+
+      const ids = [...state.entries.keys()];
+      expect(ids).toEqual(["c", "a", "b"]);
+    });
+
+    it("preserves entry data when reordering", () => {
+      const item = makeItem({ id: "x" });
+      let state = cartReducer(emptyState, { type: "add", item });
+      state = cartReducer(state, {
+        type: "set-quantity",
+        itemId: "x",
+        quantity: 5,
+      });
+      state = cartReducer(state, {
+        type: "set-notes",
+        itemId: "x",
+        notes: "keep me",
+      });
+
+      state = cartReducer(state, {
+        type: "reorder",
+        orderedIds: ["x"],
+      });
+
+      expect(state.entries.get("x")?.quantity).toBe(5);
+      expect(state.entries.get("x")?.notes).toBe("keep me");
+    });
+
+    it("ignores unknown ids in the ordered list", () => {
+      const item = makeItem({ id: "a" });
+      let state = cartReducer(emptyState, { type: "add", item });
+
+      state = cartReducer(state, {
+        type: "reorder",
+        orderedIds: ["nonexistent", "a"],
+      });
+
+      const ids = [...state.entries.keys()];
+      expect(ids).toEqual(["a"]);
+    });
+  });
 });
 
 describe("sortEntries", () => {
@@ -402,13 +457,13 @@ describe("sortEntries", () => {
     return { item: makeItem(overrides), quantity: qty };
   }
 
-  it("returns entries in original order for 'added'", () => {
+  it("returns entries in original order for 'manual'", () => {
     const entries = [
       entry({ id: "a", name: "Zword", level: 5, price: { gp: 50 } }),
       entry({ id: "b", name: "Amulet", level: 1, price: { gp: 10 } }),
       entry({ id: "c", name: "Mace", level: 3, price: { gp: 30 } }),
     ];
-    const sorted = sortEntries(entries, "added");
+    const sorted = sortEntries(entries, "manual");
     expect(sorted.map((e) => e.item.id)).toEqual(["a", "b", "c"]);
   });
 

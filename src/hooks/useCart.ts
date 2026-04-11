@@ -3,7 +3,7 @@ import { resolvePriceModifier, sumPrices, toCopper } from "../lib/price";
 import type { Item, Price, PriceModifier } from "../types";
 
 export type CartSortOrder =
-  | "added"
+  | "manual"
   | "level-asc"
   | "level-desc"
   | "price-asc"
@@ -38,7 +38,8 @@ export type CartAction =
       update: { name?: string; price?: Price };
     }
   | { type: "clear" }
-  | { type: "replace"; entries: Map<string, CartEntry> };
+  | { type: "replace"; entries: Map<string, CartEntry> }
+  | { type: "reorder"; orderedIds: string[] };
 
 export function cartReducer(state: CartState, action: CartAction): CartState {
   const next = new Map(state.entries);
@@ -101,6 +102,14 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
       return { entries: new Map() };
     case "replace":
       return { entries: action.entries };
+    case "reorder": {
+      const reordered = new Map<string, CartEntry>();
+      for (const id of action.orderedIds) {
+        const entry = next.get(id);
+        if (entry) reordered.set(id, entry);
+      }
+      return { entries: reordered };
+    }
   }
 
   return { entries: next };
@@ -111,7 +120,7 @@ export function sortEntries(
   entries: CartEntry[],
   order: CartSortOrder,
 ): CartEntry[] {
-  if (order === "added") return [...entries];
+  if (order === "manual") return [...entries];
 
   const desc = order.endsWith("-desc") ? -1 : 1;
   const field = order.startsWith("level") ? "level" : "price";
@@ -164,6 +173,10 @@ export function useCart() {
     (entries: Map<string, CartEntry>) => dispatch({ type: "replace", entries }),
     [],
   );
+  const reorderItems = useCallback(
+    (orderedIds: string[]) => dispatch({ type: "reorder", orderedIds }),
+    [],
+  );
 
   const entries = [...state.entries.values()];
 
@@ -196,5 +209,6 @@ export function useCart() {
     updateItem,
     clearCart,
     replaceCart,
+    reorderItems,
   };
 }
