@@ -605,6 +605,8 @@ export function Cart({
                           {entry.item.name}
                         </span>
                         <span className={styles.itemPrice}>
+                          {!entry.item.id.startsWith("custom-") &&
+                            `Level ${entry.item.level} · `}
                           {entry.priceModifier ? (
                             <>
                               <span className={styles.originalPrice}>
@@ -703,6 +705,8 @@ export function Cart({
                           </ItemTooltipWrapper>
                         )}
                         <span className={styles.itemPrice}>
+                          {!entry.item.id.startsWith("custom-") &&
+                            `Level ${entry.item.level} · `}
                           {entry.priceModifier ? (
                             <>
                               <span className={styles.originalPrice}>

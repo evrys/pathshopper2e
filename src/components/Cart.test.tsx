@@ -152,7 +152,7 @@ describe("Cart", () => {
 
     // Should show both original and discounted price
     expect(screen.getByText("10 gp")).toBeDefined();
-    expect(screen.getByText("8 gp")).toBeDefined();
+    expect(screen.getByText(/8 gp/)).toBeDefined();
   });
 
   it("shows modifier label for preset modifiers", () => {
@@ -214,6 +214,28 @@ describe("Cart", () => {
     expect(screen.getByText("Open list")).toBeDefined();
     expect(screen.getByText("New list")).toBeDefined();
     expect(screen.getByText("Add custom item")).toBeDefined();
+  });
+
+  it("shows level indicator for non-custom items", () => {
+    const entries = [
+      makeEntry({ item: makeItem({ id: "w1", name: "Longsword", level: 5 }) }),
+    ];
+    renderWithProviders(<Cart {...defaultProps} entries={entries} />);
+    expect(screen.getByText(/Level 5/)).toBeDefined();
+  });
+
+  it("does not show level indicator for custom items", () => {
+    const entries = [
+      makeEntry({
+        item: makeItem({
+          id: "custom-1-123",
+          name: "My Custom Item",
+          level: 3,
+        }),
+      }),
+    ];
+    renderWithProviders(<Cart {...defaultProps} entries={entries} />);
+    expect(screen.queryByText(/Level 3/)).toBeNull();
   });
 
   it("renders custom items without link", () => {
