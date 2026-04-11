@@ -110,6 +110,9 @@ function searchOne(
   if (!idxs || idxs.length === 0) return [];
 
   if (!info || !order) {
+    // uFuzzy skips the info/order step when there are too many filter matches
+    // (default threshold: 1000). Return empty ranges here — callers compute
+    // substring ranges lazily only for items that make it into the final results.
     return idxs.map((idx) => ({ idx, ranges: [] }));
   }
 
@@ -117,6 +120,39 @@ function searchOne(
     idx: info.idx[orderIdx],
     ranges: [...info.ranges[orderIdx]],
   }));
+}
+
+/**
+ * Fast substring search for secondary text (descriptions).
+ *
+ * uFuzzy's regex-based filter is too slow for multi-word queries on large
+ * description haystacks, so we use a simple case-insensitive substring check
+ * instead. This finds strict matches only (no fuzzy/typo tolerance), which is
+ * the right trade-off for descriptions — fuzzy matching is done on names.
+ */
+function searchSecondaries(
+  haystack: string[],
+  needle: string,
+): { idx: number; ranges: number[] }[] {
+  const lower = needle.toLowerCase();
+  const results: { idx: number; ranges: number[] }[] = [];
+  for (let i = 0; i < haystack.length; i++) {
+    const idx = haystack[i].toLowerCase().indexOf(lower);
+    if (idx !== -1) {
+      results.push({ idx: i, ranges: [idx, idx + lower.length] });
+    }
+  }
+  return results;
+}
+
+/**
+ * Find the first case-insensitive occurrence of `lowerNeedle` in `text` and
+ * return a ranges array ([start, end]).  Returns [] when not found.
+ */
+function substringRanges(text: string, lowerNeedle: string): number[] {
+  const idx = text.toLowerCase().indexOf(lowerNeedle);
+  if (idx === -1) return [];
+  return [idx, idx + lowerNeedle.length];
 }
 
 export interface FuzzyResult<T> {
@@ -173,8 +209,10 @@ export function rankSearch<T>(
   // 1) Search names
   const nameHits = searchOne(names, trimmed);
 
-  // 2) Search descriptions (if available)
-  const secHits = secondaries.length > 0 ? searchOne(secondaries, trimmed) : [];
+  // 2) Search descriptions (if available) — use fast substring search to
+  // avoid uFuzzy's expensive regex filter on long description texts.
+  const secHits =
+    secondaries.length > 0 ? searchSecondaries(secondaries, trimmed) : [];
 
   // Build a quick lookup: idx → secHit
   const secHitMap = new Map(secHits.map((h) => [h.idx, h]));
@@ -227,14 +265,22 @@ export function rankSearch<T>(
     if (seen.has(hit.idx)) return;
     seen.add(hit.idx);
     const name = names[hit.idx];
-    const merged = mergeAdjacentRanges(hit.ranges, name);
+    const ranges =
+      hit.ranges.length > 0 ? hit.ranges : substringRanges(name, lowerNeedle);
+    const merged = mergeAdjacentRanges(ranges, name);
     const highlighted =
       merged.length > 0 ? highlightRanges(name, merged) : null;
 
     let secondarySnippet: ReactNode | null = null;
     const secHit = secHitMap.get(hit.idx);
-    if (secHit && secHit.ranges.length > 0) {
-      secondarySnippet = buildSnippet(secondaries[hit.idx], secHit.ranges);
+    if (secHit) {
+      const secRanges =
+        secHit.ranges.length > 0
+          ? secHit.ranges
+          : substringRanges(secondaries[hit.idx], lowerNeedle);
+      if (secRanges.length > 0) {
+        secondarySnippet = buildSnippet(secondaries[hit.idx], secRanges);
+      }
     }
 
     const matchedTraits = traitMatches(hit.idx);
@@ -251,8 +297,12 @@ export function rankSearch<T>(
     seen.add(hit.idx);
 
     let secondarySnippet: ReactNode | null = null;
-    if (hit.ranges.length > 0) {
-      secondarySnippet = buildSnippet(secondaries[hit.idx], hit.ranges);
+    const ranges =
+      hit.ranges.length > 0
+        ? hit.ranges
+        : substringRanges(secondaries[hit.idx], lowerNeedle);
+    if (ranges.length > 0) {
+      secondarySnippet = buildSnippet(secondaries[hit.idx], ranges);
     }
 
     const matchedTraits = traitMatches(hit.idx);
