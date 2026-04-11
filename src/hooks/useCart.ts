@@ -2,6 +2,13 @@ import { useCallback, useReducer } from "react";
 import { resolvePriceModifier, sumPrices, toCopper } from "../lib/price";
 import type { Item, Price, PriceModifier } from "../types";
 
+export type CartSortOrder =
+  | "manual"
+  | "level-asc"
+  | "level-desc"
+  | "price-asc"
+  | "price-desc";
+
 export interface CartEntry {
   item: Item;
   quantity: number;
@@ -31,7 +38,8 @@ export type CartAction =
       update: { name?: string; price?: Price };
     }
   | { type: "clear" }
-  | { type: "replace"; entries: Map<string, CartEntry> };
+  | { type: "replace"; entries: Map<string, CartEntry> }
+  | { type: "reorder"; orderedIds: string[] };
 
 export function cartReducer(state: CartState, action: CartAction): CartState {
   const next = new Map(state.entries);
@@ -94,9 +102,37 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
       return { entries: new Map() };
     case "replace":
       return { entries: action.entries };
+    case "reorder": {
+      const reordered = new Map<string, CartEntry>();
+      for (const id of action.orderedIds) {
+        const entry = next.get(id);
+        if (entry) reordered.set(id, entry);
+      }
+      return { entries: reordered };
+    }
   }
 
   return { entries: next };
+}
+
+/** Sort cart entries by the given order. Returns a new array. */
+export function sortEntries(
+  entries: CartEntry[],
+  order: CartSortOrder,
+): CartEntry[] {
+  if (order === "manual") return [...entries];
+
+  const desc = order.endsWith("-desc") ? -1 : 1;
+  const field = order.startsWith("level") ? "level" : "price";
+
+  return [...entries].sort((a, b) => {
+    const diff =
+      field === "level"
+        ? a.item.level - b.item.level
+        : toCopper(a.item.price) - toCopper(b.item.price);
+    if (diff !== 0) return diff * desc;
+    return a.item.name.localeCompare(b.item.name);
+  });
 }
 
 export function useCart() {
@@ -137,6 +173,10 @@ export function useCart() {
     (entries: Map<string, CartEntry>) => dispatch({ type: "replace", entries }),
     [],
   );
+  const reorderItems = useCallback(
+    (orderedIds: string[]) => dispatch({ type: "reorder", orderedIds }),
+    [],
+  );
 
   const entries = [...state.entries.values()];
 
@@ -169,5 +209,6 @@ export function useCart() {
     updateItem,
     clearCart,
     replaceCart,
+    reorderItems,
   };
 }

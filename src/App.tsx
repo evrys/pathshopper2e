@@ -81,6 +81,7 @@ function App() {
     updateItem,
     clearCart,
     replaceCart,
+    reorderItems,
   } = useCart();
 
   const {
@@ -341,6 +342,7 @@ function App() {
     onNewList: handleNewList,
     onDeleteList: deleteList,
     onImportCsv: handleImportCsv,
+    onReorder: reorderItems,
   };
 
   const itemCount = entries.reduce((sum, e) => sum + e.quantity, 0);

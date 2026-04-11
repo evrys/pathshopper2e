@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { Item } from "../types";
-import { cartReducer, type CartState } from "./useCart";
+import {
+  cartReducer,
+  sortEntries,
+  type CartEntry,
+  type CartState,
+} from "./useCart";
 
 function makeItem(overrides: Partial<Item> = {}): Item {
   return {
@@ -389,5 +394,145 @@ describe("cartReducer", () => {
       });
       expect(state.entries.size).toBe(0);
     });
+  });
+
+  describe("reorder", () => {
+    it("reorders entries by the given id list", () => {
+      const a = makeItem({ id: "a", name: "Alpha" });
+      const b = makeItem({ id: "b", name: "Beta" });
+      const c = makeItem({ id: "c", name: "Gamma" });
+      let state = cartReducer(emptyState, { type: "add", item: a });
+      state = cartReducer(state, { type: "add", item: b });
+      state = cartReducer(state, { type: "add", item: c });
+
+      state = cartReducer(state, {
+        type: "reorder",
+        orderedIds: ["c", "a", "b"],
+      });
+
+      const ids = [...state.entries.keys()];
+      expect(ids).toEqual(["c", "a", "b"]);
+    });
+
+    it("preserves entry data when reordering", () => {
+      const item = makeItem({ id: "x" });
+      let state = cartReducer(emptyState, { type: "add", item });
+      state = cartReducer(state, {
+        type: "set-quantity",
+        itemId: "x",
+        quantity: 5,
+      });
+      state = cartReducer(state, {
+        type: "set-notes",
+        itemId: "x",
+        notes: "keep me",
+      });
+
+      state = cartReducer(state, {
+        type: "reorder",
+        orderedIds: ["x"],
+      });
+
+      expect(state.entries.get("x")?.quantity).toBe(5);
+      expect(state.entries.get("x")?.notes).toBe("keep me");
+    });
+
+    it("ignores unknown ids in the ordered list", () => {
+      const item = makeItem({ id: "a" });
+      let state = cartReducer(emptyState, { type: "add", item });
+
+      state = cartReducer(state, {
+        type: "reorder",
+        orderedIds: ["nonexistent", "a"],
+      });
+
+      const ids = [...state.entries.keys()];
+      expect(ids).toEqual(["a"]);
+    });
+  });
+});
+
+describe("sortEntries", () => {
+  function entry(overrides: Partial<Item> = {}, qty = 1): CartEntry {
+    return { item: makeItem(overrides), quantity: qty };
+  }
+
+  it("returns entries in original order for 'manual'", () => {
+    const entries = [
+      entry({ id: "a", name: "Zword", level: 5, price: { gp: 50 } }),
+      entry({ id: "b", name: "Amulet", level: 1, price: { gp: 10 } }),
+      entry({ id: "c", name: "Mace", level: 3, price: { gp: 30 } }),
+    ];
+    const sorted = sortEntries(entries, "manual");
+    expect(sorted.map((e) => e.item.id)).toEqual(["a", "b", "c"]);
+  });
+
+  it("sorts by level ascending", () => {
+    const entries = [
+      entry({ id: "a", level: 5 }),
+      entry({ id: "b", level: 1 }),
+      entry({ id: "c", level: 3 }),
+    ];
+    const sorted = sortEntries(entries, "level-asc");
+    expect(sorted.map((e) => e.item.level)).toEqual([1, 3, 5]);
+  });
+
+  it("sorts by level descending", () => {
+    const entries = [
+      entry({ id: "a", level: 1 }),
+      entry({ id: "b", level: 5 }),
+      entry({ id: "c", level: 3 }),
+    ];
+    const sorted = sortEntries(entries, "level-desc");
+    expect(sorted.map((e) => e.item.level)).toEqual([5, 3, 1]);
+  });
+
+  it("sorts by level then by name for ties", () => {
+    const entries = [
+      entry({ id: "a", name: "Zword", level: 3 }),
+      entry({ id: "b", name: "Amulet", level: 3 }),
+      entry({ id: "c", name: "Mace", level: 1 }),
+    ];
+    const sorted = sortEntries(entries, "level-asc");
+    expect(sorted.map((e) => e.item.name)).toEqual(["Mace", "Amulet", "Zword"]);
+  });
+
+  it("sorts by price ascending (copper value)", () => {
+    const entries = [
+      entry({ id: "a", price: { gp: 10 } }),
+      entry({ id: "b", price: { sp: 5 } }),
+      entry({ id: "c", price: { gp: 1 } }),
+    ];
+    const sorted = sortEntries(entries, "price-asc");
+    expect(sorted.map((e) => e.item.id)).toEqual(["b", "c", "a"]);
+  });
+
+  it("sorts by price descending", () => {
+    const entries = [
+      entry({ id: "a", price: { gp: 10 } }),
+      entry({ id: "b", price: { sp: 5 } }),
+      entry({ id: "c", price: { gp: 1 } }),
+    ];
+    const sorted = sortEntries(entries, "price-desc");
+    expect(sorted.map((e) => e.item.id)).toEqual(["a", "c", "b"]);
+  });
+
+  it("sorts by price then by name for ties", () => {
+    const entries = [
+      entry({ id: "a", name: "Zword", price: { gp: 5 } }),
+      entry({ id: "b", name: "Amulet", price: { gp: 5 } }),
+    ];
+    const sorted = sortEntries(entries, "price-asc");
+    expect(sorted.map((e) => e.item.name)).toEqual(["Amulet", "Zword"]);
+  });
+
+  it("does not mutate the original array", () => {
+    const entries = [
+      entry({ id: "a", level: 5 }),
+      entry({ id: "b", level: 1 }),
+    ];
+    const sorted = sortEntries(entries, "level-asc");
+    expect(sorted).not.toBe(entries);
+    expect(entries[0].item.id).toBe("a");
   });
 });

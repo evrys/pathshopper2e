@@ -1,7 +1,32 @@
+import {
+  DndContext,
+  type DragEndEvent,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  restrictToParentElement,
+  restrictToVerticalAxis,
+} from "@dnd-kit/modifiers";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { DotsVerticalIcon } from "@radix-ui/react-icons";
-import { useEffect, useRef, useState } from "react";
-import type { CartEntry } from "../hooks/useCart";
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  CheckIcon,
+  DotsVerticalIcon,
+  DragHandleDots2Icon,
+} from "@radix-ui/react-icons";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { CartEntry, CartSortOrder } from "../hooks/useCart";
+import { sortEntries } from "../hooks/useCart";
 import { useIsMobile } from "../hooks/useMediaQuery";
 import type { SavedList } from "../hooks/useSavedLists";
 import { aonUrl } from "../lib/aon";
@@ -19,7 +44,7 @@ import type { Item, Price, PriceModifier } from "../types";
 import { AddCustomItemModal } from "./AddCustomItemModal";
 import styles from "./Cart.module.css";
 import { ItemSettingsModal } from "./ItemSettingsModal";
-import { ItemTooltipWrapper, useMobileTooltip } from "./ItemTooltip";
+import { ItemTooltipWrapper } from "./ItemTooltip";
 import { SavedListsModal } from "./SavedListsModal";
 
 interface CartProps {
@@ -47,6 +72,7 @@ interface CartProps {
   onDeleteList: (id: string) => void;
   /** Import CSV. If commit is false, returns matched item count without modifying cart. */
   onImportCsv: (csv: string, commit: boolean) => number;
+  onReorder: (orderedIds: string[]) => void;
 }
 
 /** Build a share URL pointing to the readonly list view with cart + list name in the hash. */
@@ -106,97 +132,44 @@ function buildShareUrl(
   return `${window.location.origin}${base}/?view=list${buildHashString(params)}`;
 }
 
-/** Cart list item that opens the tooltip on any tap in the info area (mobile). */
-function MobileCartItem({
-  entry,
-  onSetSettingsEntry,
-  onSetQuantity,
-  onRemoveItem,
-  isFlashing,
-  onFlashEnd,
+/** Wrapper that makes a cart list item draggable via dnd-kit. */
+function SortableItem({
+  id,
+  children,
 }: {
-  entry: CartEntry;
-  onSetSettingsEntry: (entry: CartEntry) => void;
-  onSetQuantity: (id: string, qty: number) => void;
-  onRemoveItem: (id: string) => void;
-  isFlashing: boolean;
-  onFlashEnd: () => void;
+  id: string;
+  children: React.ReactNode;
 }) {
-  const { rowProps, portal } = useMobileTooltip(entry.item);
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style: React.CSSProperties = {
+    transform: transform
+      ? `translate3d(0, ${Math.round(transform.y)}px, 0)`
+      : undefined,
+    transition,
+    opacity: isDragging ? 0.5 : undefined,
+    position: "relative" as const,
+    zIndex: isDragging ? 10 : undefined,
+  };
 
   return (
-    <li
-      data-item-id={entry.item.id}
-      className={`${styles.item}${isFlashing ? ` ${styles.flash}` : ""}`}
-      onAnimationEnd={onFlashEnd}
-    >
-      <div
-        className={styles.itemInfo}
-        {...(entry.item.id.startsWith("custom-") ? {} : rowProps)}
+    <li ref={setNodeRef} style={style} className={styles.item} {...attributes}>
+      <button
+        type="button"
+        className={styles.dragHandle}
+        {...listeners}
+        aria-label="Drag to reorder"
       >
-        <span className={styles.itemName}>{entry.item.name}</span>
-        <span className={styles.itemPrice}>
-          {entry.priceModifier ? (
-            <>
-              <span className={styles.originalPrice}>
-                {formatPrice(entry.item.price)}
-              </span>{" "}
-              {formatPrice(entry.item.price, entry.priceModifier)}
-              {modifierLabel(entry.priceModifier) &&
-                ` ${modifierLabel(entry.priceModifier)}`}
-            </>
-          ) : (
-            formatPrice(entry.item.price)
-          )}
-          {entry.quantity > 1 && " each"}
-        </span>
-        {entry.notes && <span className={styles.itemNotes}>{entry.notes}</span>}
-      </div>
-      <div className={styles.controls}>
-        <button
-          type="button"
-          className={styles.settingsBtn}
-          onClick={() => onSetSettingsEntry(entry)}
-          title="Item settings"
-        >
-          <svg
-            aria-hidden="true"
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-            <path d="m15 5 4 4" />
-          </svg>
-        </button>
-        <button
-          type="button"
-          onClick={() => onSetQuantity(entry.item.id, entry.quantity - 1)}
-        >
-          −
-        </button>
-        <span className={styles.qty}>{entry.quantity}</span>
-        <button
-          type="button"
-          onClick={() => onSetQuantity(entry.item.id, entry.quantity + 1)}
-        >
-          +
-        </button>
-        <button
-          type="button"
-          className={styles.removeBtn}
-          onClick={() => onRemoveItem(entry.item.id)}
-          title="Remove"
-        >
-          ✕
-        </button>
-      </div>
-      {portal}
+        <DragHandleDots2Icon />
+      </button>
+      {children}
     </li>
   );
 }
@@ -219,6 +192,7 @@ export function Cart({
   onNewList,
   onDeleteList,
   onImportCsv,
+  onReorder,
 }: CartProps) {
   const isMobile = useIsMobile();
   const [listsOpen, setListsOpen] = useState(false);
@@ -226,6 +200,40 @@ export function Cart({
   const [customItemOpen, setCustomItemOpen] = useState(false);
   const [settingsEntry, setSettingsEntry] = useState<CartEntry | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [sortOrder, setSortOrder] = useState<CartSortOrder>("manual");
+  const sortedEntries = useMemo(
+    () => sortEntries(entries, sortOrder),
+    [entries, sortOrder],
+  );
+  const sortedIds = useMemo(
+    () => sortedEntries.map((e) => e.item.id),
+    [sortedEntries],
+  );
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 150, tolerance: 5 },
+    }),
+  );
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = sortedIds.indexOf(active.id as string);
+    const newIndex = sortedIds.indexOf(over.id as string);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = [...sortedIds];
+    reordered.splice(oldIndex, 1);
+    reordered.splice(newIndex, 0, active.id as string);
+
+    // Switch to manual order when the user drags
+    setSortOrder("manual");
+    onReorder(reordered);
+  }
+
   const [renaming, setRenaming] = useState(false);
   const renameRef = useRef<HTMLInputElement>(null);
   const renameCallbackRef = (el: HTMLInputElement | null) => {
@@ -359,7 +367,7 @@ export function Cart({
         {entries.length > 0 && (
           <a
             className={styles.shareBtn}
-            href={buildShareUrl(entries, listName, activeListId)}
+            href={buildShareUrl(sortedEntries, listName, activeListId)}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
@@ -416,6 +424,86 @@ export function Cart({
               >
                 Add custom item
               </DropdownMenu.Item>
+              <DropdownMenu.Separator className={styles.menuDivider} />
+              <DropdownMenu.Sub>
+                <DropdownMenu.SubTrigger className={styles.menuItem}>
+                  Sort by
+                  <svg
+                    className={styles.subTriggerArrow}
+                    width="8"
+                    height="10"
+                    viewBox="0 0 8 10"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path d="M1 1 L7 5 L1 9Z" />
+                  </svg>
+                </DropdownMenu.SubTrigger>
+                <DropdownMenu.Portal>
+                  <DropdownMenu.SubContent className={styles.menuDropdown}>
+                    <DropdownMenu.RadioGroup
+                      value={sortOrder}
+                      onValueChange={(v) => setSortOrder(v as CartSortOrder)}
+                    >
+                      <DropdownMenu.RadioItem
+                        className={`${styles.menuItem} ${styles.radioItem}`}
+                        value="manual"
+                      >
+                        <DropdownMenu.ItemIndicator
+                          className={styles.radioIndicator}
+                        >
+                          <CheckIcon />
+                        </DropdownMenu.ItemIndicator>
+                        Manual
+                      </DropdownMenu.RadioItem>
+                      <DropdownMenu.RadioItem
+                        className={`${styles.menuItem} ${styles.radioItem}`}
+                        value="level-asc"
+                      >
+                        <DropdownMenu.ItemIndicator
+                          className={styles.radioIndicator}
+                        >
+                          <CheckIcon />
+                        </DropdownMenu.ItemIndicator>
+                        Level <ArrowUpIcon />
+                      </DropdownMenu.RadioItem>
+                      <DropdownMenu.RadioItem
+                        className={`${styles.menuItem} ${styles.radioItem}`}
+                        value="level-desc"
+                      >
+                        <DropdownMenu.ItemIndicator
+                          className={styles.radioIndicator}
+                        >
+                          <CheckIcon />
+                        </DropdownMenu.ItemIndicator>
+                        Level <ArrowDownIcon />
+                      </DropdownMenu.RadioItem>
+                      <DropdownMenu.RadioItem
+                        className={`${styles.menuItem} ${styles.radioItem}`}
+                        value="price-asc"
+                      >
+                        <DropdownMenu.ItemIndicator
+                          className={styles.radioIndicator}
+                        >
+                          <CheckIcon />
+                        </DropdownMenu.ItemIndicator>
+                        Price <ArrowUpIcon />
+                      </DropdownMenu.RadioItem>
+                      <DropdownMenu.RadioItem
+                        className={`${styles.menuItem} ${styles.radioItem}`}
+                        value="price-desc"
+                      >
+                        <DropdownMenu.ItemIndicator
+                          className={styles.radioIndicator}
+                        >
+                          <CheckIcon />
+                        </DropdownMenu.ItemIndicator>
+                        Price <ArrowDownIcon />
+                      </DropdownMenu.RadioItem>
+                    </DropdownMenu.RadioGroup>
+                  </DropdownMenu.SubContent>
+                </DropdownMenu.Portal>
+              </DropdownMenu.Sub>
               <DropdownMenu.Separator className={styles.menuDivider} />
               <DropdownMenu.Item
                 className={styles.menuItem}
@@ -493,112 +581,206 @@ export function Cart({
           Add items from the table to start building your list.
         </p>
       ) : (
-        <ul className={styles.items} ref={itemsListRef}>
-          {entries.map((entry) =>
-            isMobile ? (
-              <MobileCartItem
-                key={entry.item.id}
-                entry={entry}
-                onSetSettingsEntry={setSettingsEntry}
-                onSetQuantity={onSetQuantity}
-                onRemoveItem={onRemoveItem}
-                isFlashing={flashId === entry.item.id}
-                onFlashEnd={() => setFlashId(null)}
-              />
-            ) : (
-              <li
-                key={entry.item.id}
-                data-item-id={entry.item.id}
-                className={`${styles.item}${flashId === entry.item.id ? ` ${styles.flash}` : ""}`}
-                onAnimationEnd={() => setFlashId(null)}
-              >
-                {" "}
-                <div className={styles.itemInfo}>
-                  {entry.item.id.startsWith("custom-") ? (
-                    <span className={styles.itemName}>{entry.item.name}</span>
-                  ) : (
-                    <ItemTooltipWrapper item={entry.item}>
-                      <a
-                        className={styles.itemName}
-                        href={aonUrl(entry.item)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {entry.item.name}
-                      </a>
-                    </ItemTooltipWrapper>
-                  )}
-                  <span className={styles.itemPrice}>
-                    {entry.priceModifier ? (
-                      <>
-                        <span className={styles.originalPrice}>
-                          {formatPrice(entry.item.price)}
-                        </span>{" "}
-                        {formatPrice(entry.item.price, entry.priceModifier)}
-                        {modifierLabel(entry.priceModifier) &&
-                          ` ${modifierLabel(entry.priceModifier)}`}
-                      </>
-                    ) : (
-                      formatPrice(entry.item.price)
-                    )}
-                    {entry.quantity > 1 && " each"}
-                  </span>
-                  {entry.notes && (
-                    <span className={styles.itemNotes}>{entry.notes}</span>
-                  )}
-                </div>
-                <div className={styles.controls}>
-                  <button
-                    type="button"
-                    className={styles.settingsBtn}
-                    onClick={() => setSettingsEntry(entry)}
-                    title="Item settings"
-                  >
-                    <svg
-                      aria-hidden="true"
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={sortedIds}
+            strategy={verticalListSortingStrategy}
+          >
+            <ul className={styles.items} ref={itemsListRef}>
+              {sortedEntries.map((entry) =>
+                isMobile ? (
+                  <SortableItem key={entry.item.id} id={entry.item.id}>
+                    <div
+                      data-item-id={entry.item.id}
+                      className={`${styles.itemInner}${flashId === entry.item.id ? ` ${styles.flash}` : ""}`}
+                      onAnimationEnd={() => setFlashId(null)}
                     >
-                      <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                      <path d="m15 5 4 4" />
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      onSetQuantity(entry.item.id, entry.quantity - 1)
-                    }
-                  >
-                    −
-                  </button>
-                  <span className={styles.qty}>{entry.quantity}</span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      onSetQuantity(entry.item.id, entry.quantity + 1)
-                    }
-                  >
-                    +
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.removeBtn}
-                    onClick={() => onRemoveItem(entry.item.id)}
-                    title="Remove"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </li>
-            ),
-          )}
-        </ul>
+                      <div className={styles.itemInfo}>
+                        <span className={styles.itemName}>
+                          {entry.item.name}
+                        </span>
+                        <span className={styles.itemPrice}>
+                          {entry.priceModifier ? (
+                            <>
+                              <span className={styles.originalPrice}>
+                                {formatPrice(entry.item.price)}
+                              </span>{" "}
+                              {formatPrice(
+                                entry.item.price,
+                                entry.priceModifier,
+                              )}
+                              {modifierLabel(entry.priceModifier) &&
+                                ` ${modifierLabel(entry.priceModifier)}`}
+                            </>
+                          ) : (
+                            formatPrice(entry.item.price)
+                          )}
+                          {entry.quantity > 1 && " each"}
+                        </span>
+                        {entry.notes && (
+                          <span className={styles.itemNotes}>
+                            {entry.notes}
+                          </span>
+                        )}
+                      </div>
+                      <div className={styles.controls}>
+                        <button
+                          type="button"
+                          className={styles.settingsBtn}
+                          onClick={() => setSettingsEntry(entry)}
+                          title="Item settings"
+                        >
+                          <svg
+                            aria-hidden="true"
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                            <path d="m15 5 4 4" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onSetQuantity(entry.item.id, entry.quantity - 1)
+                          }
+                        >
+                          −
+                        </button>
+                        <span className={styles.qty}>{entry.quantity}</span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onSetQuantity(entry.item.id, entry.quantity + 1)
+                          }
+                        >
+                          +
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.removeBtn}
+                          onClick={() => onRemoveItem(entry.item.id)}
+                          title="Remove"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  </SortableItem>
+                ) : (
+                  <SortableItem key={entry.item.id} id={entry.item.id}>
+                    <div
+                      data-item-id={entry.item.id}
+                      className={`${styles.itemInner}${flashId === entry.item.id ? ` ${styles.flash}` : ""}`}
+                      onAnimationEnd={() => setFlashId(null)}
+                    >
+                      <div className={styles.itemInfo}>
+                        {entry.item.id.startsWith("custom-") ? (
+                          <span className={styles.itemName}>
+                            {entry.item.name}
+                          </span>
+                        ) : (
+                          <ItemTooltipWrapper item={entry.item}>
+                            <a
+                              className={styles.itemName}
+                              href={aonUrl(entry.item)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {entry.item.name}
+                            </a>
+                          </ItemTooltipWrapper>
+                        )}
+                        <span className={styles.itemPrice}>
+                          {entry.priceModifier ? (
+                            <>
+                              <span className={styles.originalPrice}>
+                                {formatPrice(entry.item.price)}
+                              </span>{" "}
+                              {formatPrice(
+                                entry.item.price,
+                                entry.priceModifier,
+                              )}
+                              {modifierLabel(entry.priceModifier) &&
+                                ` ${modifierLabel(entry.priceModifier)}`}
+                            </>
+                          ) : (
+                            formatPrice(entry.item.price)
+                          )}
+                          {entry.quantity > 1 && " each"}
+                        </span>
+                        {entry.notes && (
+                          <span className={styles.itemNotes}>
+                            {entry.notes}
+                          </span>
+                        )}
+                      </div>
+                      <div className={styles.controls}>
+                        <button
+                          type="button"
+                          className={styles.settingsBtn}
+                          onClick={() => setSettingsEntry(entry)}
+                          title="Item settings"
+                        >
+                          <svg
+                            aria-hidden="true"
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                            <path d="m15 5 4 4" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onSetQuantity(entry.item.id, entry.quantity - 1)
+                          }
+                        >
+                          −
+                        </button>
+                        <span className={styles.qty}>{entry.quantity}</span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onSetQuantity(entry.item.id, entry.quantity + 1)
+                          }
+                        >
+                          +
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.removeBtn}
+                          onClick={() => onRemoveItem(entry.item.id)}
+                          title="Remove"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  </SortableItem>
+                ),
+              )}
+            </ul>
+          </SortableContext>
+        </DndContext>
       )}
 
       {entries.length > 0 && (

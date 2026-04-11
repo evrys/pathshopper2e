@@ -1,6 +1,10 @@
+/// <reference types="node" />
 import uFuzzy from "@leeoniya/ufuzzy";
+import { readFileSync } from "node:fs";
 import { createElement, type ReactNode } from "react";
 import { describe, expect, it } from "vitest";
+import { stripHtml } from "../lib/html";
+import type { JsonItem } from "../types";
 import { rankSearch } from "./useFuzzySearch";
 
 /**
@@ -526,6 +530,59 @@ describe("rankSearch ordering", () => {
     });
   });
 
+  describe("description-only match snippets", () => {
+    it("produces a secondary snippet for description-only matches", () => {
+      const items = makeItems(
+        {
+          name: "Arbalest",
+          description: "Grants a +1 item bonus to Athletics checks",
+        },
+        { name: "Longsword", description: "A sharp blade" },
+      );
+      const results = searchItems(items, "bonus to");
+      const arbalest = results.find((r) => r.item.name === "Arbalest");
+      expect(arbalest).toBeDefined();
+      // Name doesn't match, so highlighted should be null
+      expect(arbalest?.highlighted).toBeNull();
+      // But the description match should produce a snippet with highlights
+      expect(arbalest?.secondarySnippet).not.toBeNull();
+      // The snippet should contain <mark> elements
+      const snippetNodes = arbalest?.secondarySnippet as React.ReactNode[];
+      const hasMarks = snippetNodes.some(
+        (node) => node !== null && typeof node === "object" && "type" in node,
+      );
+      expect(hasMarks).toBe(true);
+    });
+
+    it("produces snippets even when many items match the description", () => {
+      // uFuzzy.search() skips the info step when filter returns >1000 hits.
+      // We need to fall back to substring-based ranges in that case.
+      const filler = Array.from({ length: 1100 }, (_, i) => ({
+        name: `Filler ${i}`,
+        description: "This item grants a bonus to saves and more",
+        traits: [] as string[],
+      }));
+      const target = {
+        name: "Special Amulet",
+        description: "Grants a +1 item bonus to Athletics checks",
+        traits: [] as string[],
+      };
+      const items = [...filler, target];
+      const names = items.map((i) => i.name);
+      const secondaries = items.map((i) => i.description);
+      const results = rankSearch(items, names, secondaries, "bonus to");
+      const amulet = results.find((r) => r.item.name === "Special Amulet");
+      expect(amulet).toBeDefined();
+      expect(amulet?.highlighted).toBeNull();
+      expect(amulet?.secondarySnippet).not.toBeNull();
+      const snippetNodes = amulet?.secondarySnippet as React.ReactNode[];
+      const hasMarks = snippetNodes.some(
+        (node) => node !== null && typeof node === "object" && "type" in node,
+      );
+      expect(hasMarks).toBe(true);
+    });
+  });
+
   describe("category matching via getTraits", () => {
     it("matches items when category slug is included in getTraits", () => {
       const items = makeItems(
@@ -570,4 +627,47 @@ describe("rankSearch ordering", () => {
       expect(results[0].matchedTraits.has("alchemical-items")).toBe(true);
     });
   });
+});
+
+// ── Performance tests against real item data ───────────────────────────────
+
+describe("search performance", () => {
+  // Load and enrich the full item set once, mirroring useItems + ItemTable
+  const raw = JSON.parse(
+    readFileSync("public/data/items.json", "utf8"),
+  ) as JsonItem[];
+  const items = raw.map((item) => ({
+    ...item,
+    plainDescription: stripHtml(item.description),
+  }));
+  const names = items.map((i) => i.name);
+  const secondaries = items.map((i) =>
+    i.traits.length > 0
+      ? `${i.plainDescription} ${i.traits.join(" ")}`
+      : i.plainDescription,
+  );
+  const getTraits = (i: (typeof items)[0]) => [...i.traits, i.type];
+
+  // Each query should complete in under 200ms
+  const MAX_MS = 200;
+
+  const queries = [
+    "bonus to",
+    "bonus to athletics",
+    "+1 striking",
+    "fire",
+    "healing potion",
+    "resistance to fire damage",
+    "bonus to saving throws against magical effects",
+  ];
+
+  for (const query of queries) {
+    it(`"${query}" completes in under ${MAX_MS}ms`, () => {
+      const start = performance.now();
+      const results = rankSearch(items, names, secondaries, query, getTraits);
+      const elapsed = performance.now() - start;
+      expect(results.length).toBeGreaterThan(0);
+      expect(elapsed).toBeLessThan(MAX_MS);
+    });
+  }
 });
