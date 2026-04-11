@@ -42,7 +42,7 @@ a.badge:hover {
 
 .body {
   display: grid;
-  grid-template-columns: 1fr 340px;
+  grid-template-columns: 1fr 380px;
   grid-template-rows: 1fr;
   gap: 1.5rem;
   flex: 1;

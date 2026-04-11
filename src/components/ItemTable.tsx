@@ -1,5 +1,5 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { type ReactNode, useCallback, useMemo, useRef } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef } from "react";
 import { useFuzzySearch } from "../hooks/useFuzzySearch";
 import { useIsMobile } from "../hooks/useMediaQuery";
 import { aonUrl } from "../lib/aon";
@@ -332,6 +332,12 @@ export function ItemTable({
     },
     overscan: 20,
   });
+
+  // Re-estimate row heights when switching between mobile and desktop
+  // biome-ignore lint/correctness/useExhaustiveDependencies: isMobile is an intentional trigger
+  useEffect(() => {
+    virtualizer.measure();
+  }, [isMobile, virtualizer]);
 
   return (
     <div className={styles.container}>
